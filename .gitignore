@@ -1,0 +1,36 @@
+# --------------------------
+# Global / System
+# --------------------------
+.DS_Store
+Thumbs.db
+*.log
+
+# --------------------------
+# Python / FastAPI
+# --------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+.env
+.venv/
+venv/
+.env.*
+*.egg-info/
+pip-wheel-metadata/
+.mypy_cache/
+.pytest_cache/
+coverage/
+build/
+dist/
+
+# --------------------------
+# Node / React / Vite
+# --------------------------
+node_modules/
+dist/
+*.local
+npm-debug.log*
+yarn-debug.
