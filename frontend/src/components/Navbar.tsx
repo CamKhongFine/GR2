@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Container,
   Group,
@@ -6,9 +7,11 @@ import {
   Burger,
   Drawer,
   Stack,
-  Anchor,
   Box,
   ActionIcon,
+  Menu,
+  Avatar,
+  UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -16,17 +19,22 @@ import {
   IconBrandTwitter,
   IconBrandLinkedin,
   IconMail,
+  IconUser,
+  IconLogout,
+  IconSettings,
 } from '@tabler/icons-react';
+
+interface User {
+  name: string;
+  email: string;
+}
 
 export function Navbar() {
   const [opened, { toggle, close }] = useDisclosure(false);
-
-  const navItems = [
-    { label: 'Trang chủ', href: '#home' },
-    { label: 'Tính năng', href: '#features' },
-    { label: 'Giá cả', href: '#pricing' },
-    { label: 'Liên hệ', href: '#contact' },
-  ];
+  
+  // Mock user state - trong thực tế sẽ lấy từ context/state management
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   return (
     <Box
@@ -43,44 +51,63 @@ export function Navbar() {
     >
       <Container fluid px={{ base: 'md', sm: 'lg' }}>
         <Group justify="space-between" h={70}>
-          {/* Logo */}
-          <Text
-            size="xl"
-            fw={900}
-            variant="gradient"
-            gradient={{ from: 'blue', to: 'purple' }}
-          >
-            ProjectName
-          </Text>
+          {/* Empty space for logo - có thể thêm logo sau */}
+          <Box />
 
-          {/* Desktop Navigation */}
-          <Group gap="xl" visibleFrom="sm">
-            {navItems.map((item) => (
-              <Anchor
-                key={item.label}
-                href={item.href}
-                c="dark"
-                fw={500}
-                style={{ textDecoration: 'none' }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  const element = document.querySelector(item.href);
-                  element?.scrollIntoView({ behavior: 'smooth' });
+          {/* User Menu */}
+          <Group gap="md" visibleFrom="sm">
+            {isLoggedIn ? (
+              <Menu shadow="md" width={220} zIndex={1001} offset={15}>
+                <Menu.Target>
+                  <Avatar 
+                    size="md" 
+                    color="blue" 
+                    style={{ 
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {user?.name?.charAt(0) || 'U'}
+                  </Avatar>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Menu.Label>Account</Menu.Label>
+                  <Menu.Item leftSection={<IconUser size={14} />}>
+                    Profile
+                  </Menu.Item>
+                  <Menu.Item leftSection={<IconSettings size={14} />}>
+                    Settings
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item 
+                    leftSection={<IconLogout size={14} />}
+                    onClick={() => setIsLoggedIn(false)}
+                  >
+                    Logout
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="md"
+                leftSection={<IconUser size={18} />}
+                style={{
+                  padding: '10px 20px',
+                  fontWeight: 600,
+                  borderWidth: '2px',
+                  transition: 'all 0.2s ease',
+                }}
+                onClick={() => {
+                  setIsLoggedIn(true);
+                  setUser({ name: 'John Doe', email: 'john@example.com' });
                 }}
               >
-                {item.label}
-              </Anchor>
-            ))}
-          </Group>
-
-          {/* Desktop CTA Buttons */}
-          <Group gap="md" visibleFrom="sm">
-            <Button variant="outline" size="sm">
-              Đăng nhập
-            </Button>
-            <Button size="sm">
-              Bắt đầu
-            </Button>
+                Đăng nhập
+              </Button>
+            )}
           </Group>
 
           {/* Mobile Menu Button */}
@@ -103,33 +130,55 @@ export function Navbar() {
         zIndex={1000000}
       >
         <Stack gap="lg" mt="xl">
-          {navItems.map((item) => (
-            <Anchor
-              key={item.label}
-              href={item.href}
-              c="dark"
-              fw={500}
+          {isLoggedIn ? (
+            <>
+              <Group gap="md" p="md" style={{ 
+                backgroundColor: 'var(--mantine-color-gray-0)', 
+                borderRadius: '20px',
+                border: '3px solid rgba(59, 130, 246, 0.3)',
+                boxShadow: '0 6px 20px rgba(59, 130, 246, 0.2)'
+              }}>
+                <Avatar size="lg" color="blue" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                  {user?.name?.charAt(0) || 'U'}
+                </Avatar>
+                <Text fw={600} size="lg" c="blue">{user?.name || 'User'}</Text>
+              </Group>
+              
+              <Button variant="outline" fullWidth leftSection={<IconUser size={16} />}>
+                Profile
+              </Button>
+              <Button variant="outline" fullWidth leftSection={<IconSettings size={16} />}>
+                Settings
+              </Button>
+              <Button 
+                variant="outline" 
+                fullWidth 
+                leftSection={<IconLogout size={16} />}
+                onClick={() => setIsLoggedIn(false)}
+              >
+                Logout
+              </Button>
+            </>
+          ) : (
+            <Button 
+              variant="outline" 
+              fullWidth
               size="lg"
-              style={{ textDecoration: 'none' }}
-              onClick={(e) => {
-                e.preventDefault();
-                const element = document.querySelector(item.href);
-                element?.scrollIntoView({ behavior: 'smooth' });
+              leftSection={<IconUser size={18} />}
+              style={{
+                fontWeight: 600,
+                borderWidth: '2px',
+                padding: '12px 20px',
+              }}
+              onClick={() => {
+                setIsLoggedIn(true);
+                setUser({ name: 'John Doe', email: 'john@example.com' });
                 close();
               }}
             >
-              {item.label}
-            </Anchor>
-          ))}
-          
-          <Group gap="md" mt="xl">
-            <Button variant="outline" fullWidth>
               Đăng nhập
             </Button>
-            <Button fullWidth>
-              Bắt đầu
-            </Button>
-          </Group>
+          )}
 
           <Group justify="center" mt="xl">
             <ActionIcon variant="subtle" size="lg">
