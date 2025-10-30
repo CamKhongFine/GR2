@@ -18,27 +18,27 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 
-try:
-    from crawler import gemini_client  # mới dùng Gemini
-except Exception:
-    import gemini_client
+from client import extract_article_json
 
 DISALLOWED_SEGMENTS = [
-    "video",
-    "multimedia",
-    "photo",
-    "hinh-anh",
-    "infographic",
-    "podcast",
-    "tuong-tac",
+    "video", "multimedia", "photo", "hinh-anh", "infographic", "podcast", "tuong-tac"
+]
+SUPPORTED_DOMAINS = [
+    "vnexpress.net", "tuoitre.vn", "dantri.com.vn", "zingnews.vn"
 ]
 
-SUPPORTED_DOMAINS = [
-    "vnexpress.net",
-    "tuoitre.vn",
-    "dantri.com.vn",
-    "zingnews.vn",
+DISASTER_KEYWORDS = [
+    "bão", "lũ", "lũ lụt", "sạt lở", "ngập lụt", "thiên tai",
+    "động đất", "cháy rừng", "mưa lớn", "áp thấp nhiệt đới",
 ]
+
+RESCUE_KEYWORDS = [
+    "cứu hộ", "cứu nạn", "tìm kiếm cứu nạn", "cứu trợ", "hỗ trợ khẩn cấp",
+    "phát hàng cứu trợ", "bộ đội cứu hộ", "lực lượng chức năng", "điểm sơ tán",
+    "chữa cháy", "cháy nổ", "tai nạn giao thông", "sập nhà", "người mất tích",
+]
+
+ALL_KEYWORDS = DISASTER_KEYWORDS + RESCUE_KEYWORDS
 
 def create_driver(headless: bool = True) -> webdriver.Chrome:
     options = ChromeOptions()
@@ -58,13 +58,11 @@ def create_driver(headless: bool = True) -> webdriver.Chrome:
 
 def random_delay(a: float = 1.2, b: float = 2.8) -> None:
     time.sleep(random.uniform(a, b))
-
 def safe_text(el) -> str:
     try:
         return el.text.strip()
     except Exception:
         return ""
-
 def get_meta_content(driver: webdriver.Chrome, names: List[str]) -> Optional[str]:
     for name in names:
         try:
@@ -76,7 +74,6 @@ def get_meta_content(driver: webdriver.Chrome, names: List[str]) -> Optional[str
         except NoSuchElementException:
             pass
     return None
-
 def get_meta_property(driver: webdriver.Chrome, properties: List[str]) -> Optional[str]:
     for prop in properties:
         try:
@@ -88,24 +85,13 @@ def get_meta_property(driver: webdriver.Chrome, properties: List[str]) -> Option
         except NoSuchElementException:
             pass
     return None
-
 def close_cookie_banners(driver: webdriver.Chrome) -> None:
     selectors = [
-        "button[aria-label='Close']",
-        "button[aria-label='close']",
-        "button[aria-label='Đóng']",
-        "button[aria-label='Tắt']",
-        "button[aria-label='dismiss']",
-        "button[aria-label='Got it']",
-        "button[aria-label='Accept']",
-        "button[aria-label='I agree']",
-        "button.btn-accept",
-        "button.accept",
-        ".qc-cmp2-summary-buttons .qc-cmp2-summary-buttons-accept-all",
-        ".qc-cmp2-footer .qc-cmp2-btn.qc-cmp2-accept-all",
-        ".btn-consent, .btn-accept, .cookie-accept, .cookie-approve",
-        "#onetrust-accept-btn-handler",
-        ".ot-sdk-container #onetrust-accept-btn-handler",
+        "button[aria-label='Close']", "button[aria-label='close']", "button[aria-label='Đóng']", "button[aria-label='Tắt']",
+        "button[aria-label='dismiss']", "button[aria-label='Got it']", "button[aria-label='Accept']", "button[aria-label='I agree']",
+        "button.btn-accept", "button.accept", ".qc-cmp2-summary-buttons .qc-cmp2-summary-buttons-accept-all",
+        ".qc-cmp2-footer .qc-cmp2-btn.qc-cmp2-accept-all", ".btn-consent, .btn-accept, .cookie-accept, .cookie-approve",
+        "#onetrust-accept-btn-handler", ".ot-sdk-container #onetrust-accept-btn-handler",
     ]
     for css in selectors:
         try:
@@ -116,7 +102,6 @@ def close_cookie_banners(driver: webdriver.Chrome) -> None:
                     random_delay(0.2, 0.5)
         except Exception:
             pass
-
 def is_probable_article(url: str) -> bool:
     u = url.lower()
     if any(seg in u for seg in DISALLOWED_SEGMENTS):
@@ -127,10 +112,8 @@ def is_probable_article(url: str) -> bool:
     if re.search(r"\d{5,}", path):
         return True
     return path.count("-") >= 2 and len(path) > 12
-
 def normalize_url(url: str) -> str:
     return url.split("#")[0].split("?")[0].strip()
-
 def collect_links_from_search(driver: webdriver.Chrome, url: str, limit: int) -> List[str]:
     links: List[str] = []
     seen: Set[str] = set()
@@ -157,19 +140,17 @@ def collect_links_from_search(driver: webdriver.Chrome, url: str, limit: int) ->
     except Exception:
         pass
     return links
-
 def search_articles(keyword: str, limit: int = 40, driver: Optional[webdriver.Chrome] = None) -> List[str]:
     should_quit = False
     if driver is None:
         driver = create_driver(headless=True)
         should_quit = True
-
     encoded = quote(keyword)
     search_pages = [
-        f"https://vnexpress.net/tim-kiem?q={encoded}",
         f"https://tuoitre.vn/tim-kiem.htm?keywords={encoded}",
         f"https://dantri.com.vn/tim-kiem.htm?keywords={encoded}",
         f"https://zingnews.vn/tim-kiem.html?q={encoded}",
+        f"https://vnexpress.net/tim-kiem?q={encoded}",
     ]
     results: List[str] = []
     seen: Set[str] = set()
@@ -190,20 +171,13 @@ def search_articles(keyword: str, limit: int = 40, driver: Optional[webdriver.Ch
         except Exception:
             pass
     return results
-
 def extract_published_time(driver: webdriver.Chrome) -> Optional[str]:
     meta_time = get_meta_property(driver, [
-        "article:published_time",
-        "og:published_time",
-        "article:modified_time",
-        "og:updated_time",
+        "article:published_time", "og:published_time", "article:modified_time", "og:updated_time"
     ])
     if meta_time:
         return meta_time
-    selectors = [
-        "time[datetime]",
-        ".date, .time, .ArticleDate, .article-time, .publish-time",
-    ]
+    selectors = ["time[datetime]", ".date, .time, .ArticleDate, .article-time, .publish-time"]
     for css in selectors:
         try:
             el = driver.find_element(By.CSS_SELECTOR, css)
@@ -216,15 +190,9 @@ def extract_published_time(driver: webdriver.Chrome) -> Optional[str]:
         except NoSuchElementException:
             pass
     return None
-
 def collect_article_paragraphs(driver: webdriver.Chrome) -> List[str]:
     containers = [
-        "article",
-        ".fck_detail",
-        ".article-body",
-        ".the-article-body",
-        ".main",
-        ".container",
+        "article", ".fck_detail", ".article-body", ".the-article-body", ".main", ".container"
     ]
     paras: List[str] = []
     for css in containers:
@@ -236,7 +204,6 @@ def collect_article_paragraphs(driver: webdriver.Chrome) -> List[str]:
         if paras:
             break
     return paras
-
 def parse_article(url: str, driver: Optional[webdriver.Chrome] = None) -> Optional[Dict[str, str]]:
     should_quit = False
     if driver is None:
@@ -279,9 +246,8 @@ def parse_article(url: str, driver: Optional[webdriver.Chrome] = None) -> Option
                 driver.quit()
             except Exception:
                 pass
-
-def write_json_utf8(data: List[Dict[str, str]], keyword: str, output_path: Optional[str] = None, prefix: str = "output") -> str:
-    os.makedirs("crawler", exist_ok=True)
+def write_json_utf8(data: List[Dict[str, str]], keyword: str, output_path: Optional[str] = None, prefix: str = "ai_output") -> str:
+    os.makedirs("result", exist_ok=True)
     slug = re.sub(r"\W+", "_", keyword.strip()).strip("_").lower()
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     fname = output_path or os.path.join("crawler", f"{prefix}_{slug}_{ts}.json")
@@ -289,57 +255,65 @@ def write_json_utf8(data: List[Dict[str, str]], keyword: str, output_path: Optio
         json.dump(data, f, ensure_ascii=False, indent=2)
     return fname
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Vietnam Disaster News Crawler")
-    parser.add_argument("--keyword", required=True, help="Vietnamese keyword to search (e.g., 'lũ lụt', 'bão')")
-    parser.add_argument("--limit", type=int, default=40, help="Max number of articles to return (30-50 recommended)")
+def main():
+    parser = argparse.ArgumentParser(description="Vietnam Disaster News Crawler (multi-keyword)")
+    parser.add_argument("--limit", type=int, default=40, help="Max articles per keyword (30-50 recommended)")
     parser.add_argument("--headless", action="store_true", help="Run headless Chrome")
-    parser.add_argument("--output", help="Optional output JSON path for raw articles")
-    parser.add_argument("--use_ai", action="store_true", help="Call Gemini to extract structured JSON per article")
+    parser.add_argument("--output", help="Output dir (default 'result/')")
     args = parser.parse_args()
+
     headless = True if args.headless else False
-    try:
-        driver = create_driver(headless=headless)
-    except Exception as e:
-        print(f"Failed to start browser: {e}")
-        sys.exit(1)
-    try:
-        links = search_articles(args.keyword, limit=max(10, min(60, args.limit)), driver=driver)
-        unique_links: List[str] = []
-        seen: Set[str] = set()
-        for u in links:
-            if u not in seen:
-                seen.add(u)
-                unique_links.append(u)
+    output_dir = args.output or "result"
+    os.makedirs(output_dir, exist_ok=True)
+    global_seen_links = set()
+    for keyword in ALL_KEYWORDS:
+        print(f"\n--- Crawling keyword: {keyword}")
+        try:
+            driver = create_driver(headless=headless)
+        except Exception as e:
+            print(f"Failed to start browser for '{keyword}': {e}")
+            continue
+        try:
+            links = search_articles(keyword, limit=args.limit, driver=driver)
+            print(f"Collected {len(links)} links for '{keyword}'")
+            if not links:
+                print(f"!!! No links found for '{keyword}' => skip !!!")
+                continue
+            unique_links = []
+            for u in links:
+                if u not in global_seen_links:
+                    global_seen_links.add(u)
+                    unique_links.append(u)
                 if len(unique_links) >= args.limit:
                     break
-        results: List[Dict[str, str]] = []
-        ai_results: List[Dict[str, str]] = []
-        for u in unique_links:
-            random_delay(0.9, 2.2)
-            art = parse_article(u, driver=driver)
-            if art:
-                results.append(art)
-                if args.use_ai:
+            print(f"Unique non-duplicate links: {len(unique_links)}")
+            ai_results = []
+            for u in unique_links:
+                random_delay(0.9, 2.2)
+                art = parse_article(u, driver=driver)
+                if art:
                     try:
-                        ai_obj = gemini_client.extract_article_json(art) or {}
+                        ai_obj = extract_article_json(art) or {}
                         if "origin" not in ai_obj or not ai_obj.get("origin"):
                             ai_obj["origin"] = art.get("origin", "")
                         ai_results.append(ai_obj)
-                    except Exception:
-                        pass
-                if len(results) >= args.limit:
+                    except Exception as ex:
+                        print(f"Error extracting AI info for {u}: {ex}")
+                if len(ai_results) >= args.limit:
                     break
-        outfile = write_json_utf8(results, args.keyword, args.output, prefix="output")
-        print(outfile)
-        if args.use_ai:
-            ai_outfile = write_json_utf8(ai_results, args.keyword, None, prefix="ai_output")
-            print(ai_outfile)
-    finally:
-        try:
-            driver.quit()
-        except Exception:
-            pass
+            slug = re.sub(r"\W+", "_", keyword.strip()).strip("_").lower()
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            fname = os.path.join(output_dir, f"ai_output_{slug}_{ts}.json")
+            with open(fname, "w", encoding="utf-8") as f:
+                json.dump(ai_results, f, ensure_ascii=False, indent=2)
+            print(f"Saved: {fname}")
+            print(f"Total AI articles extracted: {len(ai_results)}\n")
+        finally:
+            try:
+                driver.quit()
+            except Exception:
+                pass
+        random_delay(3, 5)
 
 if __name__ == "__main__":
     main()
