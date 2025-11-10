@@ -1,7 +1,7 @@
 """
 Pydantic Schemas
 """
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
@@ -9,33 +9,35 @@ from decimal import Decimal
 # User Schemas
 class UserBase(BaseModel):
     """Base user schema"""
-    username: str
-    email: EmailStr
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    keycloak_sub: str
+    username: Optional[str] = None
 
 class UserCreate(UserBase):
     """Schema for creating user"""
-    passwords: str
+    pass
+
+class SignUpRequest(BaseModel):
+    """Schema for user signup"""
+    username: str
+    password: str
+    email: Optional[str] = None
 
 class UserUpdate(BaseModel):
     """Schema for updating user"""
-    username: Optional[str] = None
-    email: Optional[EmailStr] = None
-    passwords: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
     balance: Optional[Decimal] = None
     rating: Optional[Decimal] = None
-    is_active: Optional[bool] = None
+    is_banned: Optional[bool] = None
+    is_seller_verified: Optional[bool] = None
 
 class UserInDB(UserBase):
     """User schema in database"""
     id: int
     balance: Decimal
     rating: Decimal
-    is_active: bool
+    is_banned: bool
+    is_seller_verified: bool
     created_at: datetime
+    updated_at: datetime
     
     class Config:
         from_attributes = True
@@ -69,6 +71,7 @@ class ItemInDB(ItemBase):
     id: int
     owner_id: int
     created_at: datetime
+    updated_at: datetime
     
     class Config:
         from_attributes = True
@@ -102,6 +105,7 @@ class AuctionInDB(AuctionBase):
     current_price: Decimal
     winner_id: Optional[int] = None
     created_at: datetime
+    updated_at: datetime
     
     class Config:
         from_attributes = True
@@ -126,6 +130,7 @@ class BidInDB(BidBase):
     id: int
     user_id: int
     created_at: datetime
+    updated_at: datetime
     
     class Config:
         from_attributes = True
@@ -158,6 +163,7 @@ class PaymentInDB(PaymentBase):
     status: str
     transaction_id: Optional[str] = None
     created_at: datetime
+    updated_at: datetime
     
     class Config:
         from_attributes = True
@@ -186,6 +192,7 @@ class NotificationInDB(NotificationBase):
     user_id: int
     is_read: bool
     created_at: datetime
+    updated_at: datetime
     
     class Config:
         from_attributes = True

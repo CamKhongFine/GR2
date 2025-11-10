@@ -34,6 +34,20 @@ async def get_user(
         )
     return user
 
+@router.get("/keycloak/{keycloak_sub}", response_model=User)
+async def get_user_by_keycloak_sub(
+    keycloak_sub: str,
+    db: Session = Depends(get_db)
+):
+    """Get user by Keycloak sub"""
+    user = UserService.get_user_by_keycloak_sub(db, keycloak_sub=keycloak_sub)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return user
+
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user: UserCreate,
@@ -41,18 +55,11 @@ async def create_user(
 ):
     """Create new user"""
     # Check if user already exists
-    db_user = UserService.get_user_by_email(db, email=user.email)
+    db_user = UserService.get_user_by_keycloak_sub(db, keycloak_sub=user.keycloak_sub)
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    db_user = UserService.get_user_by_username(db, username=user.username)
-    if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already taken"
+            detail="User with this Keycloak sub already exists"
         )
     
     return UserService.create_user(db=db, user=user)

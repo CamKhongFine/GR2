@@ -15,6 +15,7 @@ class Bid(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     bid_amount = Column(Numeric(12, 2), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     auction = relationship("Auction", back_populates="bids")

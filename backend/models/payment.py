@@ -18,6 +18,7 @@ class Payment(Base):
     provider = Column(String(50), nullable=True)  # momo, zalopay, stripe, etc.
     transaction_id = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     auction = relationship("Auction", back_populates="payments")

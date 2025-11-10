@@ -28,4 +28,6 @@ def get_db():
 
 def create_tables():
     """Tạo tất cả tables trong database"""
+    # Import tất cả models để đảm bảo chúng được đăng ký với Base
+    from models import User, Item, Auction, Bid, Payment, Notification  # noqa: F401
     Base.metadata.create_all(bind=engine)

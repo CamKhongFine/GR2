@@ -17,6 +17,7 @@ class Item(Base):
     starting_price = Column(Numeric(12, 2), nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     owner = relationship("User", backref="items")

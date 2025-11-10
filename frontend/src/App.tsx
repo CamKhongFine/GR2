@@ -1,14 +1,20 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
-import { HomePage } from './components/HomePage';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import Login from './pages/Login';
+import { SignUp } from './pages/SignUp';
+import MyBids from './pages/MyBids';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/carousel/styles.css';
 
 function App() {
   return (
     <MantineProvider
       theme={{
+        primaryColor: 'orange',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
         fontFamilyMonospace: 'Monaco, Courier, monospace',
         headings: { fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif' },
@@ -16,7 +22,14 @@ function App() {
     >
       <ModalsProvider>
         <Notifications />
-        <HomePage />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/my-bids" element={<MyBids />} />
+            <Route path="/" element={<HomePage />} />
+          </Routes>
+        </BrowserRouter>
       </ModalsProvider>
     </MantineProvider>
   )

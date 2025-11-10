@@ -13,17 +13,16 @@ class Settings(BaseSettings):
     APP_NAME: str = "Graduation Research API"
     DEBUG: bool = True
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 8000    
     
     # Database settings
-    DATABASE_URL: str = "sqlite:///./app.db"
-    # DATABASE_URL: str = "postgresql://user:password@localhost/dbname"  # For PostgreSQL
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
     
     
     # CORS settings
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
-        "http://localhost:5173",  # Vite default port
+        "http://localhost:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
     ]
@@ -34,6 +33,16 @@ class Settings(BaseSettings):
     
     # Logging
     LOG_LEVEL: str = "INFO"
+    
+    # Keycloak settings
+    KEYCLOAK_ISSUER: str = "http://localhost:8080/realms/auction"
+    KEYCLOAK_JWKS_URL: str = "http://localhost:8080/realms/auction/protocol/openid-connect/certs"
+    KEYCLOAK_CLIENT_ID: str = "account"
+    KEYCLOAK_BASE_URL: str = "http://localhost:8080"
+    KEYCLOAK_REALM: str = "auction"
+    # Keycloak Admin settings (for user registration)
+    KEYCLOAK_ADMIN_USERNAME: str = os.getenv("KEYCLOAK_ADMIN_USERNAME", "admin")
+    KEYCLOAK_ADMIN_PASSWORD: str = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "admin")
     
     class Config:
         env_file = ".env"

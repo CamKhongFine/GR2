@@ -18,6 +18,7 @@ class Auction(Base):
     current_price = Column(Numeric(12, 2), default=0)
     winner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     item = relationship("Item", back_populates="auction")

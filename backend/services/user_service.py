@@ -15,14 +15,9 @@ class UserService:
         return db.query(User).filter(User.id == user_id).first()
     
     @staticmethod
-    def get_user_by_email(db: Session, email: str) -> Optional[User]:
-        """Get user by email"""
-        return db.query(User).filter(User.email == email).first()
-    
-    @staticmethod
-    def get_user_by_username(db: Session, username: str) -> Optional[User]:
-        """Get user by username"""
-        return db.query(User).filter(User.username == username).first()
+    def get_user_by_keycloak_sub(db: Session, keycloak_sub: str) -> Optional[User]:
+        """Get user by Keycloak sub"""
+        return db.query(User).filter(User.keycloak_sub == keycloak_sub).first()
     
     @staticmethod
     def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
@@ -33,9 +28,8 @@ class UserService:
     def create_user(db: Session, user: UserCreate) -> User:
         """Create new user"""
         db_user = User(
-            email=user.email,
-            username=user.username,
-            full_name=user.full_name
+            keycloak_sub=user.keycloak_sub,
+            username=user.username
         )
         db.add(db_user)
         db.commit()

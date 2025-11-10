@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Container,
   Group,
@@ -14,6 +14,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { useNavigate } from 'react-router-dom';
 import {
   IconBrandGithub,
   IconBrandTwitter,
@@ -26,15 +27,40 @@ import {
 
 interface User {
   name: string;
-  email: string;
+  email?: string;
 }
 
 export function Navbar() {
   const [opened, { toggle, close }] = useDisclosure(false);
-  
-  // Mock user state - trong thực tế sẽ lấy từ context/state management
+  const navigate = useNavigate();
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    const userInfoRaw = localStorage.getItem('user_info');
+    if (token && userInfoRaw) {
+      try {
+        const userInfo = JSON.parse(userInfoRaw);
+        setIsLoggedIn(true);
+        setUser({ name: userInfo.username || 'User', email: userInfo.email });
+      } catch {
+        // ignore parse errors
+      }
+    } else {
+      setIsLoggedIn(false);
+      setUser(null);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_info');
+    setIsLoggedIn(false);
+    setUser(null);
+    navigate('/login');
+  };
 
   return (
     <Box
@@ -83,7 +109,7 @@ export function Navbar() {
                   <Menu.Divider />
                   <Menu.Item 
                     leftSection={<IconLogout size={14} />}
-                    onClick={() => setIsLoggedIn(false)}
+                    onClick={handleLogout}
                   >
                     Logout
                   </Menu.Item>
@@ -100,10 +126,7 @@ export function Navbar() {
                   borderWidth: '2px',
                   transition: 'all 0.2s ease',
                 }}
-                onClick={() => {
-                  setIsLoggedIn(true);
-                  setUser({ name: 'John Doe', email: 'john@example.com' });
-                }}
+                onClick={() => navigate('/login')}
               >
                 Đăng nhập
               </Button>
@@ -154,7 +177,7 @@ export function Navbar() {
                 variant="outline" 
                 fullWidth 
                 leftSection={<IconLogout size={16} />}
-                onClick={() => setIsLoggedIn(false)}
+                onClick={() => { handleLogout(); close(); }}
               >
                 Logout
               </Button>
@@ -170,11 +193,7 @@ export function Navbar() {
                 borderWidth: '2px',
                 padding: '12px 20px',
               }}
-              onClick={() => {
-                setIsLoggedIn(true);
-                setUser({ name: 'John Doe', email: 'john@example.com' });
-                close();
-              }}
+              onClick={() => { navigate('/login'); close(); }}
             >
               Đăng nhập
             </Button>
