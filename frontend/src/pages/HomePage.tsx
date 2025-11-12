@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HeaderBar from '../components/Header';
 import AuctionCard from '../components/AuctionCard';
+import api from '../utils/api';
+import HeroArt from '../assets/images/Hero.png';
 import {
   AppShell,
   Box,
@@ -31,14 +33,9 @@ type AuctionItem = {
   heat: number;
 };
 
-const mockItemsSeed: AuctionItem[] = [
-  { id: 1, title: 'Vintage Camera', thumbnail: 'https://images.esquiremag.ph/esquiremagph/images/2019/11/06/where-to-buy-vintage-camera-MAINIMAGE.jpg', currentPrice: 120, endsAt: Date.now() + 1000 * 60 * 25, createdAt: Date.now() - 1000 * 60 * 5, heat: 3 },
-    { id: 2, title: 'Classic Watch', thumbnail: 'https://www.pierrecardinwatches.com/cdn/shop/files/CF.1005.MD_4.jpg?v=1731385232', currentPrice: 340, endsAt: Date.now() + 1000 * 60 * 42, createdAt: Date.now() - 1000 * 60 * 60, heat: 9 },
-    { id: 3, title: 'Sneakers Limited', thumbnail: 'https://i.shgcdn.com/4a179e4c-6e93-4af2-9ab0-58543f0d68c0/-/format/auto/-/preview/3000x3000/-/quality/lighter/', currentPrice: 220, endsAt: Date.now() + 1000 * 60 * 12, createdAt: Date.now() - 1000 * 60 * 2, heat: 7 },
-  { id: 4, title: 'Rare Trading Card', thumbnail: 'https://cdn.catawiki.net/assets/marketing/uploads-files/51621-85a01cc12270c23cfcf6ee9b97b551f246bca11b-story_inline_image.png', currentPrice: 85, endsAt: Date.now() + 1000 * 60 * 58, createdAt: Date.now() - 1000 * 60 * 180, heat: 4 },
-  { id: 5, title: 'Designer Bag', thumbnail: 'https://img4.dhresource.com/webp/m/0x0/f3/albu/jc/y/03/349cc688-f592-4bf7-99e8-f5bac31746fa.jpg', currentPrice: 510, endsAt: Date.now() + 1000 * 60 * 33, createdAt: Date.now() - 1000 * 60 * 20, heat: 10 },
-  { id: 6, title: 'Art Print #21', thumbnail: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=1200&auto=format&fit=crop', currentPrice: 60, endsAt: Date.now() + 1000 * 60 * 7, createdAt: Date.now() - 1000 * 60 * 1, heat: 5 },
-];
+// Backend-driven pagination
+const PAGE_SIZE = 12;
+const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200&auto=format&fit=crop';
 
 function formatTimeLeft(endsAt: number, now: number): string {
   const diff = Math.max(0, endsAt - now);
@@ -54,7 +51,6 @@ export default function HomePage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [tab, setTab] = useState<string | null>('featured');
   const tickRef = useRef<number | null>(null);
-  const priceRef = useRef<number | null>(null);
   const [tick, setTick] = useState(0); // keep ticking to refresh countdown labels
   const [heroReady, setHeroReady] = useState(false);
   const [scroll, scrollTo] = useWindowScroll();
@@ -65,33 +61,57 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // Simulate fetching data
+  // Initial fetch from backend
   useEffect(() => {
-    const t = setTimeout(() => {
-      setItems(mockItemsSeed);
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(t);
+    let cancelled = false;
+    async function fetchFirst() {
+      try {
+        setLoading(true);
+        const res = await api.get('/auctions', {
+          params: { limit: PAGE_SIZE, offset: 0 },
+          timeout: 10000,
+        });
+        const data = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
+        const mapped: AuctionItem[] = data.map((a: any) => ({
+          id: a.id,
+          title: a.product?.name ?? `Auction #${a.id}`,
+          thumbnail:
+            a.product?.image_url ||
+            (Array.isArray(a.product?.image_gallery) ? a.product.image_gallery[0] : null) ||
+            PLACEHOLDER_IMG,
+          currentPrice: Number(a.current_price ?? a.start_price ?? 0),
+          endsAt: a.end_time ? new Date(a.end_time).getTime() : Date.now() + 1000 * 60 * 30,
+          createdAt: a.created_at ? new Date(a.created_at).getTime() : Date.now(),
+          heat: Number(a.bid_count ?? Math.max(1, Math.floor((a.current_price ?? 0) / 50))),
+        }));
+        if (!cancelled) {
+          setItems(mapped);
+          setHasMore(mapped.length >= PAGE_SIZE);
+        }
+      } catch {
+        if (!cancelled) {
+          setItems([]);
+          setHasMore(false);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchFirst();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     setHeroReady(true);
   }, []);
 
-  // Countdown and mock realtime bidding
+  // Countdown tick for UI labels
   useEffect(() => {
     tickRef.current = window.setInterval(() => setTick((v) => v + 1), 1000);
-    priceRef.current = window.setInterval(() => {
-      setItems((prev) => {
-        if (prev.length === 0) return prev;
-        const idx = Math.floor(Math.random() * prev.length);
-        const delta = Math.random() < 0.5 ? 1 : 5;
-        return prev.map((it, i) => (i === idx ? { ...it, currentPrice: it.currentPrice + delta, heat: it.heat + 1 } : it));
-      });
-    }, 5000);
     return () => {
       if (tickRef.current) window.clearInterval(tickRef.current);
-      if (priceRef.current) window.clearInterval(priceRef.current);
     };
   }, []);
 
@@ -131,27 +151,37 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [isHeaderHidden]);
 
-  function loadMore() {
+  async function loadMore() {
+    if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
-    // Simulate async fetch latency
-    setTimeout(() => {
+    try {
       const nextPage = page + 1;
-      // Create more items based on seed with new ids
-      const extra = mockItemsSeed.map((it) => ({
-        ...it,
-        id: it.id + nextPage * 1000 + Math.floor(Math.random() * 100),
-        createdAt: Date.now() - Math.floor(Math.random() * 1000 * 60 * 60),
-        endsAt: Date.now() + Math.floor(Math.random() * 1000 * 60 * 90),
-        heat: Math.floor(Math.random() * 10) + 1,
-        currentPrice: Math.max(10, it.currentPrice + Math.floor(Math.random() * 50) - 10),
+      const offset = (nextPage - 1) * PAGE_SIZE;
+      const res = await api.get('/auctions', {
+        params: { limit: PAGE_SIZE, offset },
+        timeout: 10000,
+      });
+      const data = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
+      const extra: AuctionItem[] = data.map((a: any) => ({
+        id: a.id,
+        title: a.product?.name ?? `Auction #${a.id}`,
+        thumbnail:
+          a.product?.image_url ||
+          (Array.isArray(a.product?.image_gallery) ? a.product.image_gallery[0] : null) ||
+          PLACEHOLDER_IMG,
+        currentPrice: Number(a.current_price ?? a.start_price ?? 0),
+        endsAt: a.end_time ? new Date(a.end_time).getTime() : Date.now() + 1000 * 60 * 30,
+        createdAt: a.created_at ? new Date(a.created_at).getTime() : Date.now(),
+        heat: Number(a.bid_count ?? Math.max(1, Math.floor((a.current_price ?? 0) / 50))),
       }));
-      const newItems = [...items, ...extra];
-      setItems(newItems);
+      setItems((prev) => [...prev, ...extra]);
       setPage(nextPage);
-      // Stop after 8 pages for demo
-      if (nextPage >= 8) setHasMore(false);
+      setHasMore(extra.length >= PAGE_SIZE);
+    } catch {
+      setHasMore(false);
+    } finally {
       setIsLoadingMore(false);
-    }, 700);
+    }
   }
 
   const filtered = useMemo(() => {
@@ -194,7 +224,10 @@ export default function HomePage() {
         <Box
           component="section"
           style={{
-            background: 'linear-gradient(90deg, #007BFF 0%, #5C67F2 100%)',
+            backgroundImage: `linear-gradient(0deg, rgba(11, 20, 38, 0.65), rgba(11, 20, 38, 0.35)), url(${HeroArt})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
             color: '#ffffff',
             minHeight: 300,
             display: 'flex',
@@ -237,7 +270,7 @@ export default function HomePage() {
                   lineHeight: 1.6,
                 }}
               >
-                Đấu giá ngay, rinh quà liền tay. Nền tảng đấu giá thời gian thực mang đến trải nghiệm chuyên nghiệp cho tất cả mọi người.
+                Đấu giá ngay, rinh quà liền tay. Nền tảng đấu giá thời gian thực mang đến trải nghiệm chuyên nghiệp cho tất cả mọi người
               </Text>
               <Group mt="md" gap="sm" justify="center">
                 <Button
@@ -305,7 +338,7 @@ export default function HomePage() {
             <Stack gap={8} style={{ flex: 1 }}>
               <Title order={2} style={{ fontWeight: 800, letterSpacing: '-0.4px' }}>Sản Phẩm Đang Đấu Giá</Title>
               <Text c="dimmed" size="sm">
-                Khám phá những món hàng hot nhất được cập nhật liên tục theo thời gian thực.
+                Khám phá những món hàng hot nhất được cập nhật liên tục theo thời gian thực
               </Text>
             </Stack>
             <Badge
@@ -318,6 +351,7 @@ export default function HomePage() {
                 fontWeight: 600,
                 letterSpacing: 0.2,
                 textTransform: 'uppercase',
+                marginTop: 45,
               }}
             >
               {items.length} items

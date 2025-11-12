@@ -78,7 +78,7 @@ export default function HeaderBar() {
       component="header"
       style={{
         height: 72,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#e9e8eb',
         borderBottom: '1px solid #E5E7EB',
         boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
       }}
