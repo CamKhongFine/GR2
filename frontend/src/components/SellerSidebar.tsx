@@ -47,8 +47,8 @@ export default function SellerSidebar() {
       {/* Brand Section (Logo + Name) */}
       <AppShell.Section px="md" py="lg">
         <UnstyledButton
-          onClick={() => navigate('/')}
           style={{
+            marginLeft: '17px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',

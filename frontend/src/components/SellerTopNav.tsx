@@ -1,8 +1,9 @@
-import { AppShell, Group, Text, Badge, ActionIcon, Avatar, Menu, UnstyledButton, Divider } from '@mantine/core';
+import { AppShell, Group, Image, Badge, ActionIcon, Avatar, Menu, UnstyledButton, Divider } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconBell, IconLogout, IconUser, IconSettings, IconGavel } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import Logo from '../assets/images/Logo.png';
 
 export default function SellerTopNav() {
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -37,9 +38,7 @@ export default function SellerTopNav() {
           }}
         >
           <Group gap="sm">
-            <Text fw={600} size="sm" c="orange">
-              Smart Auction Seller
-            </Text>
+            <Image src={Logo} alt="Smart Auction Seller" h={24} fit="contain" />
           </Group>
         </UnstyledButton>
 

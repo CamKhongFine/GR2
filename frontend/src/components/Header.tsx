@@ -1,8 +1,27 @@
 import { useState } from 'react';
-import { Container, Group, Anchor, Button, Avatar, ActionIcon, TextInput, Burger, Drawer, Stack, Title, rem, Box, Menu, Divider } from '@mantine/core';
+import {
+  Container,
+  Group,
+  Anchor,
+  Button,
+  Avatar,
+  ActionIcon,
+  TextInput,
+  Burger,
+  Drawer,
+  Stack,
+  rem,
+  Box,
+  Menu,
+  Divider,
+  Image,
+  UnstyledButton,
+  Paper,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { IconBell, IconSearch, IconUser, IconSettings, IconLogout, IconGavel } from '@tabler/icons-react';
+import Logo from '../assets/images/Logo.png';
 
 
 export default function HeaderBar() {
@@ -12,6 +31,8 @@ export default function HeaderBar() {
   const [userInfo, setUserInfo] = useState<any>(() => {
     try { return JSON.parse(localStorage.getItem('user_info') || 'null'); } catch { return null; }
   });
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
+  const location = useLocation();
 
   const doLogout = () => {
     localStorage.removeItem('access_token');
@@ -28,28 +49,97 @@ export default function HeaderBar() {
     { label: 'Contact', href: '/contact' },
   ];
 
+  const renderNavLink = (link: typeof navLinks[number]) => {
+    const isActive = location.pathname === link.href;
+    const isHovered = hoveredNav === link.href;
+    return (
+      <Anchor
+        key={link.href}
+        component={Link}
+        to={link.href}
+        underline="never"
+        fw={500}
+        style={{
+          position: 'relative',
+          padding: '4px 0',
+          transition: 'color 150ms ease',
+          color: isActive || isHovered ? '#FF7A00' : '#4B5563',
+        }}
+        onMouseEnter={() => setHoveredNav(link.href)}
+        onMouseLeave={() => setHoveredNav(null)}
+      >
+        {link.label}
+      </Anchor>
+    );
+  };
+
   return (
-    <Box component="header" style={{ height: 64 }}>
+    <Box
+      component="header"
+      style={{
+        height: 72,
+        backgroundColor: '#ffffff',
+        borderBottom: '1px solid #E5E7EB',
+        boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+      }}
+    >
       <Container size="lg" h="100%">
-        <Group justify="space-between" h="100%">
-          <Group gap="xs">
-            <Title order={3} style={{ fontSize: 24, fontWeight: 900, letterSpacing: 0.1 }}>Auction</Title>
+        <Group justify="space-between" align="center" h="100%">
+          <UnstyledButton onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <Group gap="xs">
+              <Image src={Logo} alt="Smart Auction" h={30} fit="contain" />
+            </Group>
+          </UnstyledButton>
+
+          <Group gap="lg" visibleFrom="md" style={{ fontFamily: 'Inter, Poppins, sans-serif' }}>
+            {navLinks.map(renderNavLink)}
           </Group>
 
-          <Group gap="lg" visibleFrom="md">
-            {navLinks.map((l) => (
-              <Anchor key={l.href} component={Link} to={l.href} underline="never" c="dimmed">{l.label}</Anchor>
-            ))}
-          </Group>
+          <Group gap="md" visibleFrom="sm" align="center">
+            <Paper
+              radius="xl"
+              withBorder={false}
+              shadow="xs"
+              px="md"
+              py={6}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                backgroundColor: '#F9FAFB',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                minWidth: 260,
+              }}
+            >
+              <TextInput
+                placeholder="Search auctions"
+                aria-label="Search auctions"
+                variant="unstyled"
+                style={{ flex: 1, fontFamily: 'Inter, sans-serif' }}
+              />
+              <ActionIcon
+                size="lg"
+                radius="xl"
+                color="orange"
+                variant="filled"
+                aria-label="Search"
+              >
+                <IconSearch size={16} />
+              </ActionIcon>
+            </Paper>
 
-          <Group gap="xs" visibleFrom="sm">
-            <TextInput leftSection={<IconSearch size={16} />} placeholder="Search" aria-label="Search" radius="md" />
             {isLoggedIn ? (
-              <Group gap="xs">
-                <ActionIcon variant="subtle" aria-label="Notifications">
+              <Group gap="sm" align="center">
+                <ActionIcon
+                  variant="subtle"
+                  aria-label="Notifications"
+                  color="gray"
+                  radius="xl"
+                  size="lg"
+                >
                   <IconBell size={18} />
                 </ActionIcon>
-                <Menu withinPortal position="bottom-end" offset={10} width={150} shadow="md">
+                <Menu withinPortal position="bottom-end" offset={10} width={180} shadow="md">
                   <Menu.Target>
                     <Avatar radius="xl" color="blue" style={{ cursor: 'pointer' }} title={userInfo?.username || 'User'}>
                       {(userInfo?.username?.[0] || 'U').toUpperCase()}
@@ -66,9 +156,9 @@ export default function HeaderBar() {
                 </Menu>
               </Group>
             ) : (
-              <Group gap="xs">
-                <Button variant="subtle" component="a" href="/login">Login</Button>
-                <Button component="a" href="/signup">Signup</Button>
+              <Group gap="sm">
+                <Button variant="subtle" color="gray" component="a" href="/login">Login</Button>
+                <Button component="a" href="/signup" color="orange">Signup</Button>
               </Group>
             )}
           </Group>
