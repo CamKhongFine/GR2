@@ -6,6 +6,8 @@ import HomePage from './pages/HomePage';
 import Login from './pages/Login';
 import { SignUp } from './pages/SignUp';
 import MyBids from './pages/MyBids';
+import AuctionDetailPage from './pages/AuctionDetailPage';
+import AdminCategoryManagement from './pages/AdminCategoryManagement';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/carousel/styles.css';
@@ -27,6 +29,8 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/my-bids" element={<MyBids />} />
+            <Route path="/auction/:id" element={<AuctionDetailPage />} />
+            <Route path="/admin/categories" element={<AdminCategoryManagement />} />
             <Route path="/" element={<HomePage />} />
           </Routes>
         </BrowserRouter>

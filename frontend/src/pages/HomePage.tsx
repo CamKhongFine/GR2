@@ -28,11 +28,11 @@ type AuctionItem = {
 };
 
 const mockItemsSeed: AuctionItem[] = [
-  { id: 1, title: 'Vintage Camera', thumbnail: 'https://images.unsplash.com/photo-1519183071298-a2962be96f83?q=80&w=1200&auto=format&fit=crop', currentPrice: 120, endsAt: Date.now() + 1000 * 60 * 25, createdAt: Date.now() - 1000 * 60 * 5, heat: 3 },
-  { id: 2, title: 'Classic Watch', thumbnail: 'https://images.unsplash.com/photo-1513863323963-2f0b6cf3fab5?q=80&w=1200&auto=format&fit=crop', currentPrice: 340, endsAt: Date.now() + 1000 * 60 * 42, createdAt: Date.now() - 1000 * 60 * 60, heat: 9 },
-  { id: 3, title: 'Sneakers Limited', thumbnail: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop', currentPrice: 220, endsAt: Date.now() + 1000 * 60 * 12, createdAt: Date.now() - 1000 * 60 * 2, heat: 7 },
-  { id: 4, title: 'Rare Trading Card', thumbnail: 'https://images.unsplash.com/photo-1620012253295-28fdd2b006fc?q=80&w=1200&auto=format&fit=crop', currentPrice: 85, endsAt: Date.now() + 1000 * 60 * 58, createdAt: Date.now() - 1000 * 60 * 180, heat: 4 },
-  { id: 5, title: 'Designer Bag', thumbnail: 'https://images.unsplash.com/photo-1584916201218-c081d6e4b6fe?q=80&w=1200&auto=format&fit=crop', currentPrice: 510, endsAt: Date.now() + 1000 * 60 * 33, createdAt: Date.now() - 1000 * 60 * 20, heat: 10 },
+  { id: 1, title: 'Vintage Camera', thumbnail: 'https://images.esquiremag.ph/esquiremagph/images/2019/11/06/where-to-buy-vintage-camera-MAINIMAGE.jpg', currentPrice: 120, endsAt: Date.now() + 1000 * 60 * 25, createdAt: Date.now() - 1000 * 60 * 5, heat: 3 },
+    { id: 2, title: 'Classic Watch', thumbnail: 'https://www.pierrecardinwatches.com/cdn/shop/files/CF.1005.MD_4.jpg?v=1731385232', currentPrice: 340, endsAt: Date.now() + 1000 * 60 * 42, createdAt: Date.now() - 1000 * 60 * 60, heat: 9 },
+    { id: 3, title: 'Sneakers Limited', thumbnail: 'https://i.shgcdn.com/4a179e4c-6e93-4af2-9ab0-58543f0d68c0/-/format/auto/-/preview/3000x3000/-/quality/lighter/', currentPrice: 220, endsAt: Date.now() + 1000 * 60 * 12, createdAt: Date.now() - 1000 * 60 * 2, heat: 7 },
+  { id: 4, title: 'Rare Trading Card', thumbnail: 'https://cdn.catawiki.net/assets/marketing/uploads-files/51621-85a01cc12270c23cfcf6ee9b97b551f246bca11b-story_inline_image.png', currentPrice: 85, endsAt: Date.now() + 1000 * 60 * 58, createdAt: Date.now() - 1000 * 60 * 180, heat: 4 },
+  { id: 5, title: 'Designer Bag', thumbnail: 'https://img4.dhresource.com/webp/m/0x0/f3/albu/jc/y/03/349cc688-f592-4bf7-99e8-f5bac31746fa.jpg', currentPrice: 510, endsAt: Date.now() + 1000 * 60 * 33, createdAt: Date.now() - 1000 * 60 * 20, heat: 10 },
   { id: 6, title: 'Art Print #21', thumbnail: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=1200&auto=format&fit=crop', currentPrice: 60, endsAt: Date.now() + 1000 * 60 * 7, createdAt: Date.now() - 1000 * 60 * 1, heat: 5 },
 ];
 

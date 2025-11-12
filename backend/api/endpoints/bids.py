@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from database.connection import get_db
-from models.schemas import Bid, BidCreate
+from models.schemas import Bid, BidCreate, BidUpdate
 from services.bid_service import BidService
 
 router = APIRouter()
@@ -45,15 +45,15 @@ async def get_bids_by_auction(
     bids = BidService.get_bids_by_auction(db, auction_id=auction_id, skip=skip, limit=limit)
     return bids
 
-@router.get("/user/{user_id}", response_model=List[Bid])
-async def get_bids_by_user(
-    user_id: int,
+@router.get("/bidder/{bidder_id}", response_model=List[Bid])
+async def get_bids_by_bidder(
+    bidder_id: int,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    """Get bids by user ID"""
-    bids = BidService.get_bids_by_user(db, user_id=user_id, skip=skip, limit=limit)
+    """Get bids by bidder ID"""
+    bids = BidService.get_bids_by_bidder(db, bidder_id=bidder_id, skip=skip, limit=limit)
     return bids
 
 @router.get("/auction/{auction_id}/highest", response_model=Bid)
@@ -77,6 +77,21 @@ async def create_bid(
 ):
     """Create new bid"""
     return BidService.create_bid(db=db, bid=bid)
+
+@router.put("/{bid_id}", response_model=Bid)
+async def update_bid(
+    bid_id: int,
+    bid_update: BidUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update bid"""
+    bid = BidService.update_bid(db, bid_id=bid_id, update=bid_update)
+    if bid is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bid not found"
+        )
+    return bid
 
 @router.delete("/{bid_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_bid(

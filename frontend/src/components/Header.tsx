@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Container, Group, Anchor, Button, Avatar, ActionIcon, TextInput, Burger, Drawer, Stack, Title, rem, Box, Menu, Divider } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useNavigate } from 'react-router-dom';
-import { IconBell, IconSearch, IconUser, IconSettings, IconLogout } from '@tabler/icons-react';
+import { IconBell, IconSearch, IconUser, IconSettings, IconLogout, IconGavel } from '@tabler/icons-react';
 
 
 export default function HeaderBar() {
@@ -57,6 +57,7 @@ export default function HeaderBar() {
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Label>{userInfo?.username || 'User'}</Menu.Label>
+                    <Menu.Item leftSection={<IconGavel size={16} />} onClick={() => navigate('/my-bids')}>My Bids</Menu.Item>
                     <Menu.Item leftSection={<IconUser size={16} />} onClick={() => navigate('/profile')}>Profile</Menu.Item>
                     <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => navigate('/settings')}>Settings</Menu.Item>
                     <Divider />
@@ -97,6 +98,7 @@ export default function HeaderBar() {
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Label>{userInfo?.username || 'User'}</Menu.Label>
+                    <Menu.Item leftSection={<IconGavel size={16} />} onClick={() => { close(); navigate('/my-bids'); }}>My Bids</Menu.Item>
                     <Menu.Item leftSection={<IconUser size={16} />} onClick={() => { close(); navigate('/profile'); }}>Profile</Menu.Item>
                     <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => { close(); navigate('/settings'); }}>Settings</Menu.Item>
                     <Divider />

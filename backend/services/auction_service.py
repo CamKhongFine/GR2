@@ -25,9 +25,9 @@ class AuctionService:
         return db.query(Auction).filter(Auction.status == status).offset(skip).limit(limit).all()
     
     @staticmethod
-    def get_auctions_by_item(db: Session, item_id: int) -> Optional[Auction]:
-        """Get auction by item ID"""
-        return db.query(Auction).filter(Auction.item_id == item_id).first()
+    def get_auction_by_product(db: Session, product_id: int) -> Optional[Auction]:
+        """Get auction by product ID"""
+        return db.query(Auction).filter(Auction.product_id == product_id).first()
     
     @staticmethod
     def get_active_auctions(db: Session, skip: int = 0, limit: int = 100) -> List[Auction]:
@@ -38,9 +38,15 @@ class AuctionService:
     def create_auction(db: Session, auction: AuctionCreate) -> Auction:
         """Create new auction"""
         db_auction = Auction(
-            item_id=auction.item_id,
+            product_id=auction.product_id,
+            seller_id=auction.seller_id,
+            start_price=auction.start_price,
+            current_price=auction.current_price or auction.start_price,
+            buy_now_price=auction.buy_now_price,
+            start_time=auction.start_time,
             end_time=auction.end_time,
-            status=auction.status
+            winner_id=auction.winner_id,
+            status=auction.status or "draft",
         )
         db.add(db_auction)
         db.commit()

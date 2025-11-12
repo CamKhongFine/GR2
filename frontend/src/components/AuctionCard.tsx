@@ -1,6 +1,7 @@
-import { memo } from 'react';
+import { memo, MouseEvent } from 'react';
 import { Card, CardSection, Image, Group, Text, Button, Stack, ActionIcon, Tooltip } from '@mantine/core';
 import { IconHeart, IconEye } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
 
 export type AuctionCardProps = {
   id: number;
@@ -12,8 +13,21 @@ export type AuctionCardProps = {
 };
 
 function AuctionCardBase({ id, title, thumbnail, currentPrice, timeLeftLabel, onBid }: AuctionCardProps) {
+  const navigate = useNavigate();
+  const handleNavigate = () => navigate(`/auction/${id}`);
+  const handleBidClick = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    onBid(id);
+  };
   return (
-    <Card shadow="md" radius="md" withBorder style={{ overflow: 'hidden' }}>
+    <Card
+      shadow="md"
+      radius="md"
+      withBorder
+      style={{ overflow: 'hidden', cursor: 'pointer' }}
+      onClick={handleNavigate}
+      aria-label={`Open details for ${title}`}
+    >
       <CardSection>
         <Image src={thumbnail} alt={title} h={170} fit="cover" loading="lazy" />
       </CardSection>
@@ -38,7 +52,7 @@ function AuctionCardBase({ id, title, thumbnail, currentPrice, timeLeftLabel, on
           <Text c="dimmed">Ends in</Text>
           <Text fw={600}>{timeLeftLabel}</Text>
         </Group>
-        <Button mt="xs" color="orange" radius="xl" onClick={() => onBid(id)} aria-label={`Bid now on ${title}`}>
+        <Button mt="xs" color="orange" radius="xl" onClick={handleBidClick} aria-label={`Bid now on ${title}`}>
           Bid now
         </Button>
       </Stack>

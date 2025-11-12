@@ -2,9 +2,92 @@
 Pydantic Schemas
 """
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
+
+# Category Schemas
+class CategoryBase(BaseModel):
+    """Base category schema"""
+    name: str
+    slug: Optional[str] = None
+    parent_id: Optional[int] = None
+    description: Optional[str] = None
+
+class CategoryCreate(CategoryBase):
+    """Schema for creating category"""
+    pass
+
+class CategoryUpdate(BaseModel):
+    """Schema for updating category"""
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    parent_id: Optional[int] = None
+    description: Optional[str] = None
+
+class CategoryInDB(CategoryBase):
+    """Category schema in database"""
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class Category(CategoryInDB):
+    """Category schema for response"""
+    pass
+
+
+# Product Schemas
+class ProductBase(BaseModel):
+    """Base product schema"""
+    name: str
+    description: Optional[str] = None
+    category_id: Optional[int] = None
+    condition: Optional[str] = "used"
+    base_price: Decimal
+    image_url: Optional[str] = None
+    image_gallery: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+    status: Optional[str] = "draft"
+
+
+class ProductCreate(ProductBase):
+    """Schema for creating product"""
+    seller_id: int
+
+
+class ProductUpdate(BaseModel):
+    """Schema for updating product"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category_id: Optional[int] = None
+    condition: Optional[str] = None
+    base_price: Optional[Decimal] = None
+    image_url: Optional[str] = None
+    image_gallery: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+    status: Optional[str] = None
+    deleted_at: Optional[datetime] = None
+
+
+class ProductInDB(ProductBase):
+    """Product schema in database"""
+    id: int
+    seller_id: int
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class Product(ProductInDB):
+    """Product schema for response"""
+    pass
+
 
 # User Schemas
 class UserBase(BaseModel):
@@ -84,9 +167,15 @@ class Item(ItemInDB):
 # Auction Schemas
 class AuctionBase(BaseModel):
     """Base auction schema"""
-    item_id: int
+    product_id: int
+    seller_id: int
+    start_price: Decimal
+    current_price: Optional[Decimal] = None
+    buy_now_price: Optional[Decimal] = None
+    start_time: datetime
     end_time: datetime
-    status: Optional[str] = "active"
+    winner_id: Optional[int] = None
+    status: Optional[str] = "draft"
 
 class AuctionCreate(AuctionBase):
     """Schema for creating auction"""
@@ -94,19 +183,20 @@ class AuctionCreate(AuctionBase):
 
 class AuctionUpdate(BaseModel):
     """Schema for updating auction"""
-    status: Optional[str] = None
+    start_price: Optional[Decimal] = None
     current_price: Optional[Decimal] = None
+    buy_now_price: Optional[Decimal] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
     winner_id: Optional[int] = None
+    status: Optional[str] = None
 
 class AuctionInDB(AuctionBase):
     """Auction schema in database"""
     id: int
-    start_time: datetime
-    current_price: Decimal
-    winner_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -120,15 +210,26 @@ class BidBase(BaseModel):
     """Base bid schema"""
     auction_id: int
     bid_amount: Decimal
+    bidder_id: int
+    is_highest: Optional[bool] = False
+    status: Optional[str] = "valid"
 
 class BidCreate(BidBase):
     """Schema for creating bid"""
-    user_id: int
+    pass
+
+
+class BidUpdate(BaseModel):
+    """Schema for updating bid"""
+    bid_amount: Optional[Decimal] = None
+    is_highest: Optional[bool] = None
+    status: Optional[str] = None
+
 
 class BidInDB(BidBase):
     """Bid schema in database"""
     id: int
-    user_id: int
+    bid_time: datetime
     created_at: datetime
     updated_at: datetime
     

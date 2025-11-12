@@ -48,17 +48,17 @@ async def get_auction(
         )
     return auction
 
-@router.get("/item/{item_id}", response_model=Auction)
-async def get_auction_by_item(
-    item_id: int,
+@router.get("/product/{product_id}", response_model=Auction)
+async def get_auction_by_product(
+    product_id: int,
     db: Session = Depends(get_db)
 ):
-    """Get auction by item ID"""
-    auction = AuctionService.get_auctions_by_item(db, item_id=item_id)
+    """Get auction by product ID"""
+    auction = AuctionService.get_auction_by_product(db, product_id=product_id)
     if auction is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Auction not found for this item"
+            detail="Auction not found for this product"
         )
     return auction
 
