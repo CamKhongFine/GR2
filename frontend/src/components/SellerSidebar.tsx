@@ -180,7 +180,7 @@ export default function SellerSidebar() {
             <Menu
               withinPortal={false}
               position="top-end"
-              offset={100}
+              offset={10}
               width={180}
               shadow="md"
               zIndex={2000}
