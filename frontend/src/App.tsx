@@ -1,16 +1,20 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import Login from './pages/Login';
 import { SignUp } from './pages/SignUp';
 import MyBids from './pages/MyBids';
 import AuctionDetailPage from './pages/AuctionDetailPage';
-import AdminCategoryManagement from './pages/AdminCategoryManagement';
+import AdminCategoryManagement from './pages/admin/AdminCategoryManagement';
+import SellerLayout from './layouts/SellerLayout';
+import SellerProductsPage from './pages/seller/SellerProductsPage';
+import SellerAuctionsPage from './pages/seller/SellerAuctionsPage';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/carousel/styles.css';
+import '@mantine/dates/styles.css';
 
 function App() {
   return (
@@ -31,6 +35,14 @@ function App() {
             <Route path="/my-bids" element={<MyBids />} />
             <Route path="/auction/:id" element={<AuctionDetailPage />} />
             <Route path="/admin/categories" element={<AdminCategoryManagement />} />
+            
+            {/* Seller Routes */}
+            <Route path="/seller" element={<SellerLayout />}>
+              <Route index element={<Navigate to="/seller/auctions" replace />} />
+              <Route path="products" element={<SellerProductsPage />} />
+              <Route path="auctions" element={<SellerAuctionsPage />} />
+            </Route>
+            
             <Route path="/" element={<HomePage />} />
           </Routes>
         </BrowserRouter>
@@ -40,3 +52,4 @@ function App() {
 }
 
 export default App
+

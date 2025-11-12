@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Container, Group, Anchor, Button, Avatar, ActionIcon, TextInput, Burger, Drawer, Stack, Title, rem, Box, Menu, Divider } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { IconBell, IconSearch, IconUser, IconSettings, IconLogout, IconGavel } from '@tabler/icons-react';
 
 
@@ -24,7 +24,7 @@ export default function HeaderBar() {
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Browse Auctions', href: '/browse' },
-    { label: 'How It Works', href: '/how-it-works' },
+    { label: 'Seller', href: '/seller/auctions' },
     { label: 'Contact', href: '/contact' },
   ];
 
@@ -38,7 +38,7 @@ export default function HeaderBar() {
 
           <Group gap="lg" visibleFrom="md">
             {navLinks.map((l) => (
-              <Anchor key={l.href} href={l.href} underline="never" c="dimmed">{l.label}</Anchor>
+              <Anchor key={l.href} component={Link} to={l.href} underline="never" c="dimmed">{l.label}</Anchor>
             ))}
           </Group>
 
@@ -83,7 +83,7 @@ export default function HeaderBar() {
       <Drawer opened={opened} onClose={close} padding="md" size={rem(320)} title="Menu">
         <Stack gap="md">
           {navLinks.map((l) => (
-            <Anchor key={l.href} href={l.href} onClick={close}>{l.label}</Anchor>
+            <Anchor key={l.href} component={Link} to={l.href} onClick={close}>{l.label}</Anchor>
           ))}
           <TextInput leftSection={<IconSearch size={16} />} placeholder="Search" aria-label="Search" radius="md" />
           {isLoggedIn ? (

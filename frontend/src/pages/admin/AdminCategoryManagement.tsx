@@ -19,7 +19,7 @@ import {
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash, IconPlus, IconAlertCircle } from '@tabler/icons-react';
-import api from '../utils/api';
+import api from '../../utils/api';
 
 type Category = {
   id: number;

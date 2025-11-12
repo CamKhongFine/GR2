@@ -17,6 +17,7 @@
     "@mantine/hooks": "^8.3.7",
     "@mantine/modals": "^8.3.7",
     "@mantine/notifications": "^8.3.7",
+    "@mantine/dates": "^8.3.7",
     "@tabler/icons-react": "^3.35.0",
     "embla-carousel-autoplay": "^8.0.0",
     "axios": "^1.7.9",
