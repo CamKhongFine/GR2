@@ -1,16 +1,15 @@
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  NavLink as MantineNavLink,
   AppShell,
   Stack,
   Text,
   Group,
+  ActionIcon,
+  Tooltip,
   UnstyledButton,
   Badge,
   Menu,
   Avatar,
   Divider,
-  ActionIcon,
 } from '@mantine/core';
 import {
   IconPackage,
@@ -21,66 +20,95 @@ import {
   IconLogout,
   IconUser,
   IconSettings,
+  IconChevronLeft,
+  IconChevronRight,
 } from '@tabler/icons-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useMediaQuery } from '@mantine/hooks';
 
-// 👇 Gộp Dashboard vào chung navItems
 const navItems = [
-  {
-    label: 'Dashboard',
-    icon: IconLayoutDashboard,
-    path: '/seller/dashboard',
-  },
-  {
-    label: 'Products',
-    icon: IconPackage,
-    path: '/seller/products',
-  },
-  {
-    label: 'Auctions',
-    icon: IconGavel,
-    path: '/seller/auctions',
-  },
+  { label: 'Dashboard', icon: IconLayoutDashboard, path: '/seller/dashboard' },
+  { label: 'Products', icon: IconPackage, path: '/seller/products' },
+  { label: 'Auctions', icon: IconGavel, path: '/seller/auctions' },
 ];
 
-export default function SellerSidebar() {
+type SellerSidebarContentProps = {
+  navbarOpened: boolean;
+  toggle: () => void;
+};
+
+export default function SellerSidebar({ navbarOpened, toggle } : SellerSidebarContentProps ) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [userInfo, setUserInfo] = useState<any>(() => {
-    try { return JSON.parse(localStorage.getItem('user_info') || 'null'); } catch { return null; }
+  const [userInfo, setUserInfo] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user_info') || 'null');
+    } catch {
+      return null;
+    }
   });
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
-  const userBalance = '1,204.00';
+  const closeIfMobile = () => {
+    if (isMobile && navbarOpened) toggle();
+  };
 
   const doLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user_info');
     setUserInfo(null);
     navigate('/login');
+    closeIfMobile();
   };
+
+  const userBalance = '1,204.00';
 
   return (
     <AppShell.Navbar
+      p="md"
       style={{
+        position: 'relative',
         backgroundColor: '#1F2937',
         borderRight: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
         flexDirection: 'column',
+        justifyContent: 'space-between',
       }}
-      p={0}
     >
-      {/* Brand Section (Logo + Name) */}
+      {/* Toggle button */}
+      <Tooltip label="Toggle sidebar" position="right" withArrow>
+        <ActionIcon
+          variant="filled"
+          color="orange"
+          radius="xl"
+          size="lg"
+          onClick={toggle}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            right: '-14px',
+            transform: 'translateY(-50%)',
+            zIndex: 3000,
+            boxShadow: '0 0 6px rgba(0,0,0,0.25)',
+            transition: 'all 0.3s ease',
+          }}
+        >
+          {navbarOpened ? <IconChevronLeft size={18} /> : <IconChevronRight size={18} />}
+        </ActionIcon>
+      </Tooltip>
+
+      {/* Brand */}
       <AppShell.Section px="md" py="lg">
         <UnstyledButton
+          onClick={() => navigate('/')}
           style={{
-            marginLeft: '17px',
-            marginTop: '15px',
+            marginLeft: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
           }}
-          onClick={() => navigate('/')}
         >
           <Text fw={700} size="lg" c="#FF7A00">
             Seller Management
@@ -88,59 +116,37 @@ export default function SellerSidebar() {
         </UnstyledButton>
       </AppShell.Section>
 
-      {/* Navigation Items */}
+      {/* Navigation */}
       <AppShell.Section grow px="md">
         <Stack gap={4}>
           {navItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path);
             return (
-              <MantineNavLink
+              <Group
                 key={item.path}
-                component={NavLink}
-                to={item.path}
-                label={item.label}
-                leftSection={
-                  <item.icon
-                    size={18}
-                    style={{
-                      color: isActive ? 'white' : '#E5E7EB',
-                    }}
-                  />
-                }
-                active={isActive}
+                onClick={() => {
+                  navigate(item.path);
+                  closeIfMobile();
+                }}
                 style={{
-                  borderRadius: 'var(--mantine-radius-md)',
-                  padding: 'var(--mantine-spacing-sm) var(--mantine-spacing-md)',
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  padding: '8px 12px',
                   color: isActive ? 'white' : '#E5E7EB',
                   backgroundColor: isActive ? '#FF7A00' : 'transparent',
                   transition: 'all 0.2s ease',
                 }}
-                styles={{
-                  root: {
-                    '&:hover': {
-                      backgroundColor: isActive
-                        ? '#FF7A00'
-                        : 'rgba(255,122,0,0.1)',
-                    },
-                  },
-                  label: {
-                    color: isActive ? 'white' : '#E5E7EB',
-                    fontWeight: isActive ? 600 : 400,
-                  },
-                }}
-              />
+              >
+                <item.icon size={18} />
+                <Text fw={500}>{item.label}</Text>
+              </Group>
             );
           })}
         </Stack>
       </AppShell.Section>
 
-      <AppShell.Section
-        px="md"
-        py="lg"
-        style={{
-          marginTop: 'auto',
-        }}
-      >
+      {/* Footer */}
+      <AppShell.Section px="md" py="lg">
         <Stack gap="sm" align="center">
           <Badge
             variant="filled"
@@ -152,7 +158,7 @@ export default function SellerSidebar() {
               borderRadius: 6,
             }}
           >
-            Balance: ${userBalance}
+            BALANCE: ${userBalance}
           </Badge>
 
           <Group gap={12} align="center">
@@ -162,18 +168,15 @@ export default function SellerSidebar() {
               radius="xl"
               size={36}
               color="gray"
-              onClick={() => navigate('/')}
+              onClick={() => {
+                navigate('/');
+                closeIfMobile();
+              }}
             >
               <IconHome size={18} />
             </ActionIcon>
 
-            <ActionIcon
-              variant="subtle"
-              aria-label="Notifications"
-              radius="xl"
-              size={36}
-              color="gray"
-            >
+            <ActionIcon variant="subtle" aria-label="Notifications" radius="xl" size={36} color="gray">
               <IconBell size={18} />
             </ActionIcon>
 
@@ -184,21 +187,14 @@ export default function SellerSidebar() {
               width={180}
               shadow="md"
               zIndex={2000}
-              styles={
-                {
-                  dropdown: {
-                    transform: 'translateX(25px)',
-                  },
-                }
-              }
+              styles={{
+                dropdown: {
+                  marginLeft: "30px",
+                },
+              }}
             >
               <Menu.Target>
-                <Avatar
-                  radius="xl"
-                  color="blue"
-                  style={{ cursor: 'pointer' }}
-                  title={userInfo?.username || 'User'}
-                >
+                <Avatar radius="xl" color="blue" style={{ cursor: 'pointer' }} title={userInfo?.username || 'User'}>
                   {(userInfo?.username?.[0] || 'U').toUpperCase()}
                 </Avatar>
               </Menu.Target>
@@ -226,5 +222,3 @@ export default function SellerSidebar() {
     </AppShell.Navbar>
   );
 }
-
-// Updated bottom controls: Balance + Bell + Avatar menu

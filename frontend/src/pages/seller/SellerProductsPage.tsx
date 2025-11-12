@@ -104,7 +104,9 @@ export default function SellerProductsPage() {
       setLoading(true);
       setError(null);
       // TODO: Replace 1 with actual seller_id from auth
-      const response = await api.get('/products/seller/1');
+      const response = await api.get('/products/seller/1', {
+        timeout: 10000,
+      });
       const fetchedProducts = response.data || [];
       setProducts(fetchedProducts);
       setFilteredProducts(fetchedProducts);

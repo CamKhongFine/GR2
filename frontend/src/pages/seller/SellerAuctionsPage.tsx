@@ -111,7 +111,9 @@ export default function SellerAuctionsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/auctions');
+      const response = await api.get('/auctions', {
+        timeout: 10000,
+      });
       const fetchedAuctions = response.data || [];
       setAuctions(fetchedAuctions);
       setFilteredAuctions(fetchedAuctions);
@@ -172,7 +174,9 @@ export default function SellerAuctionsPage() {
   const fetchProduct = async (id: number) => {
     try {
       setLoadingProduct(true);
-      const response = await api.get(`/products/${id}`);
+      const response = await api.get(`/products/${id}`, {
+        timeout: 10000,
+      });
       const productData = response.data;
       setSelectedProduct(productData);
       
@@ -197,7 +201,9 @@ export default function SellerAuctionsPage() {
     try {
       setLoadingProducts(true);
       // TODO: Replace 1 with actual seller_id from auth
-      const response = await api.get('/products/seller/1');
+      const response = await api.get('/products/seller/1', {
+        timeout: 10000,
+      });
       const fetchedProducts = response.data;
       setProducts(fetchedProducts);
       
