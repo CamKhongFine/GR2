@@ -22,7 +22,6 @@ import {
   Skeleton,
   Alert,
   Box,
-  Divider,
   SimpleGrid,
   rem,
   Flex,
@@ -544,7 +543,6 @@ export default function SellerProductsPage() {
     statusFilter !== null;
 
   const ProductCard = ({ product }: { product: Product }) => {
-    const createdDate = new Date(product.created_at).toLocaleDateString();
     const mainImage =
       product.image_url ||
       (product.image_gallery && product.image_gallery.length > 0
@@ -610,11 +608,11 @@ export default function SellerProductsPage() {
               </Badge>
             </Group>
 
-            <Stack gap={6} style={{ flex: 1, minHeight: rem(80) }}>
-              <Text fw={600} size="md" lineClamp={2} style={{ lineHeight: 1.3 }}>
+            <Stack gap={6} style={{ flex: 1, minHeight: rem(80) }} align="center">
+              <Text fw={600} size="md" lineClamp={2} style={{ lineHeight: 1.3 }} ta="center">
                 {product.name}
               </Text>
-              <Text fw={700} size="xl" c="orange" style={{ letterSpacing: '-0.01em' }}>
+              <Text fw={700} size="xl" c="orange" style={{ letterSpacing: '-0.01em' }} ta="center">
                 {formatCurrency(product.base_price)}
               </Text>
             </Stack>
@@ -625,20 +623,11 @@ export default function SellerProductsPage() {
                   {product.description}
                 </Text>
               )}
-              <Group gap={6}>
-                <Text size="xs" c="dimmed">
-                  Created {createdDate}
-                </Text>
-                <Divider orientation="vertical" />
-                <Text size="xs" c="dimmed">
-                  ID #{product.id}
-                </Text>
-              </Group>
             </Stack>
           </Stack>
 
-          <Stack gap="sm">
-            <Group gap={6}>
+          <Stack gap="sm" align="center">
+            <Group gap={6} justify="center">
               <ActionIcon
                 variant="subtle"
                 color="gray"
@@ -746,7 +735,7 @@ export default function SellerProductsPage() {
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
               size="md"
               radius="md"
-              style={{ flex: '1 1 260px', minWidth: 220 }}
+              style={{ flex: '1 1 280px', minWidth: 220 }}
               styles={{
                 input: {
                   borderColor: '#eee',

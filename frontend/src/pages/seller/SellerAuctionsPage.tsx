@@ -19,8 +19,6 @@ import {
   Box,
   Flex,
   SimpleGrid,
-  Divider,
-  rem,
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
@@ -28,7 +26,6 @@ import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import {
   IconPlus,
-  IconEye,
   IconInfoCircle,
   IconAlertCircle,
   IconGavel,
@@ -50,6 +47,9 @@ type Auction = {
   end_time: string;
   status: string;
   created_at: string;
+  current_bidder_name?: string | null;
+  current_bidder?: string | null;
+  highest_bidder_name?: string | null;
 };
 
 type Product = {
@@ -449,92 +449,51 @@ export default function SellerAuctionsPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'green';
-      case 'ended':
-        return 'gray';
-      case 'cancelled':
-        return 'red';
-      case 'sold':
-        return 'orange';
-      default:
-        return 'blue';
-    }
-  };
-
 const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
 
-const getTimeRemainingLabel = (endTime: string) => {
-  const end = new Date(endTime).getTime();
-  const now = Date.now();
-  if (Number.isNaN(end)) {
-    return null;
-  }
-  const diff = end - now;
-  if (diff <= 0) {
-    return null;
-  }
+const formatDuration = (diffMs: number) => {
+  if (diffMs <= 0) return '0s';
 
-  const totalMinutes = Math.floor(diff / (1000 * 60));
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSeconds / (60 * 60 * 24));
+  const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
+  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+  const seconds = totalSeconds % 60;
 
   if (days > 0) {
-    return `${days}d ${hours}h`;
+    return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
   }
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m`;
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   }
 
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
   if (minutes > 0) {
-    return `${minutes}m ${seconds}s`;
+    return `${minutes}m`;
   }
 
   return `${seconds}s`;
 };
 
-const getAuctionTimeStatus = (auction: Auction) => {
-  const formattedEnd = formatDate(auction.end_time);
-  switch (auction.status) {
-    case 'active': {
-      const remaining = getTimeRemainingLabel(auction.end_time);
-      return remaining ? `Ends in ${remaining}` : `Ends ${formattedEnd}`;
-    }
-    case 'draft':
-      return `Starts ${formatDate(auction.start_time)}`;
-    case 'ended':
-      return `Ended on ${formattedEnd}`;
-    case 'sold':
-      return `Sold on ${formattedEnd}`;
-    case 'cancelled':
-      return 'Auction cancelled';
-    default:
-      return `Ends ${formattedEnd}`;
-  }
-};
+const getAuctionTimingBadge = (auction: Auction) => {
+  const now = Date.now();
+  const start = new Date(auction.start_time).getTime();
+  const end = new Date(auction.end_time).getTime();
+  const finishedStatuses = ['ended', 'sold', 'cancelled'];
 
-const getAuctionTimeStatusColor = (auction: Auction) => {
-  switch (auction.status) {
-    case 'active':
-      return 'orange';
-    case 'draft':
-      return 'blue';
-    case 'sold':
-      return 'green';
-    case 'cancelled':
-      return 'gray';
-    default:
-      return 'gray';
+  if (Number.isNaN(start) || Number.isNaN(end)) {
+    return { label: 'Schedule unavailable', color: 'gray', finished: false };
   }
+
+  if (finishedStatuses.includes(auction.status) || end <= now) {
+    return { label: 'Finished', color: 'gray', finished: true };
+  }
+
+  if (start > now) {
+    return { label: `Starts in ${formatDuration(start - now)}`, color: 'blue', finished: false };
+  }
+
+  return { label: `Ends in ${formatDuration(end - now)}`, color: 'orange', finished: false };
 };
 
   const FilterChip = ({
@@ -598,30 +557,48 @@ const getAuctionTimeStatusColor = (auction: Auction) => {
         : null);
     const currentPrice = auction.current_price ?? auction.start_price;
     const buyNowPrice = auction.buy_now_price;
-    const createdDate = new Date(auction.created_at).toLocaleDateString();
-    const timeStatus = getAuctionTimeStatus(auction);
-    const timeStatusColor = getAuctionTimeStatusColor(auction);
+    const timingBadge = getAuctionTimingBadge(auction);
+    const bidderName =
+      auction.current_bidder_name ??
+      auction.current_bidder ??
+      auction.highest_bidder_name ??
+      null;
+
+    const handleNavigate = () => navigate(`/auction/${auction.id}`);
 
     return (
       <Paper
         radius="xl"
         shadow="sm"
         p="lg"
-        bg="#f8f9fa"
         withBorder
+        bg="#fff"
+        role="button"
+        tabIndex={0}
+        onClick={handleNavigate}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleNavigate();
+          }
+        }}
         style={{
+          height: '100%',
           borderColor: 'var(--mantine-color-gray-3)',
           transition: 'transform 160ms ease, box-shadow 160ms ease',
           transform: hovered ? 'translateY(-4px)' : undefined,
-          boxShadow: hovered ? '0 24px 50px -28px rgba(15, 23, 42, 0.45)' : undefined,
+          boxShadow: hovered ? '0 18px 36px rgba(15, 23, 42, 0.14)' : undefined,
+          cursor: 'pointer',
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <Stack gap="md" style={{ height: '100%' }}>
+        <Stack gap="md" style={{ height: '100%' }} align="center">
           <Box
-            h={180}
             style={{
+              flex: '0 0 60%',
+              minHeight: 240,
+              width: '100%',
               borderRadius: '20px',
               overflow: 'hidden',
               backgroundColor: 'var(--mantine-color-gray-2)',
@@ -639,112 +616,66 @@ const getAuctionTimeStatusColor = (auction: Auction) => {
                 fit="cover"
               />
             ) : (
-              <IconPackage size={44} color="var(--mantine-color-gray-5)" />
+              <IconPackage size={48} color="var(--mantine-color-gray-5)" />
             )}
           </Box>
 
-          <Stack gap={10} style={{ flex: 1 }}>
-            <Group gap="xs">
-              {product?.condition && (
-                <Badge
-                  radius="xl"
-                  size="sm"
-                  variant="dot"
-                  color="gray"
-                  style={{ textTransform: 'uppercase', letterSpacing: 0.4 }}
-                >
-                  {product.condition.toUpperCase()}
-                </Badge>
-              )}
-              <Badge
-                radius="xl"
-                size="sm"
-                variant="light"
-                color={getStatusColor(auction.status)}
-                style={{ textTransform: 'uppercase', letterSpacing: 0.4 }}
+          <Stack gap="sm" style={{ flex: 1, width: '100%' }} align="center">
+            <Stack gap={4} align="center">
+              <Text
+                fw={700}
+                c="orange"
+                style={{ fontSize: '1.6rem', lineHeight: 1.1, letterSpacing: '-0.01em', textAlign: 'center' }}
               >
-                {auction.status}
-              </Badge>
-            </Group>
-
-            <Stack gap={6} style={{ flex: 1, minHeight: rem(80) }}>
-              <Text fw={600} size="md" lineClamp={2} style={{ lineHeight: 1.3 }}>
-                {product?.name ?? `Auction #${auction.id}`}
+                {formatCurrency(currentPrice)}
               </Text>
-              <Group gap="sm" align="flex-end">
-                <Text fw={700} size="xl" c="orange" style={{ letterSpacing: '-0.01em' }}>
-                  {formatCurrency(currentPrice)}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  Start {formatCurrency(auction.start_price)}
-                </Text>
-              </Group>
-            </Stack>
-
-            <Stack gap={6}>
               {buyNowPrice !== null && (
-                <Text size="sm" c="green" fw={600}>
+                <Text size="xs" c="dimmed" ta="center">
                   Buy now {formatCurrency(buyNowPrice)}
                 </Text>
               )}
-              <Group gap={6}>
-                <Text size="xs" c="dimmed">
-                  Auction #{auction.id}
-                </Text>
-                <Divider orientation="vertical" />
-                <Text size="xs" c="dimmed">
-                  Created {createdDate}
-                </Text>
-              </Group>
             </Stack>
-          </Stack>
-
-          <Divider />
-
-          <Group gap="lg" align="flex-start" wrap="wrap">
-            <Stack gap={2} style={{ minWidth: 140 }}>
-              <Text size="xs" c="dimmed">
-                Start Time
-              </Text>
-              <Text size="sm">{formatDate(auction.start_time)}</Text>
-            </Stack>
-            <Stack gap={2} style={{ minWidth: 140 }}>
-              <Text size="xs" c="dimmed">
-                End Time
-              </Text>
-              <Text size="sm">{formatDate(auction.end_time)}</Text>
-            </Stack>
-            {buyNowPrice !== null && (
-              <Stack gap={2}>
-                <Text size="xs" c="dimmed">
-                  Buy Now
-                </Text>
-                <Text size="sm" fw={600} c="green">
-                  {formatCurrency(buyNowPrice)}
-                </Text>
-              </Stack>
-            )}
-          </Group>
-
-          <Group justify="space-between" align="center" mt="auto">
-            <Badge radius="xl" variant="light" color={timeStatusColor}>
-              {timeStatus}
-            </Badge>
-            <Button
+            <Badge
+              radius="xl"
               variant="light"
-              color="orange"
-              size="sm"
-              leftSection={<IconEye size={16} />}
-              onClick={() => navigate(`/auction/${auction.id}`)}
+              color={timingBadge.color}
+              tt="uppercase"
+              size="lg"
+              styles={{
+                root: {
+                  paddingInline: '1rem',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                },
+              }}
             >
-              View Details
-            </Button>
-          </Group>
+              {timingBadge.label}
+            </Badge>
+
+            <Stack gap={4} align="center">
+              <Text fw={600} size="md" lineClamp={2} ta="center">
+                {product?.name ?? `Auction #${auction.id}`}
+              </Text>
+              {product?.description && (
+                <Text size="sm" c="dimmed" lineClamp={2} ta="center">
+                  {product.description}
+                </Text>
+              )}
+            </Stack>
+
+            {bidderName && (
+              <Text size="sm" c="dimmed" ta="center">
+                Current bidder:{' '}
+                <Text span fw={600} c="var(--mantine-color-dark-6)">
+                  {bidderName}
+                </Text>
+              </Text>
+            )}
+          </Stack>
         </Stack>
       </Paper>
     );
   };
-
   const mainImage = selectedProduct?.image_url || (selectedProduct?.image_gallery && selectedProduct.image_gallery[0]) || null;
 
   return (
