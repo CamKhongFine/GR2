@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Title,
@@ -7,7 +7,6 @@ import {
   Group,
   Text,
   Badge,
-  ActionIcon,
   Paper,
   Stack,
   Modal,
@@ -16,15 +15,28 @@ import {
   Image,
   Alert,
   Skeleton,
-  Card,
   TextInput,
   Box,
+  Flex,
+  SimpleGrid,
+  Divider,
+  rem,
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { IconPlus, IconEye, IconInfoCircle, IconAlertCircle, IconGavel, IconSearch, IconFilterOff } from '@tabler/icons-react';
+import {
+  IconPlus,
+  IconEye,
+  IconInfoCircle,
+  IconAlertCircle,
+  IconGavel,
+  IconSearch,
+  IconFilterOff,
+  IconChevronDown,
+  IconPackage,
+} from '@tabler/icons-react';
 import '@mantine/dates/styles.css';
 import api from '../../utils/api';
 
@@ -61,6 +73,7 @@ type AuctionFormValues = {
 
 export default function SellerAuctionsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [filteredAuctions, setFilteredAuctions] = useState<Auction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +85,13 @@ export default function SellerAuctionsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loadingProduct, setLoadingProduct] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [userInfo] = useState<any>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user_info') || 'null');
+    } catch {
+      return null;
+    }
+  });
   
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -107,6 +127,38 @@ export default function SellerAuctionsPage() {
     fetchAuctions();
   }, []);
 
+  useEffect(() => {
+    const productIdParam = searchParams.get('product_id');
+    if (productIdParam && userInfo?.id) {
+      const numericId = parseInt(productIdParam, 10);
+      handleOpenModal(numericId);
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('product_id');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, userInfo?.id]);
+
+  const normalizeAuction = useCallback(
+    (auction: any): Auction => ({
+      ...auction,
+      start_price:
+        typeof auction.start_price === 'number'
+          ? auction.start_price
+          : parseFloat(auction.start_price ?? '0') || 0,
+      current_price:
+        typeof auction.current_price === 'number'
+          ? auction.current_price
+          : parseFloat(auction.current_price ?? '0') || 0,
+      buy_now_price:
+        auction.buy_now_price === null || auction.buy_now_price === undefined
+          ? null
+          : typeof auction.buy_now_price === 'number'
+            ? auction.buy_now_price
+            : parseFloat(auction.buy_now_price),
+    }),
+    [],
+  );
+
   const fetchAuctions = async () => {
     try {
       setLoading(true);
@@ -114,9 +166,10 @@ export default function SellerAuctionsPage() {
       const response = await api.get('/auctions', {
         timeout: 10000,
       });
-      const fetchedAuctions = response.data || [];
-      setAuctions(fetchedAuctions);
-      setFilteredAuctions(fetchedAuctions);
+      const fetchedAuctions = Array.isArray(response.data) ? response.data : [];
+      const normalizedAuctions = fetchedAuctions.map(normalizeAuction);
+      setAuctions(normalizedAuctions);
+      setFilteredAuctions(normalizedAuctions);
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || 'Failed to fetch auctions';
       setError(errorMessage);
@@ -129,6 +182,22 @@ export default function SellerAuctionsPage() {
       setLoading(false);
     }
   };
+
+  const normalizeProduct = useCallback(
+    (product: any): Product => ({
+      ...product,
+      base_price:
+        typeof product.base_price === 'number'
+          ? product.base_price
+          : parseFloat(product.base_price ?? '0') || 0,
+      image_gallery: Array.isArray(product.image_gallery)
+        ? product.image_gallery
+        : product.image_gallery
+          ? [product.image_gallery]
+          : [],
+    }),
+    [],
+  );
 
   // Filter and sort auctions
   useEffect(() => {
@@ -177,7 +246,7 @@ export default function SellerAuctionsPage() {
       const response = await api.get(`/products/${id}`, {
         timeout: 10000,
       });
-      const productData = response.data;
+      const productData = normalizeProduct(response.data);
       setSelectedProduct(productData);
       
       // Prefill form with product data
@@ -196,31 +265,42 @@ export default function SellerAuctionsPage() {
     }
   };
 
-  const handleOpenModal = async () => {
-    // Fetch products first
-    try {
-      setLoadingProducts(true);
-      // TODO: Replace 1 with actual seller_id from auth
-      const response = await api.get('/products/seller/1', {
-        timeout: 10000,
-      });
-      const fetchedProducts = response.data;
-      setProducts(fetchedProducts);
-      
-      // Check if there are any products
-      if (fetchedProducts.length === 0) {
-        openErrorModal();
-      } else {
-        open();
-      }
-    } catch (error: any) {
+  const handleOpenModal = async (prefillProductId?: number) => {
+    if (!userInfo?.id) {
       notifications.show({
         title: 'Error',
-        message: 'Failed to load products',
+        message: 'User information is missing. Please log in again.',
         color: 'red',
       });
-    } finally {
-      setLoadingProducts(false);
+      return;
+    }
+
+    const sellerProducts =
+      products.length > 0 ? products : await loadSellerProducts();
+
+    if (!sellerProducts || sellerProducts.length === 0) {
+      openErrorModal();
+      return;
+    }
+
+    if (!prefillProductId) {
+      form.reset();
+      setSelectedProduct(null);
+    }
+
+    open();
+
+    if (prefillProductId) {
+      const match = sellerProducts.find((product) => product.id === prefillProductId);
+      if (match) {
+        handleProductSelect(prefillProductId.toString());
+      } else {
+        notifications.show({
+          title: 'Notice',
+          message: 'The selected product is no longer available.',
+          color: 'yellow',
+        });
+      }
     }
   };
 
@@ -236,30 +316,115 @@ export default function SellerAuctionsPage() {
       form.setFieldValue('product_id', null);
       return;
     }
-    const id = parseInt(productId);
+    const id = parseInt(productId, 10);
     form.setFieldValue('product_id', id);
     fetchProduct(id);
   };
 
+  const loadSellerProducts = useCallback(
+    async (options: { silent?: boolean } = {}) => {
+      if (!userInfo?.id) return [];
+      const { silent = false } = options;
+      try {
+        setLoadingProducts(true);
+        const response = await api.get(`/products/seller/${userInfo.id}`, {
+          timeout: 10000,
+        });
+        const fetchedProducts = Array.isArray(response.data)
+          ? response.data.map(normalizeProduct)
+          : [];
+        setProducts(fetchedProducts);
+        return fetchedProducts;
+      } catch (error: any) {
+        if (!silent) {
+          notifications.show({
+            title: 'Error',
+            message: error.response?.data?.detail || 'Failed to load products',
+            color: 'red',
+          });
+        }
+        return [];
+      } finally {
+        setLoadingProducts(false);
+      }
+    },
+    [normalizeProduct, userInfo?.id],
+  );
+
+  useEffect(() => {
+    if (!userInfo?.id) return;
+    loadSellerProducts({ silent: true });
+  }, [loadSellerProducts, userInfo?.id]);
+
   const handleSubmit = async (values: AuctionFormValues) => {
     if (!values.product_id) return;
+
+    const normalizedStart =
+      values.start_time instanceof Date
+        ? values.start_time
+        : values.start_time
+        ? new Date(values.start_time)
+        : null;
+    const normalizedEnd =
+      values.end_time instanceof Date
+        ? values.end_time
+        : values.end_time
+        ? new Date(values.end_time)
+        : null;
+
+    if (!normalizedStart || !normalizedEnd) {
+      notifications.show({
+        title: 'Missing dates',
+        message: 'Please select both start and end time for the auction.',
+        color: 'red',
+      });
+      return;
+    }
 
     try {
       setSubmitting(true);
 
+      const startPrice =
+        typeof values.start_price === 'number'
+          ? values.start_price
+          : parseFloat(values.start_price as string);
+
+      if (!Number.isFinite(startPrice) || startPrice <= 0) {
+        notifications.show({
+          title: 'Invalid price',
+          message: 'Start price must be a positive number.',
+          color: 'red',
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      const rawBuyNow = values.buy_now_price;
+      const hasBuyNow = rawBuyNow !== '' && rawBuyNow !== null && rawBuyNow !== undefined;
+      const buyNowPrice = hasBuyNow
+        ? typeof rawBuyNow === 'number'
+          ? rawBuyNow
+          : parseFloat(String(rawBuyNow))
+        : null;
+
+      if (buyNowPrice !== null && (!Number.isFinite(buyNowPrice) || buyNowPrice <= 0)) {
+        notifications.show({
+          title: 'Invalid price',
+          message: 'Buy now price must be a positive number.',
+          color: 'red',
+        });
+        setSubmitting(false);
+        return;
+      }
+
       const payload = {
         product_id: values.product_id,
-        seller_id: 1, // TODO: Get from auth context
-        start_price: typeof values.start_price === 'number' 
-          ? values.start_price 
-          : parseFloat(values.start_price as string),
-        buy_now_price: values.buy_now_price 
-          ? (typeof values.buy_now_price === 'number' 
-              ? values.buy_now_price 
-              : parseFloat(values.buy_now_price as string))
-          : null,
-        start_time: values.start_time?.toISOString() || new Date().toISOString(),
-        end_time: values.end_time?.toISOString() || '',
+        seller_id: userInfo?.id || 1,
+        start_price: startPrice,
+        current_price: startPrice,
+        buy_now_price: buyNowPrice,
+        start_time: normalizedStart.toISOString(),
+        end_time: normalizedEnd.toISOString(),
         status: 'draft',
       };
 
@@ -303,10 +468,282 @@ export default function SellerAuctionsPage() {
     }
   };
 
-  const productOptions = products.map((product) => ({
-    value: product.id.toString(),
-    label: `${product.name} - $${product.base_price.toFixed(2)}`,
-  }));
+const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
+
+const getTimeRemainingLabel = (endTime: string) => {
+  const end = new Date(endTime).getTime();
+  const now = Date.now();
+  if (Number.isNaN(end)) {
+    return null;
+  }
+  const diff = end - now;
+  if (diff <= 0) {
+    return null;
+  }
+
+  const totalMinutes = Math.floor(diff / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h`;
+  }
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+
+  return `${seconds}s`;
+};
+
+const getAuctionTimeStatus = (auction: Auction) => {
+  const formattedEnd = formatDate(auction.end_time);
+  switch (auction.status) {
+    case 'active': {
+      const remaining = getTimeRemainingLabel(auction.end_time);
+      return remaining ? `Ends in ${remaining}` : `Ends ${formattedEnd}`;
+    }
+    case 'draft':
+      return `Starts ${formatDate(auction.start_time)}`;
+    case 'ended':
+      return `Ended on ${formattedEnd}`;
+    case 'sold':
+      return `Sold on ${formattedEnd}`;
+    case 'cancelled':
+      return 'Auction cancelled';
+    default:
+      return `Ends ${formattedEnd}`;
+  }
+};
+
+const getAuctionTimeStatusColor = (auction: Auction) => {
+  switch (auction.status) {
+    case 'active':
+      return 'orange';
+    case 'draft':
+      return 'blue';
+    case 'sold':
+      return 'green';
+    case 'cancelled':
+      return 'gray';
+    default:
+      return 'gray';
+  }
+};
+
+  const FilterChip = ({
+    label,
+    children,
+  }: {
+    label: string;
+    children: ReactNode;
+  }) => {
+    const [hovered, setHovered] = useState(false);
+    return (
+      <Paper
+        withBorder
+        shadow="none"
+        radius="xl"
+        px="sm"
+        py={6}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          borderColor: hovered ? '#e2e6eb' : '#eff1f5',
+          backgroundColor: hovered ? '#f8f9fb' : '#fff',
+          transition: 'background 140ms ease, border-color 140ms ease',
+        }}
+      >
+        <Group gap={6} align="center" wrap="nowrap">
+          <Text size="sm" c="dimmed">
+            {label}:
+          </Text>
+          <Box style={{ minWidth: 90 }}>{children}</Box>
+        </Group>
+      </Paper>
+    );
+  };
+
+  const productOptions = useMemo(
+    () =>
+      products.map((product) => ({
+        value: product.id.toString(),
+        label: `${product.name} - ${formatCurrency(product.base_price)}`,
+      })),
+    [products],
+  );
+
+  const productLookup = useMemo(
+    () =>
+      products.reduce((acc, product) => {
+        acc[product.id] = product;
+        return acc;
+      }, {} as Record<number, Product>),
+    [products],
+  );
+
+  const AuctionCard = ({ auction }: { auction: Auction }) => {
+    const [hovered, setHovered] = useState(false);
+    const product = productLookup[auction.product_id];
+    const imageSource =
+      product?.image_url ||
+      (product?.image_gallery && product.image_gallery.length > 0
+        ? product.image_gallery[0]
+        : null);
+    const currentPrice = auction.current_price ?? auction.start_price;
+    const buyNowPrice = auction.buy_now_price;
+    const createdDate = new Date(auction.created_at).toLocaleDateString();
+    const timeStatus = getAuctionTimeStatus(auction);
+    const timeStatusColor = getAuctionTimeStatusColor(auction);
+
+    return (
+      <Paper
+        radius="xl"
+        shadow="sm"
+        p="lg"
+        bg="#f8f9fa"
+        withBorder
+        style={{
+          borderColor: 'var(--mantine-color-gray-3)',
+          transition: 'transform 160ms ease, box-shadow 160ms ease',
+          transform: hovered ? 'translateY(-4px)' : undefined,
+          boxShadow: hovered ? '0 24px 50px -28px rgba(15, 23, 42, 0.45)' : undefined,
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <Stack gap="md" style={{ height: '100%' }}>
+          <Box
+            h={180}
+            style={{
+              borderRadius: '20px',
+              overflow: 'hidden',
+              backgroundColor: 'var(--mantine-color-gray-2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {imageSource ? (
+              <Image
+                src={imageSource}
+                alt={product?.name ?? `Auction #${auction.id}`}
+                w="100%"
+                h="100%"
+                fit="cover"
+              />
+            ) : (
+              <IconPackage size={44} color="var(--mantine-color-gray-5)" />
+            )}
+          </Box>
+
+          <Stack gap={10} style={{ flex: 1 }}>
+            <Group gap="xs">
+              {product?.condition && (
+                <Badge
+                  radius="xl"
+                  size="sm"
+                  variant="dot"
+                  color="gray"
+                  style={{ textTransform: 'uppercase', letterSpacing: 0.4 }}
+                >
+                  {product.condition.toUpperCase()}
+                </Badge>
+              )}
+              <Badge
+                radius="xl"
+                size="sm"
+                variant="light"
+                color={getStatusColor(auction.status)}
+                style={{ textTransform: 'uppercase', letterSpacing: 0.4 }}
+              >
+                {auction.status}
+              </Badge>
+            </Group>
+
+            <Stack gap={6} style={{ flex: 1, minHeight: rem(80) }}>
+              <Text fw={600} size="md" lineClamp={2} style={{ lineHeight: 1.3 }}>
+                {product?.name ?? `Auction #${auction.id}`}
+              </Text>
+              <Group gap="sm" align="flex-end">
+                <Text fw={700} size="xl" c="orange" style={{ letterSpacing: '-0.01em' }}>
+                  {formatCurrency(currentPrice)}
+                </Text>
+                <Text size="sm" c="dimmed">
+                  Start {formatCurrency(auction.start_price)}
+                </Text>
+              </Group>
+            </Stack>
+
+            <Stack gap={6}>
+              {buyNowPrice !== null && (
+                <Text size="sm" c="green" fw={600}>
+                  Buy now {formatCurrency(buyNowPrice)}
+                </Text>
+              )}
+              <Group gap={6}>
+                <Text size="xs" c="dimmed">
+                  Auction #{auction.id}
+                </Text>
+                <Divider orientation="vertical" />
+                <Text size="xs" c="dimmed">
+                  Created {createdDate}
+                </Text>
+              </Group>
+            </Stack>
+          </Stack>
+
+          <Divider />
+
+          <Group gap="lg" align="flex-start" wrap="wrap">
+            <Stack gap={2} style={{ minWidth: 140 }}>
+              <Text size="xs" c="dimmed">
+                Start Time
+              </Text>
+              <Text size="sm">{formatDate(auction.start_time)}</Text>
+            </Stack>
+            <Stack gap={2} style={{ minWidth: 140 }}>
+              <Text size="xs" c="dimmed">
+                End Time
+              </Text>
+              <Text size="sm">{formatDate(auction.end_time)}</Text>
+            </Stack>
+            {buyNowPrice !== null && (
+              <Stack gap={2}>
+                <Text size="xs" c="dimmed">
+                  Buy Now
+                </Text>
+                <Text size="sm" fw={600} c="green">
+                  {formatCurrency(buyNowPrice)}
+                </Text>
+              </Stack>
+            )}
+          </Group>
+
+          <Group justify="space-between" align="center" mt="auto">
+            <Badge radius="xl" variant="light" color={timeStatusColor}>
+              {timeStatus}
+            </Badge>
+            <Button
+              variant="light"
+              color="orange"
+              size="sm"
+              leftSection={<IconEye size={16} />}
+              onClick={() => navigate(`/auction/${auction.id}`)}
+            >
+              View Details
+            </Button>
+          </Group>
+        </Stack>
+      </Paper>
+    );
+  };
 
   const mainImage = selectedProduct?.image_url || (selectedProduct?.image_gallery && selectedProduct.image_gallery[0]) || null;
 
@@ -318,7 +755,7 @@ export default function SellerAuctionsPage() {
           <Title order={2} fw={700}>My Auctions</Title>
           <Button
             leftSection={<IconPlus size={18} />}
-            onClick={handleOpenModal}
+            onClick={() => handleOpenModal()}
             color="orange"
             size="md"
           >
@@ -327,36 +764,80 @@ export default function SellerAuctionsPage() {
         </Group>
 
         {/* Toolbar Section */}
-        <Paper bg="#f9fafb" shadow="xs" radius="md" p="md" mb="lg">
-          <Group gap="md" wrap="wrap">
+        <Paper
+          shadow="xs"
+          radius={12}
+          p="md"
+          mb="lg"
+          withBorder
+          style={{ borderColor: '#eee', backgroundColor: '#fff' }}
+        >
+          <Flex gap="sm" align="center" wrap="wrap">
             <TextInput
               placeholder="Search auctions..."
-              leftSection={<IconSearch size={16} />}
+              leftSection={<IconSearch size={18} stroke={1.6} />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
-              style={{ flex: 1, minWidth: 200 }}
+              size="md"
+              radius="md"
+              style={{ flex: '1 1 240px', minWidth: 200 }}
+              styles={{
+                input: {
+                  borderColor: '#eee',
+                  backgroundColor: '#fff',
+                },
+              }}
             />
-            <Select
-              placeholder="Filter by status"
-              data={[
-                { value: 'draft', label: 'Draft' },
-                { value: 'active', label: 'Active' },
-                { value: 'ended', label: 'Ended' },
-                { value: 'cancelled', label: 'Cancelled' },
-                { value: 'sold', label: 'Sold' },
-              ]}
-              value={statusFilter}
-              onChange={setStatusFilter}
-              clearable
-              style={{ minWidth: 180 }}
-            />
-            <Select
-              placeholder="Sort by"
-              data={['Newest', 'Oldest', 'Price: Low→High', 'Price: High→Low']}
-              value={sortBy}
-              onChange={setSortBy}
-              style={{ minWidth: 180 }}
-            />
+
+            <FilterChip label="Status">
+              <Select
+                variant="unstyled"
+                placeholder="All"
+                data={[
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'ended', label: 'Ended' },
+                  { value: 'cancelled', label: 'Cancelled' },
+                  { value: 'sold', label: 'Sold' },
+                ]}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                clearable
+                rightSection={<IconChevronDown size={14} stroke={1.5} />}
+                rightSectionWidth={18}
+                styles={{
+                  input: {
+                    padding: '2px 0',
+                    fontSize: '0.875rem',
+                    color: '#4b5563',
+                  },
+                  dropdown: { borderRadius: 12 },
+                  option: { padding: '6px 10px' },
+                }}
+              />
+            </FilterChip>
+
+            <FilterChip label="Sort">
+              <Select
+                variant="unstyled"
+                placeholder="Newest"
+                data={['Newest', 'Oldest', 'Price: Low→High', 'Price: High→Low']}
+                value={sortBy}
+                onChange={setSortBy}
+                rightSection={<IconChevronDown size={14} stroke={1.5} />}
+                rightSectionWidth={18}
+                styles={{
+                  input: {
+                    padding: '2px 0',
+                    fontSize: '0.875rem',
+                    color: '#4b5563',
+                  },
+                  dropdown: { borderRadius: 12 },
+                  option: { padding: '6px 10px' },
+                }}
+              />
+            </FilterChip>
+
             {hasActiveFilters && (
               <Button
                 variant="subtle"
@@ -367,37 +848,26 @@ export default function SellerAuctionsPage() {
                 Reset
               </Button>
             )}
-          </Group>
+          </Flex>
         </Paper>
 
         {/* Main Content Area */}
         <Box>
           {loading ? (
-            <Stack gap="md">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Paper key={i} bg="white" shadow="xs" radius="md" p="md">
-                  <Group gap="md" justify="space-between">
-                    <Skeleton height={24} width={100} />
-                    <Group gap="lg">
-                      <Stack gap={2}>
-                        <Skeleton height={12} width={60} />
-                        <Skeleton height={20} width={80} />
-                      </Stack>
-                      <Stack gap={2}>
-                        <Skeleton height={12} width={60} />
-                        <Skeleton height={20} width={80} />
-                      </Stack>
-                      <Stack gap={2}>
-                        <Skeleton height={12} width={60} />
-                        <Skeleton height={20} width={80} />
-                      </Stack>
-                    </Group>
-                    <Skeleton height={28} width={80} />
-                    <Skeleton height={32} width={32} />
-                  </Group>
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Paper key={index} radius="xl" p="lg" bg="#f8f9fa" shadow="xs" withBorder>
+                  <Skeleton height={180} radius="lg" />
+                  <Stack gap="sm" mt="md">
+                    <Skeleton height={16} width="30%" />
+                    <Skeleton height={24} width="60%" />
+                    <Skeleton height={16} width="50%" />
+                    <Skeleton height={12} width="70%" />
+                    <Skeleton height={36} />
+                  </Stack>
                 </Paper>
               ))}
-            </Stack>
+            </SimpleGrid>
           ) : error ? (
             <Alert icon={<IconAlertCircle size={16} />} color="red" title="Error loading auctions">
               {error}
@@ -432,7 +902,7 @@ export default function SellerAuctionsPage() {
               </Stack>
               <Button 
                 leftSection={<IconPlus size={18} />}
-                onClick={handleOpenModal} 
+                onClick={() => handleOpenModal()} 
                 color="orange"
                 size="md"
                 mt="md"
@@ -441,64 +911,11 @@ export default function SellerAuctionsPage() {
               </Button>
             </Stack>
           ) : (
-            <Stack gap="md">
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3, xl: 4 }} spacing="lg">
               {filteredAuctions.map((auction) => (
-                <Card key={auction.id} withBorder radius="md" p="md" style={{ transition: 'all 0.2s' }}>
-                  <Group gap="md" align="flex-start" wrap="nowrap">
-                    {/* Auction Info */}
-                    <Stack gap="xs" style={{ flex: 1 }}>
-                      <Group justify="space-between" align="flex-start">
-                        <Stack gap={4}>
-                          <Text fw={600} size="lg">Auction #{auction.id}</Text>
-                          <Group gap="lg">
-                            <Stack gap={2}>
-                              <Text size="xs" c="dimmed">Start Price</Text>
-                              <Text fw={600} size="md">${auction.start_price.toFixed(2)}</Text>
-                            </Stack>
-                            <Stack gap={2}>
-                              <Text size="xs" c="dimmed">Current Price</Text>
-                              <Text fw={700} size="md" c="orange">${auction.current_price.toFixed(2)}</Text>
-                            </Stack>
-                            {auction.buy_now_price && (
-                              <Stack gap={2}>
-                                <Text size="xs" c="dimmed">Buy Now</Text>
-                                <Text fw={600} size="md" c="green">${auction.buy_now_price.toFixed(2)}</Text>
-                              </Stack>
-                            )}
-                          </Group>
-                        </Stack>
-                        <Badge variant="light" color={getStatusColor(auction.status)} size="lg">
-                          {auction.status}
-                        </Badge>
-                      </Group>
-                      <Group gap="md" mt="xs">
-                        <Stack gap={2}>
-                          <Text size="xs" c="dimmed">Start Time</Text>
-                          <Text size="sm">{formatDate(auction.start_time)}</Text>
-                        </Stack>
-                        <Stack gap={2}>
-                          <Text size="xs" c="dimmed">End Time</Text>
-                          <Text size="sm">{formatDate(auction.end_time)}</Text>
-                        </Stack>
-                      </Group>
-                    </Stack>
-
-                    {/* Actions */}
-                    <Group gap="xs" align="flex-start">
-                      <ActionIcon 
-                        variant="light" 
-                        color="blue" 
-                        aria-label="View" 
-                        size="lg"
-                        onClick={() => navigate(`/auction/${auction.id}`)}
-                      >
-                        <IconEye size={18} />
-                      </ActionIcon>
-                    </Group>
-                  </Group>
-                </Card>
+                <AuctionCard auction={auction} key={auction.id} />
               ))}
-            </Stack>
+            </SimpleGrid>
           )}
         </Box>
       </Container>
@@ -540,7 +957,7 @@ export default function SellerAuctionsPage() {
                       src={mainImage}
                       alt={selectedProduct.name}
                       radius="md"
-                      h={120}
+                      h={450}
                       fit="cover"
                     />
                   )}

@@ -3,7 +3,7 @@ Notification Service
 """
 from sqlalchemy.orm import Session
 from models.notification import Notification
-from models.schemas import NotificationCreate, NotificationUpdate
+from schemas import NotificationCreate, NotificationUpdate
 from typing import Optional, List
 
 class NotificationService:

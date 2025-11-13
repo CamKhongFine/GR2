@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from database.connection import get_db
-from models.schemas import Notification, NotificationCreate, NotificationUpdate
+from schemas import Notification, NotificationCreate, NotificationUpdate
 from services.notification_service import NotificationService
 
 router = APIRouter()

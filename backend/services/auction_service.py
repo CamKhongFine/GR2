@@ -3,7 +3,7 @@ Auction Service
 """
 from sqlalchemy.orm import Session
 from models.auction import Auction
-from models.schemas import AuctionCreate, AuctionUpdate
+from schemas import AuctionCreate, AuctionUpdate
 from typing import Optional, List
 
 class AuctionService:

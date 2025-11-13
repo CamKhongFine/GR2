@@ -3,7 +3,7 @@ Bid Service
 """
 from sqlalchemy.orm import Session
 from models.bid import Bid
-from models.schemas import BidCreate, BidUpdate
+from schemas import BidCreate, BidUpdate
 from typing import Optional, List
 
 class BidService:

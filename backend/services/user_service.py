@@ -3,7 +3,7 @@ User Service
 """
 from sqlalchemy.orm import Session
 from models.user import User
-from models.schemas import UserCreate, UserUpdate
+from schemas import UserCreate, UserUpdate
 from typing import Optional, List
 
 class UserService:

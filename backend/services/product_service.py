@@ -4,7 +4,7 @@ Product Service
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from models.product import Product
-from models.schemas import ProductCreate, ProductUpdate
+from schemas import ProductCreate, ProductUpdate
 
 
 class ProductService:
@@ -39,7 +39,7 @@ class ProductService:
             name=payload.name,
             description=payload.description,
             category_id=payload.category_id,
-            condition=payload.condition,
+            condition=payload.condition.lower(),
             base_price=payload.base_price,
             image_url=payload.image_url,
             image_gallery=payload.image_gallery,
@@ -59,6 +59,8 @@ class ProductService:
             return None
         update_data = update.dict(exclude_unset=True)
         for field, value in update_data.items():
+            if field == "condition" and isinstance(value, str):
+                value = value.lower()
             setattr(db_product, field, value)
         db.commit()
         db.refresh(db_product)

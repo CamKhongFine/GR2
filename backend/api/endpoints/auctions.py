@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from database.connection import get_db
-from models.schemas import Auction, AuctionCreate, AuctionUpdate
+from schemas import Auction, AuctionCreate, AuctionUpdate
 from services.auction_service import AuctionService
 
 router = APIRouter()

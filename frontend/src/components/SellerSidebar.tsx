@@ -182,14 +182,14 @@ export default function SellerSidebar({ navbarOpened, toggle } : SellerSidebarCo
 
             <Menu
               withinPortal={false}
-              position="top-end"
+              position="bottom-start"
               offset={10}
               width={180}
               shadow="md"
               zIndex={2000}
               styles={{
                 dropdown: {
-                  marginLeft: "30px",
+                  marginLeft: "45px",
                 },
               }}
             >

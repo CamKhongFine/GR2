@@ -3,7 +3,7 @@ Payment Service
 """
 from sqlalchemy.orm import Session
 from models.payment import Payment
-from models.schemas import PaymentCreate, PaymentUpdate
+from schemas import PaymentCreate, PaymentUpdate
 from typing import Optional, List
 
 class PaymentService:

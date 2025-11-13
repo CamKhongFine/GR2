@@ -6,6 +6,7 @@ from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
 
+
 # Category Schemas
 class CategoryBase(BaseModel):
     """Base category schema"""
@@ -56,6 +57,9 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     """Schema for creating product"""
     seller_id: int
+    # For MinIO integration - can accept either presigned URLs or object names
+    image_object_names: Optional[List[str]] = None  # MinIO object names
+    thumbnail_index: Optional[int] = 0  # Index of thumbnail in image_object_names
 
 
 class ProductUpdate(BaseModel):
@@ -70,6 +74,8 @@ class ProductUpdate(BaseModel):
     tags: Optional[List[str]] = None
     status: Optional[str] = None
     deleted_at: Optional[datetime] = None
+    image_object_names: Optional[List[str]] = None
+    thumbnail_index: Optional[int] = None
 
 
 class ProductInDB(ProductBase):
@@ -175,7 +181,7 @@ class AuctionBase(BaseModel):
     start_time: datetime
     end_time: datetime
     winner_id: Optional[int] = None
-    status: Optional[str] = "draft"
+    status: Optional[str] = "available"
 
 class AuctionCreate(AuctionBase):
     """Schema for creating auction"""
@@ -312,3 +318,46 @@ class HealthCheck(BaseModel):
     """Health check response"""
     status: str
     message: str
+
+
+# File Upload Schemas
+class FileUploadResponse(BaseModel):
+    """Response model for file upload"""
+    object_name: str
+    presigned_url: str
+    file_name: str
+
+
+class PresignedUrlResponse(BaseModel):
+    """Response model for presigned URL"""
+    presigned_url: str
+    object_name: str
+    expiry_seconds: int
+
+
+class PresignedUploadUrlRequest(BaseModel):
+    """Request model for presigned upload URL"""
+    file_name: str
+    content_type: Optional[str] = "image/jpeg"
+    folder: Optional[str] = None
+    expiry_seconds: Optional[int] = None
+
+
+class PresignedUploadUrlResponse(BaseModel):
+    """Response model for presigned upload URL"""
+    presigned_url: str
+    object_name: str
+    expiry_seconds: int
+
+
+class FileExistsResponse(BaseModel):
+    """Response model for file existence check"""
+    exists: bool
+    object_name: str
+
+
+class FileListResponse(BaseModel):
+    """Response model for file list"""
+    files: List[str]
+    count: int
+    folder: Optional[str] = None

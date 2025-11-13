@@ -2,7 +2,7 @@
 API Routes
 """
 from fastapi import APIRouter
-from api.endpoints import users, auctions, bids, payments, notifications, categories, products
+from api.endpoints import users, auctions, bids, payments, notifications, categories, products, files
 
 # Tạo main API router
 api_router = APIRouter()
@@ -15,3 +15,4 @@ api_router.include_router(payments.router, prefix="/payments", tags=["payments"]
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(products.router, prefix="/products", tags=["products"])
 api_router.include_router(categories.router, prefix="/categories", tags=["categories"])
+api_router.include_router(files.router, prefix="/files", tags=["files"])

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from database.connection import get_db
-from models.schemas import Payment, PaymentCreate, PaymentUpdate
+from schemas import Payment, PaymentCreate, PaymentUpdate
 from services.payment_service import PaymentService
 
 router = APIRouter()

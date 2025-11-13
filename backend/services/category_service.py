@@ -4,7 +4,7 @@ Category Service
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from models.category import Category
-from models.schemas import CategoryCreate, CategoryUpdate
+from schemas import CategoryCreate, CategoryUpdate
 
 
 class CategoryService:
