@@ -26,6 +26,7 @@ import {
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useMediaQuery } from '@mantine/hooks';
+import { clearAuthTokens } from '../utils/token';
 
 const navItems = [
   { label: 'Dashboard', icon: IconLayoutDashboard, path: '/seller/dashboard' },
@@ -38,7 +39,7 @@ type SellerSidebarContentProps = {
   toggle: () => void;
 };
 
-export default function SellerSidebar({ navbarOpened, toggle } : SellerSidebarContentProps ) {
+export default function SellerSidebar({ navbarOpened, toggle }: SellerSidebarContentProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [userInfo, setUserInfo] = useState(() => {
@@ -55,8 +56,7 @@ export default function SellerSidebar({ navbarOpened, toggle } : SellerSidebarCo
   };
 
   const doLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user_info');
+    clearAuthTokens();
     setUserInfo(null);
     navigate('/login');
     closeIfMobile();

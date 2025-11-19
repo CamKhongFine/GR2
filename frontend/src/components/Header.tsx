@@ -22,6 +22,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { IconBell, IconSearch, IconUser, IconSettings, IconLogout, IconGavel } from '@tabler/icons-react';
 import Logo from '../assets/images/Logo.png';
+import { clearAuthTokens } from '../utils/token';
 
 
 export default function HeaderBar() {
@@ -35,8 +36,7 @@ export default function HeaderBar() {
   const location = useLocation();
 
   const doLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user_info');
+    clearAuthTokens();
     setIsLoggedIn(false);
     setUserInfo(null);
     navigate('/login');
@@ -139,7 +139,7 @@ export default function HeaderBar() {
                 >
                   <IconBell size={18} />
                 </ActionIcon>
-                <Menu withinPortal position="bottom-end" offset={10} width={180} shadow="md">
+                <Menu withinPortal position="bottom-end" offset={{ mainAxis: 10, crossAxis: 145 }} width={180} shadow="md">
                   <Menu.Target>
                     <Avatar radius="xl" color="blue" style={{ cursor: 'pointer' }} title={userInfo?.username || 'User'}>
                       {(userInfo?.username?.[0] || 'U').toUpperCase()}
@@ -147,8 +147,8 @@ export default function HeaderBar() {
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Label>{userInfo?.username || 'User'}</Menu.Label>
-                    <Menu.Item leftSection={<IconGavel size={16} />} onClick={() => navigate('/my-bids')}>My Bids</Menu.Item>
                     <Menu.Item leftSection={<IconUser size={16} />} onClick={() => navigate('/profile')}>Profile</Menu.Item>
+                    <Menu.Item leftSection={<IconGavel size={16} />} onClick={() => navigate('/my-bids')}>My Bids</Menu.Item>
                     <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => navigate('/settings')}>Settings</Menu.Item>
                     <Divider />
                     <Menu.Item color="red" leftSection={<IconLogout size={16} />} onClick={doLogout}>Logout</Menu.Item>
@@ -188,8 +188,8 @@ export default function HeaderBar() {
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Label>{userInfo?.username || 'User'}</Menu.Label>
-                    <Menu.Item leftSection={<IconGavel size={16} />} onClick={() => { close(); navigate('/my-bids'); }}>My Bids</Menu.Item>
                     <Menu.Item leftSection={<IconUser size={16} />} onClick={() => { close(); navigate('/profile'); }}>Profile</Menu.Item>
+                    <Menu.Item leftSection={<IconGavel size={16} />} onClick={() => { close(); navigate('/my-bids'); }}>My Bids</Menu.Item>
                     <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => { close(); navigate('/settings'); }}>Settings</Menu.Item>
                     <Divider />
                     <Menu.Item color="red" leftSection={<IconLogout size={16} />} onClick={() => { close(); doLogout(); }}>Logout</Menu.Item>

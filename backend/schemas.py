@@ -48,8 +48,8 @@ class ProductBase(BaseModel):
     category_id: Optional[int] = None
     condition: Optional[str] = "used"
     base_price: Decimal
-    image_url: Optional[str] = None
-    image_gallery: Optional[List[str]] = None
+    thumbnail: Optional[str] = None
+    detail_images: Optional[List[str]] = None
     tags: Optional[List[str]] = None
     status: Optional[str] = "draft"
 
@@ -69,8 +69,8 @@ class ProductUpdate(BaseModel):
     category_id: Optional[int] = None
     condition: Optional[str] = None
     base_price: Optional[Decimal] = None
-    image_url: Optional[str] = None
-    image_gallery: Optional[List[str]] = None
+    thumbnail: Optional[str] = None
+    detail_images: Optional[List[str]] = None
     tags: Optional[List[str]] = None
     status: Optional[str] = None
     deleted_at: Optional[datetime] = None

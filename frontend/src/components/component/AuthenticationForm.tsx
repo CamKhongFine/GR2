@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Paper, TextInput, PasswordInput, Button, Title, Text, Anchor, Group, Stack, Divider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconMail, IconLock, IconBrandGoogleFilled, IconBrandFacebook } from '@tabler/icons-react';
+import { storeTokens } from '../../utils/token';
 
 export function AuthenticationForm(props: any) {
   const navigate = useNavigate();
@@ -19,27 +20,47 @@ export function AuthenticationForm(props: any) {
   async function login(username: string, password: string) {
     try {
       setLoading(true);
+      const KEYCLOAK_BASE_URL = import.meta.env.VITE_KEYCLOAK_BASE_URL || 'http://localhost:8080';
+      const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || 'auction';
+      const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'auction-web';
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
       const params = new URLSearchParams();
-      params.append('client_id', 'auction-web');
+      params.append('client_id', KEYCLOAK_CLIENT_ID);
       params.append('grant_type', 'password');
       params.append('username', username);
       params.append('password', password);
 
-      const resp = await fetch('http://localhost:8080/realms/auction/protocol/openid-connect/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params,
-      });
+      const resp = await fetch(
+        `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params,
+        }
+      );
+      
       const tok = await resp.json();
       if (!tok.access_token) {
-        notifications.show({ color: 'red', title: 'Login failed', message: tok.error_description || 'Invalid credentials' });
+        notifications.show({ 
+          color: 'red', 
+          title: 'Login failed', 
+          message: tok.error_description || 'Invalid credentials' 
+        });
         return;
       }
-      localStorage.setItem('access_token', tok.access_token);
 
-      const meResp = await fetch('http://localhost:8000/me', {
+      // Store both access_token and refresh_token
+      storeTokens({
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token,
+      });
+
+      // Get user info
+      const meResp = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
         headers: { Authorization: `Bearer ${tok.access_token}` },
       });
+      
       if (!meResp.ok) throw new Error('Failed to get user info');
       const me = await meResp.json();
       localStorage.setItem('user_info', JSON.stringify(me));

@@ -35,10 +35,7 @@ app.add_middleware(
 #     print("Database tables initialized")
 
 
-# Include authentication routes (no prefix for /me and /signup)
-app.include_router(authentication.router, tags=["authentication"])
-
-# Include API routes
+# Include API routes (includes authentication under /api/v1/auth)
 app.include_router(api_router, prefix="/api/v1")
 
 

@@ -11,6 +11,7 @@ import AdminCategoryManagement from './pages/admin/AdminCategoryManagement';
 import SellerLayout from './layouts/SellerLayout';
 import SellerProductsPage from './pages/seller/SellerProductsPage';
 import SellerAuctionsPage from './pages/seller/SellerAuctionsPage';
+import ProfilePage from './pages/ProfilePage';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/carousel/styles.css';
@@ -35,14 +36,14 @@ function App() {
             <Route path="/my-bids" element={<MyBids />} />
             <Route path="/auction/:id" element={<AuctionDetailPage />} />
             <Route path="/admin/categories" element={<AdminCategoryManagement />} />
-            
-            {/* Seller Routes */}
+
             <Route path="/seller" element={<SellerLayout />}>
               <Route index element={<Navigate to="/seller/auctions" replace />} />
               <Route path="products" element={<SellerProductsPage />} />
               <Route path="auctions" element={<SellerAuctionsPage />} />
             </Route>
-            
+
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/" element={<HomePage />} />
           </Routes>
         </BrowserRouter>

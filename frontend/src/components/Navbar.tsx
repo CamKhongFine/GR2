@@ -24,6 +24,7 @@ import {
   IconLogout,
   IconSettings,
 } from '@tabler/icons-react';
+import { clearAuthTokens } from '../utils/token';
 
 interface User {
   name: string;
@@ -55,8 +56,7 @@ export function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user_info');
+    clearAuthTokens();
     setIsLoggedIn(false);
     setUser(null);
     navigate('/login');

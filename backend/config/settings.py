@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     MINIO_ACCESS_KEY: str = Field(default="minioadmin")
     MINIO_SECRET_KEY: str = Field(default="minioadmin")
     MINIO_SECURE: bool = Field(default=False)
+    MINIO_PROTOCOL: str = Field(default="http")
     MINIO_BUCKET_NAME: str = Field(default="auction-bucket")
     MINIO_PRESIGNED_URL_EXPIRY: int = Field(
         default=3600,

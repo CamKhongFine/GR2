@@ -57,8 +57,8 @@ type Product = {
   name: string;
   description: string | null;
   base_price: number;
-  image_url: string | null;
-  image_gallery: string[] | null;
+  thumbnail: string | null;
+  detail_images: string[] | null;
   condition: string;
   category_id: number | null;
 };
@@ -190,11 +190,12 @@ export default function SellerAuctionsPage() {
         typeof product.base_price === 'number'
           ? product.base_price
           : parseFloat(product.base_price ?? '0') || 0,
-      image_gallery: Array.isArray(product.image_gallery)
-        ? product.image_gallery
-        : product.image_gallery
-          ? [product.image_gallery]
-          : [],
+      thumbnail: product.thumbnail || null,
+      detail_images: Array.isArray(product.detail_images)
+        ? product.detail_images
+        : product.detail_images
+          ? [product.detail_images]
+          : null,
     }),
     [],
   );
@@ -551,9 +552,9 @@ const getAuctionTimingBadge = (auction: Auction) => {
     const [hovered, setHovered] = useState(false);
     const product = productLookup[auction.product_id];
     const imageSource =
-      product?.image_url ||
-      (product?.image_gallery && product.image_gallery.length > 0
-        ? product.image_gallery[0]
+      product?.thumbnail ||
+      (product?.detail_images && product.detail_images.length > 0
+        ? product.detail_images[0]
         : null);
     const currentPrice = auction.current_price ?? auction.start_price;
     const buyNowPrice = auction.buy_now_price;
@@ -676,7 +677,7 @@ const getAuctionTimingBadge = (auction: Auction) => {
       </Paper>
     );
   };
-  const mainImage = selectedProduct?.image_url || (selectedProduct?.image_gallery && selectedProduct.image_gallery[0]) || null;
+  const mainImage = selectedProduct?.thumbnail || (selectedProduct?.detail_images && selectedProduct.detail_images[0]) || null;
 
   return (
     <>

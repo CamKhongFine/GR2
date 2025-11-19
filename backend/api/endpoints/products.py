@@ -7,7 +7,7 @@ from typing import List, Optional
 from database.connection import get_db
 from schemas import Product, ProductCreate, ProductUpdate
 from services.product_service import ProductService
-from services.minio_service import minio_service
+from services.file_service import file_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -53,50 +53,37 @@ async def create_product(
     payload: ProductCreate,
     db: Session = Depends(get_db)
 ):
-    """
-    Create product with MinIO image integration
-    
-    If image_object_names is provided, uploads images to MinIO and stores presigned URLs.
-    thumbnail_index specifies which image in image_object_names should be used as the main image.
-    """
+
     try:
-        # Process images if object names are provided
-        image_url = payload.image_url
-        image_gallery = payload.image_gallery
+        thumbnail = payload.thumbnail
+        detail_images = payload.detail_images
         
         if payload.image_object_names and len(payload.image_object_names) > 0:
-            # Get presigned URLs for all images
-            image_gallery_urls = []
-            for object_name in payload.image_object_names:
-                try:
-                    presigned_url = minio_service.get_presigned_url(object_name)
-                    image_gallery_urls.append(presigned_url)
-                except Exception as e:
-                    logger.warning(f"Failed to get presigned URL for {object_name}: {e}")
-                    # Continue with other images even if one fails
-                    continue
+            image_urls = [file_service.get_file_url(obj_name) for obj_name in payload.image_object_names]
             
-            # Set thumbnail (main image) based on thumbnail_index
-            if len(image_gallery_urls) > 0:
-                thumbnail_index = payload.thumbnail_index or 0
-                if 0 <= thumbnail_index < len(image_gallery_urls):
-                    image_url = image_gallery_urls[thumbnail_index]
-                else:
-                    # Fallback to first image if index is invalid
-                    image_url = image_gallery_urls[0]
-                
-                # Set image gallery
-                image_gallery = image_gallery_urls
+            thumbnail_index = payload.thumbnail_index or 0
+            if 0 <= thumbnail_index < len(image_urls):
+                thumbnail = image_urls[thumbnail_index]
+                detail_images = [url for i, url in enumerate(image_urls) if i != thumbnail_index]
+            else:
+                thumbnail = image_urls[0] if image_urls else None
+                detail_images = image_urls[1:] if len(image_urls) > 1 else []
         
-        # Create product payload dict (exclude MinIO-specific fields)
+        if thumbnail and not thumbnail.startswith('http'):
+            thumbnail = file_service.get_file_url(thumbnail)
+        
+        if detail_images:
+            detail_images = [
+                file_service.get_file_url(img) if not img.startswith('http') else img
+                for img in detail_images
+            ]
+        
         product_data = payload.dict(exclude={'image_object_names', 'thumbnail_index'})
-        product_data['image_url'] = image_url
-        product_data['image_gallery'] = image_gallery
+        product_data['thumbnail'] = thumbnail
+        product_data['detail_images'] = detail_images if detail_images else None
         
-        # Create ProductCreate instance with updated data
         final_payload = ProductCreate(**product_data)
         
-        # Create product
         return ProductService.create_product(db, payload=final_payload)
         
     except Exception as e:
@@ -120,20 +107,25 @@ async def update_product(
         thumbnail_index = update_data.pop("thumbnail_index", None)
 
         if image_object_names:
-            image_gallery_urls = []
-            for object_name in image_object_names:
-                try:
-                    presigned_url = minio_service.get_presigned_url(object_name)
-                    image_gallery_urls.append(presigned_url)
-                except Exception as e:
-                    logger.warning(f"Failed to get presigned URL for {object_name}: {e}")
-                    continue
-
-            if image_gallery_urls:
-                if thumbnail_index is None or thumbnail_index < 0 or thumbnail_index >= len(image_gallery_urls):
-                    thumbnail_index = 0
-                update_data["image_gallery"] = image_gallery_urls
-                update_data["image_url"] = image_gallery_urls[thumbnail_index]
+            # Convert object names to full URLs
+            image_urls = [file_service.get_file_url(obj_name) for obj_name in image_object_names]
+            
+            if thumbnail_index is None or thumbnail_index < 0 or thumbnail_index >= len(image_urls):
+                thumbnail_index = 0
+            
+            # Set thumbnail and remove it from detail_images
+            update_data["thumbnail"] = image_urls[thumbnail_index]
+            update_data["detail_images"] = [url for i, url in enumerate(image_urls) if i != thumbnail_index]
+        
+        # Convert existing thumbnail/detail_images to URLs if they're object names
+        if "thumbnail" in update_data and update_data["thumbnail"] and not update_data["thumbnail"].startswith('http'):
+            update_data["thumbnail"] = file_service.get_file_url(update_data["thumbnail"])
+        
+        if "detail_images" in update_data and update_data["detail_images"]:
+            update_data["detail_images"] = [
+                file_service.get_file_url(img) if not img.startswith('http') else img
+                for img in update_data["detail_images"]
+            ]
 
         product = ProductService.update_product(
             db,
@@ -158,7 +150,46 @@ async def delete_product(
     product_id: int,
     db: Session = Depends(get_db)
 ):
-    """Delete product"""
+    """Delete product and associated images"""
+    # Get product first to extract image URLs
+    product = ProductService.get_product(db, product_id=product_id)
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    
+    # Collect all image URLs to delete
+    image_urls = []
+    
+    if product.thumbnail:
+        image_urls.append(product.thumbnail)
+    
+    if product.detail_images:
+        if isinstance(product.detail_images, list):
+            image_urls.extend(product.detail_images)
+        elif isinstance(product.detail_images, str):
+            image_urls.append(product.detail_images)
+    
+    # Extract object names from URLs
+    object_names = []
+    for url in image_urls:
+        if url and url.startswith('http'):
+            try:
+                object_name = file_service.extract_object_name_from_url(url)
+                if object_name:
+                    object_names.append(object_name)
+                else:
+                    logger.warning(f"Could not extract object name from URL: {url}")
+            except Exception as e:
+                logger.error(f"Error extracting object name from URL {url}: {e}")
+    
+    # Batch delete all images from MinIO
+    if object_names:
+        result = file_service.delete_files_batch(object_names)
+        if result['failed']:
+            logger.warning(f"Failed to delete {len(result['failed'])} image files for product {product_id}")
+        if result['deleted']:
+            logger.info(f"Successfully deleted {len(result['deleted'])} image files for product {product_id}")
+    
+    # Delete product from database
     success = ProductService.delete_product(db, product_id=product_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")

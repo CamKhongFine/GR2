@@ -50,8 +50,8 @@ type Product = {
   name: string;
   description: string | null;
   base_price: number;
-  image_url: string | null;
-  image_gallery: string[];
+  thumbnail: string | null;
+  detail_images: string[] | null;
   condition: string;
   status: string;
   created_at: string;
@@ -150,11 +150,12 @@ export default function SellerProductsPage() {
       typeof product.base_price === 'number'
         ? product.base_price
         : parseFloat(product.base_price ?? '0') || 0,
-    image_gallery: Array.isArray(product.image_gallery)
-      ? product.image_gallery
-      : product.image_gallery
-        ? [product.image_gallery]
-        : [],
+    thumbnail: product.thumbnail || null,
+    detail_images: Array.isArray(product.detail_images)
+      ? product.detail_images
+      : product.detail_images
+        ? [product.detail_images]
+        : null,
     tags: Array.isArray(product.tags) ? product.tags : product.tags ? [product.tags] : [],
     status: product.status ?? 'draft',
   });
@@ -328,12 +329,10 @@ export default function SellerProductsPage() {
     handleCloseViewModal();
     setIsEditMode(true);
     setActiveProduct(product);
-    const existingImages =
-      product.image_gallery && product.image_gallery.length > 0
-        ? product.image_gallery
-        : product.image_url
-          ? [product.image_url]
-          : [];
+    const existingImages = [
+      product.thumbnail,
+      ...(product.detail_images || []),
+    ].filter(Boolean) as string[];
     setExistingImageUrls(existingImages);
     form.setValues({
       name: product.name,
@@ -463,14 +462,33 @@ export default function SellerProductsPage() {
       };
 
       if (isEditing && activeProduct) {
+        setUploadingImages(true);
+        if (imageFiles.length > 0) {
+          try {
+            uploadedObjectNames = await uploadImagesToMinIO(imageFiles);
+          } catch (err) {
+            setUploadingImages(false);
+            setSubmitting(false);
+            return;
+          }
+        }
+        setUploadingImages(false);
+
         const updatePayload: Record<string, any> = {
           ...basePayload,
           status: activeProduct.status,
         };
 
-        if (existingImageUrls.length > 0) {
-          updatePayload.image_gallery = existingImageUrls;
-          updatePayload.image_url = existingImageUrls[0];
+        // Combine existing URLs with newly uploaded object names
+        const allImageUrls = [...existingImageUrls];
+        if (uploadedObjectNames.length > 0) {
+          // Convert object names to URLs (backend will handle this, but we can also do it here)
+          allImageUrls.push(...uploadedObjectNames);
+        }
+
+        if (allImageUrls.length > 0) {
+          updatePayload.image_object_names = allImageUrls;
+          updatePayload.thumbnail_index = thumbnailIndex;
         }
 
         await api.put(`/products/${activeProduct.id}`, updatePayload);
@@ -544,9 +562,9 @@ export default function SellerProductsPage() {
 
   const ProductCard = ({ product }: { product: Product }) => {
     const mainImage =
-      product.image_url ||
-      (product.image_gallery && product.image_gallery.length > 0
-        ? product.image_gallery[0]
+      product.thumbnail ||
+      (product.detail_images && product.detail_images.length > 0
+        ? product.detail_images[0]
         : null);
     const [hovered, setHovered] = useState(false);
 
@@ -1117,8 +1135,8 @@ export default function SellerProductsPage() {
             const galleryImages = Array.from(
               new Set(
                 [
-                  viewingProduct.image_url,
-                  ...(viewingProduct.image_gallery || []),
+                  viewingProduct.thumbnail,
+                  ...(viewingProduct.detail_images || []),
                 ].filter(Boolean),
               ),
             ) as string[];

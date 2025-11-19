@@ -51,8 +51,8 @@ class Product(Base):
         default=ProductCondition.USED,
     )
     base_price = Column(Numeric(15, 2), nullable=False)
-    image_url = Column(String(500), nullable=True)
-    image_gallery = Column(JSON, nullable=True)
+    thumbnail = Column(String(500), nullable=True)
+    detail_images = Column(JSON, nullable=True)
     tags = Column(JSON, nullable=True)
     status = Column(
         SQLEnum(ProductStatus, name="product_status"),

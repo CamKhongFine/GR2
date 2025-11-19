@@ -2,12 +2,13 @@
 API Routes
 """
 from fastapi import APIRouter
-from api.endpoints import users, auctions, bids, payments, notifications, categories, products, files
+from api.endpoints import users, auctions, bids, payments, notifications, categories, products, files, authentication
 
 # Tạo main API router
 api_router = APIRouter()
 
 # Include endpoint routers
+api_router.include_router(authentication.router, prefix="/auth", tags=["authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(auctions.router, prefix="/auctions", tags=["auctions"])
 api_router.include_router(bids.router, prefix="/bids", tags=["bids"])

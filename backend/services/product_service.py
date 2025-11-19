@@ -41,8 +41,8 @@ class ProductService:
             category_id=payload.category_id,
             condition=payload.condition.lower(),
             base_price=payload.base_price,
-            image_url=payload.image_url,
-            image_gallery=payload.image_gallery,
+            thumbnail=payload.thumbnail,
+            detail_images=payload.detail_images,
             tags=payload.tags,
             status=payload.status,
         )
