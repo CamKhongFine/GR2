@@ -13,6 +13,7 @@ import {
   Stack,
   Table,
 } from '@mantine/core';
+import MainLayout from '../layouts/MainLayout';
 
 type ActiveBidItem = {
   id: number;
@@ -81,7 +82,8 @@ export default function MyBids() {
   }, []);
 
   return (
-    <Container size="lg" py="xl">
+    <MainLayout>
+      <Container size="lg" py="xl">
       <Title order={1} mb="md">My Bids</Title>
       <Tabs value={tab} onChange={setTab} keepMounted={false}>
         <Tabs.List>
@@ -142,6 +144,7 @@ export default function MyBids() {
           </Table>
         </Tabs.Panel>
       </Tabs>
-    </Container>
+      </Container>
+    </MainLayout>
   );
 }

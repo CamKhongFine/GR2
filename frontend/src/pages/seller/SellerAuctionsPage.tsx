@@ -449,7 +449,6 @@ export default function SellerAuctionsPage() {
         buy_now_price: buyNowPrice,
         start_time: normalizedStart.toISOString(),
         end_time: normalizedEnd.toISOString(),
-        status: 'draft',
       };
 
       await api.post('/auctions', payload);

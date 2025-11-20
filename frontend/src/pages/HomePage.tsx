@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import HeaderBar from '../components/Header';
+import MainLayout from '../layouts/MainLayout';
 import AuctionCard from '../components/AuctionCard';
 import api from '../utils/api';
 import HeroArt from '../assets/images/Hero.png';
 import {
-  AppShell,
   Box,
   Container,
   Title,
@@ -18,9 +17,16 @@ import {
   Button,
   Affix,
   ActionIcon,
+  Modal,
+  Image,
+  Divider,
+  Loader,
+  Alert,
+  Paper,
+  ScrollArea,
 } from '@mantine/core';
 import { Transition } from '@mantine/core';
-import { useWindowScroll } from '@mantine/hooks';
+import { useWindowScroll, useDisclosure } from '@mantine/hooks';
 import { IconArrowUp } from '@tabler/icons-react';
 
 type AuctionItem = {
@@ -31,6 +37,17 @@ type AuctionItem = {
   endsAt: number;
   createdAt: number;
   heat: number;
+  productId?: number;
+};
+
+type ProductData = {
+  id: number;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  image_gallery: string[] | null;
+  detail_images: string[] | null;
+  thumbnail: string | null;
 };
 
 // Backend-driven pagination
@@ -53,9 +70,14 @@ export default function HomePage() {
   const tickRef = useRef<number | null>(null);
   const [tick, setTick] = useState(0); // keep ticking to refresh countdown labels
   const [heroReady, setHeroReady] = useState(false);
+  
+  // Quick view modal state
+  const [quickViewOpened, { open: openQuickView, close: closeQuickView }] = useDisclosure(false);
+  const [quickViewProduct, setQuickViewProduct] = useState<ProductData | null>(null);
+  const [quickViewLoading, setQuickViewLoading] = useState(false);
+  const [quickViewError, setQuickViewError] = useState<string | null>(null);
+  const [quickViewAuctionId, setQuickViewAuctionId] = useState<number | null>(null);
   const [scroll, scrollTo] = useWindowScroll();
-  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
-  const lastScrollYRef = useRef<number>(0);
   const [page, setPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -75,34 +97,35 @@ export default function HomePage() {
         const data = Array.isArray(res.data?.auctions) ? res.data.auctions : [];
         const now = Date.now();
         
-        // Filter valid active auctions
+        // Filter valid auctions (exclude ended/cancelled/sold and not started yet)
+        const excludedStatuses = ['ended', 'cancelled', 'sold'];
         const validAuctions = data.filter((a: any) => {
           if (!a.end_time) return false;
-          // Only show active auctions
-          if (a.status && a.status !== 'active') return false;
+          // Exclude ended/cancelled/sold auctions
+          if (a.status && excludedStatuses.includes(a.status)) return false;
+          // Check if auction has started
+          if (a.start_time) {
+            const startTime = new Date(a.start_time).getTime();
+            if (startTime > now) return false; // Auction hasn't started yet
+          }
           const endTime = new Date(a.end_time).getTime();
+          // Only show auctions that haven't ended
           return endTime > now;
         });
 
-        // Map auctions - each auction has product relationship loaded
+        // Map auctions - use title and thumbnail directly from auction
         const mapped: AuctionItem[] = validAuctions.map((a: any) => {
           const endTime = new Date(a.end_time).getTime();
-          // Product is loaded via relationship, may be nested
-          const product = a.product || {};
           
           return {
             id: a.id,
-            title: product.name || `Auction #${a.id}`,
-            thumbnail:
-              product.thumbnail ||
-              (Array.isArray(product.detail_images) && product.detail_images.length > 0
-                ? product.detail_images[0]
-                : null) ||
-              PLACEHOLDER_IMG,
+            title: a.title || `Auction #${a.id}`,
+            thumbnail: a.thumbnail || PLACEHOLDER_IMG,
             currentPrice: Number(a.current_price || a.start_price || 0),
             endsAt: endTime,
             createdAt: a.created_at ? new Date(a.created_at).getTime() : now,
             heat: Number(a.bid_count || 0),
+            productId: a.product_id,
           };
         });
         
@@ -125,6 +148,93 @@ export default function HomePage() {
       cancelled = true;
     };
   }, []);
+
+  // Reload handler
+  const handleReload = async () => {
+    setLoading(true);
+    setItems([]);
+    setPage(1);
+    setHasMore(true);
+    setIsLoadingMore(false);
+    
+    try {
+      const res = await api.get('/auctions', {
+        params: { limit: PAGE_SIZE, offset: 0 },
+        timeout: 10000,
+      });
+      const data = Array.isArray(res.data?.auctions) ? res.data.auctions : [];
+      const now = Date.now();
+      
+      const excludedStatuses = ['ended', 'cancelled', 'sold'];
+      const validAuctions = data.filter((a: any) => {
+        if (!a.end_time) return false;
+        if (a.status && excludedStatuses.includes(a.status)) return false;
+        if (a.start_time) {
+          const startTime = new Date(a.start_time).getTime();
+          if (startTime > now) return false;
+        }
+        const endTime = new Date(a.end_time).getTime();
+        return endTime > now;
+      });
+
+      const mapped: AuctionItem[] = validAuctions.map((a: any) => {
+        const endTime = new Date(a.end_time).getTime();
+        return {
+          id: a.id,
+          title: a.title || `Auction #${a.id}`,
+          thumbnail: a.thumbnail || PLACEHOLDER_IMG,
+          currentPrice: Number(a.current_price || a.start_price || 0),
+          endsAt: endTime,
+          createdAt: a.created_at ? new Date(a.created_at).getTime() : now,
+          heat: Number(a.bid_count || 0),
+          productId: a.product_id,
+        };
+      });
+      
+      setItems(mapped);
+      setHasMore(mapped.length >= PAGE_SIZE);
+    } catch (error) {
+      console.error('Failed to reload auctions:', error);
+      setItems([]);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Quick view handler
+  const handleQuickView = async (auctionId: number) => {
+    try {
+      setQuickViewLoading(true);
+      setQuickViewError(null);
+      setQuickViewAuctionId(auctionId);
+      openQuickView();
+      
+      // Find auction to get product_id
+      const auction = items.find(item => item.id === auctionId);
+      let productId: number | undefined = auction?.productId;
+      
+      // If productId not found in items, fetch auction detail
+      if (!productId) {
+        const auctionRes = await api.get(`/auctions/${auctionId}`);
+        const auctionData = auctionRes.data;
+        productId = auctionData.product_id;
+      }
+      
+      if (productId) {
+        // Fetch product detail
+        const productRes = await api.get(`/products/${productId}`);
+        setQuickViewProduct(productRes.data);
+      } else {
+        setQuickViewError('Product information not available');
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch product for quick view:', err);
+      setQuickViewError(err.response?.data?.detail || 'Failed to load product details');
+    } finally {
+      setQuickViewLoading(false);
+    }
+  };
 
   useEffect(() => {
     setHeroReady(true);
@@ -156,23 +266,6 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, [isLoadingMore, hasMore, loading, tab, items.length]);
 
-  // Smart, auto-hiding fixed header
-  useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY || 0;
-      const last = lastScrollYRef.current;
-      if (y <= 0) {
-        if (isHeaderHidden) setIsHeaderHidden(false);
-      } else if (y > last && y > 80) {
-        if (!isHeaderHidden) setIsHeaderHidden(true);
-      } else if (y < last) {
-        if (isHeaderHidden) setIsHeaderHidden(false);
-      }
-      lastScrollYRef.current = y;
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [isHeaderHidden]);
 
   async function loadMore() {
     if (isLoadingMore || !hasMore) return;
@@ -188,34 +281,35 @@ export default function HomePage() {
       const data = Array.isArray(res.data?.auctions) ? res.data.auctions : [];
       const now = Date.now();
       
-      // Filter valid active auctions
+      // Filter valid auctions (exclude ended/cancelled/sold and not started yet)
+      const excludedStatuses = ['ended', 'cancelled', 'sold'];
       const validAuctions = data.filter((a: any) => {
         if (!a.end_time) return false;
-        // Only show active auctions
-        if (a.status && a.status !== 'active') return false;
+        // Exclude ended/cancelled/sold auctions
+        if (a.status && excludedStatuses.includes(a.status)) return false;
+        // Check if auction has started
+        if (a.start_time) {
+          const startTime = new Date(a.start_time).getTime();
+          if (startTime > now) return false; // Auction hasn't started yet
+        }
         const endTime = new Date(a.end_time).getTime();
+        // Only show auctions that haven't ended
         return endTime > now;
       });
 
-      // Map auctions - each auction has product relationship loaded
+      // Map auctions - use title and thumbnail directly from auction
       const extra: AuctionItem[] = validAuctions.map((a: any) => {
         const endTime = new Date(a.end_time).getTime();
-        // Product is loaded via relationship, may be nested
-        const product = a.product || {};
         
         return {
           id: a.id,
-          title: product.name || `Auction #${a.id}`,
-          thumbnail:
-            product.thumbnail ||
-            (Array.isArray(product.detail_images) && product.detail_images.length > 0
-              ? product.detail_images[0]
-              : null) ||
-            PLACEHOLDER_IMG,
+          title: a.title || `Auction #${a.id}`,
+          thumbnail: a.thumbnail || PLACEHOLDER_IMG,
           currentPrice: Number(a.current_price || a.start_price || 0),
           endsAt: endTime,
           createdAt: a.created_at ? new Date(a.created_at).getTime() : now,
           heat: Number(a.bid_count || 0),
+          productId: a.product_id,
         };
       });
       
@@ -238,34 +332,7 @@ export default function HomePage() {
   }, [items, tab]);
 
   return (
-    <>
-    <AppShell
-      header={{ height: 72 }}
-      padding="md"
-      styles={{
-        main: {
-          backgroundColor: '#F5F7FB',
-          fontFamily: 'Inter, Poppins, sans-serif',
-          paddingTop: 72,
-        },
-      }}
-    >
-      <AppShell.Header
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          transform: isHeaderHidden ? 'translateY(-100%)' : 'translateY(0)',
-          transition: 'transform 220ms ease',
-          background: '#FFFFFF',
-          borderBottom: '1px solid #EEEEEE',
-        }}
-      >
-        <HeaderBar />
-      </AppShell.Header>
-      <AppShell.Main>
+    <MainLayout>
         {/* Hero Section */}
         <Box
           component="section"
@@ -441,7 +508,15 @@ export default function HomePage() {
           ) : filtered.length === 0 ? (
             <Stack align="center" py="xl">
               <Text c="dimmed">Hiện không có sản phẩm nào</Text>
-              <Button variant="light" radius="xl" color="orange">Tải lại</Button>
+              <Button 
+                variant="light" 
+                radius="xl" 
+                color="orange"
+                onClick={handleReload}
+                loading={loading}
+              >
+                Tải lại
+              </Button>
             </Stack>
           ) : (
             <Grid gutter="xl">
@@ -454,6 +529,7 @@ export default function HomePage() {
                     currentPrice={item.currentPrice}
                     timeLeftLabel={formatTimeLeft(item.endsAt, Date.now() + tick)}
                     onBid={(id) => console.log(`TODO bid item id: ${id}`)}
+                    onQuickView={handleQuickView}
                   />
                 </Grid.Col>
               ))}
@@ -488,8 +564,110 @@ export default function HomePage() {
             )}
           </Transition>
         </Affix>
-      </AppShell.Main>
-    </AppShell>
-    </>
+
+    <Modal
+      opened={quickViewOpened}
+      onClose={closeQuickView}
+      title="Product Quick View"
+      size="lg"
+      centered
+      styles={{
+        body: { padding: 0 },
+        content: { overflow: 'hidden' },
+      }}
+    >
+      {quickViewLoading ? (
+        <Stack align="center" py="xl" px="md">
+          <Loader size="lg" />
+          <Text c="dimmed" size="sm">Loading product details...</Text>
+        </Stack>
+      ) : quickViewError ? (
+        <Alert color="red" title="Error" m="md">
+          {quickViewError}
+        </Alert>
+      ) : quickViewProduct ? (
+        <ScrollArea h={600}>
+          <Stack gap={0}>
+            <Paper p="md" withBorder={false} style={{ borderBottom: '1px solid #EEEEEE' }}>
+              <Image
+                src={
+                  quickViewProduct.thumbnail ||
+                  (Array.isArray(quickViewProduct.detail_images) && quickViewProduct.detail_images.length > 0
+                    ? quickViewProduct.detail_images[0]
+                    : null) ||
+                  PLACEHOLDER_IMG
+                }
+                alt={quickViewProduct.name}
+                mah={400}
+                fit="cover"
+                radius="md"
+                style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)' }}
+              />
+            </Paper>
+
+            <Stack gap="md" p="md">
+              <Stack gap="xs">
+                <Title order={3} size="h4" fw={700}>
+                  {quickViewProduct.name}
+                </Title>
+                {quickViewProduct.description && (
+                  <Text c="dimmed" size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                    {quickViewProduct.description}
+                  </Text>
+                )}
+              </Stack>
+
+              {Array.isArray(quickViewProduct.detail_images) && quickViewProduct.detail_images.length > 0 && (
+                <>
+                  <Divider />
+                  <Stack gap="xs">
+                    <Text fw={600} size="sm" c="dimmed">
+                      Additional Images
+                    </Text>
+                    <ScrollArea type="scroll" scrollbars="x">
+                      <Group gap="xs" style={{ flexWrap: 'nowrap' }}>
+                        {quickViewProduct.detail_images.map((img, idx) => (
+                          <Image
+                            key={idx}
+                            src={img}
+                            alt={`${quickViewProduct.name} - Image ${idx + 1}`}
+                            h={100}
+                            w={100}
+                            fit="cover"
+                            radius="md"
+                            style={{ flexShrink: 0, boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}
+                          />
+                        ))}
+                      </Group>
+                    </ScrollArea>
+                  </Stack>
+                </>
+              )}
+
+              <Divider />
+
+              <Group justify="flex-end" gap="sm" mt="xs">
+                <Button variant="subtle" onClick={closeQuickView} size="md">
+                  Close
+                </Button>
+                <Button
+                  color="orange"
+                  size="md"
+                  onClick={() => {
+                    closeQuickView();
+                    if (quickViewAuctionId) {
+                      window.location.href = `/auction/${quickViewAuctionId}`;
+                    }
+                  }}
+                >
+                  View Details
+                </Button>
+              </Group>
+            </Stack>
+          </Stack>
+        </ScrollArea>
+      ) : null}
+    </Modal>
+    </MainLayout>
   );
 }

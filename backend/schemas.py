@@ -51,7 +51,7 @@ class ProductBase(BaseModel):
     thumbnail: Optional[str] = None
     detail_images: Optional[List[str]] = None
     tags: Optional[List[str]] = None
-    status: Optional[str] = "draft"
+    status: Optional[str] = "active"
 
 
 class ProductCreate(ProductBase):
