@@ -181,7 +181,7 @@ class AuctionBase(BaseModel):
     start_time: datetime
     end_time: datetime
     winner_id: Optional[int] = None
-    status: Optional[str] = "available"
+    status: Optional[str] = "active"
 
 class AuctionCreate(AuctionBase):
     """Schema for creating auction"""
@@ -200,6 +200,9 @@ class AuctionUpdate(BaseModel):
 class AuctionInDB(AuctionBase):
     """Auction schema in database"""
     id: int
+    title: Optional[str] = None
+    thumbnail: Optional[str] = None
+    category: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -209,6 +212,11 @@ class AuctionInDB(AuctionBase):
 class Auction(AuctionInDB):
     """Auction schema for response"""
     pass
+
+
+class AuctionListResponse(BaseModel):
+    """Response schema for list of auctions"""
+    auctions: List[Auction]
 
 
 # Bid Schemas

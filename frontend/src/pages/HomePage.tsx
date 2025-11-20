@@ -61,7 +61,7 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // Initial fetch from backend
+  // Initial fetch from backend - only active auctions
   useEffect(() => {
     let cancelled = false;
     async function fetchFirst() {
@@ -71,24 +71,47 @@ export default function HomePage() {
           params: { limit: PAGE_SIZE, offset: 0 },
           timeout: 10000,
         });
-        const data = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
-        const mapped: AuctionItem[] = data.map((a: any) => ({
-          id: a.id,
-          title: a.product?.name ?? `Auction #${a.id}`,
-          thumbnail:
-            a.product?.image_url ||
-            (Array.isArray(a.product?.image_gallery) ? a.product.image_gallery[0] : null) ||
-            PLACEHOLDER_IMG,
-          currentPrice: Number(a.current_price ?? a.start_price ?? 0),
-          endsAt: a.end_time ? new Date(a.end_time).getTime() : Date.now() + 1000 * 60 * 30,
-          createdAt: a.created_at ? new Date(a.created_at).getTime() : Date.now(),
-          heat: Number(a.bid_count ?? Math.max(1, Math.floor((a.current_price ?? 0) / 50))),
-        }));
+        // Response format: { auctions: [...] }
+        const data = Array.isArray(res.data?.auctions) ? res.data.auctions : [];
+        const now = Date.now();
+        
+        // Filter valid active auctions
+        const validAuctions = data.filter((a: any) => {
+          if (!a.end_time) return false;
+          // Only show active auctions
+          if (a.status && a.status !== 'active') return false;
+          const endTime = new Date(a.end_time).getTime();
+          return endTime > now;
+        });
+
+        // Map auctions - each auction has product relationship loaded
+        const mapped: AuctionItem[] = validAuctions.map((a: any) => {
+          const endTime = new Date(a.end_time).getTime();
+          // Product is loaded via relationship, may be nested
+          const product = a.product || {};
+          
+          return {
+            id: a.id,
+            title: product.name || `Auction #${a.id}`,
+            thumbnail:
+              product.thumbnail ||
+              (Array.isArray(product.detail_images) && product.detail_images.length > 0
+                ? product.detail_images[0]
+                : null) ||
+              PLACEHOLDER_IMG,
+            currentPrice: Number(a.current_price || a.start_price || 0),
+            endsAt: endTime,
+            createdAt: a.created_at ? new Date(a.created_at).getTime() : now,
+            heat: Number(a.bid_count || 0),
+          };
+        });
+        
         if (!cancelled) {
           setItems(mapped);
           setHasMore(mapped.length >= PAGE_SIZE);
         }
-      } catch {
+      } catch (error) {
+        console.error('Failed to fetch auctions:', error);
         if (!cancelled) {
           setItems([]);
           setHasMore(false);
@@ -161,23 +184,46 @@ export default function HomePage() {
         params: { limit: PAGE_SIZE, offset },
         timeout: 10000,
       });
-      const data = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
-      const extra: AuctionItem[] = data.map((a: any) => ({
-        id: a.id,
-        title: a.product?.name ?? `Auction #${a.id}`,
-        thumbnail:
-          a.product?.image_url ||
-          (Array.isArray(a.product?.image_gallery) ? a.product.image_gallery[0] : null) ||
-          PLACEHOLDER_IMG,
-        currentPrice: Number(a.current_price ?? a.start_price ?? 0),
-        endsAt: a.end_time ? new Date(a.end_time).getTime() : Date.now() + 1000 * 60 * 30,
-        createdAt: a.created_at ? new Date(a.created_at).getTime() : Date.now(),
-        heat: Number(a.bid_count ?? Math.max(1, Math.floor((a.current_price ?? 0) / 50))),
-      }));
+      // Response format: { auctions: [...] }
+      const data = Array.isArray(res.data?.auctions) ? res.data.auctions : [];
+      const now = Date.now();
+      
+      // Filter valid active auctions
+      const validAuctions = data.filter((a: any) => {
+        if (!a.end_time) return false;
+        // Only show active auctions
+        if (a.status && a.status !== 'active') return false;
+        const endTime = new Date(a.end_time).getTime();
+        return endTime > now;
+      });
+
+      // Map auctions - each auction has product relationship loaded
+      const extra: AuctionItem[] = validAuctions.map((a: any) => {
+        const endTime = new Date(a.end_time).getTime();
+        // Product is loaded via relationship, may be nested
+        const product = a.product || {};
+        
+        return {
+          id: a.id,
+          title: product.name || `Auction #${a.id}`,
+          thumbnail:
+            product.thumbnail ||
+            (Array.isArray(product.detail_images) && product.detail_images.length > 0
+              ? product.detail_images[0]
+              : null) ||
+            PLACEHOLDER_IMG,
+          currentPrice: Number(a.current_price || a.start_price || 0),
+          endsAt: endTime,
+          createdAt: a.created_at ? new Date(a.created_at).getTime() : now,
+          heat: Number(a.bid_count || 0),
+        };
+      });
+      
       setItems((prev) => [...prev, ...extra]);
       setPage(nextPage);
       setHasMore(extra.length >= PAGE_SIZE);
-    } catch {
+    } catch (error) {
+      console.error('Failed to load more auctions:', error);
       setHasMore(false);
     } finally {
       setIsLoadingMore(false);

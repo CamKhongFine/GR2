@@ -1,8 +1,10 @@
 """
 Auction Service
 """
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from models.auction import Auction
+from models.product import Product
+from models.category import Category
 from schemas import AuctionCreate, AuctionUpdate
 from typing import Optional, List
 
@@ -11,32 +13,45 @@ class AuctionService:
     
     @staticmethod
     def get_auction(db: Session, auction_id: int) -> Optional[Auction]:
-        """Get auction by ID"""
-        return db.query(Auction).filter(Auction.id == auction_id).first()
+        """Get auction by ID with product"""
+        return db.query(Auction).options(joinedload(Auction.product)).filter(Auction.id == auction_id).first()
     
     @staticmethod
     def get_auctions(db: Session, skip: int = 0, limit: int = 100) -> List[Auction]:
-        """Get list of auctions"""
-        return db.query(Auction).offset(skip).limit(limit).all()
+        """Get list of auctions with products"""
+        return db.query(Auction).options(joinedload(Auction.product)).offset(skip).limit(limit).all()
     
     @staticmethod
     def get_auctions_by_status(db: Session, status: str, skip: int = 0, limit: int = 100) -> List[Auction]:
-        """Get auctions by status"""
-        return db.query(Auction).filter(Auction.status == status).offset(skip).limit(limit).all()
+        """Get auctions by status with products"""
+        return db.query(Auction).options(joinedload(Auction.product)).filter(Auction.status == status).offset(skip).limit(limit).all()
     
     @staticmethod
     def get_auction_by_product(db: Session, product_id: int) -> Optional[Auction]:
-        """Get auction by product ID"""
-        return db.query(Auction).filter(Auction.product_id == product_id).first()
+        """Get auction by product ID with product"""
+        return db.query(Auction).options(joinedload(Auction.product)).filter(Auction.product_id == product_id).first()
     
     @staticmethod
     def get_active_auctions(db: Session, skip: int = 0, limit: int = 100) -> List[Auction]:
-        """Get active auctions"""
-        return db.query(Auction).filter(Auction.status == "active").offset(skip).limit(limit).all()
+        """Get active auctions with products"""
+        return db.query(Auction).options(joinedload(Auction.product)).filter(Auction.status == "active").offset(skip).limit(limit).all()
     
     @staticmethod
     def create_auction(db: Session, auction: AuctionCreate) -> Auction:
-        """Create new auction"""
+        """Create new auction with title, thumbnail, and category from product"""
+        product = db.query(Product).filter(Product.id == auction.product_id).first()
+        if not product:
+            raise ValueError(f"Product with id {auction.product_id} not found")
+        
+        title = product.name
+        thumbnail = product.thumbnail
+        
+        category_name = None
+        if product.category_id:
+            category = db.query(Category).filter(Category.id == product.category_id).first()
+            if category:
+                category_name = category.name
+        
         db_auction = Auction(
             product_id=auction.product_id,
             seller_id=auction.seller_id,
@@ -46,7 +61,10 @@ class AuctionService:
             start_time=auction.start_time,
             end_time=auction.end_time,
             winner_id=auction.winner_id,
-            status=auction.status or "draft",
+            status=auction.status or "active",
+            title=title,
+            thumbnail=thumbnail,
+            category=category_name,
         )
         db.add(db_auction)
         db.commit()
