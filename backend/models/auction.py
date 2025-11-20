@@ -28,7 +28,10 @@ class Auction(Base):
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)
     winner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    status = Column(SQLEnum(AuctionStatus, name="auction_status"), nullable=False, default=AuctionStatus.DRAFT)
+    status = Column(SQLEnum(AuctionStatus, name="auction_status"), nullable=False, default=AuctionStatus.ACTIVE)
+    title = Column(String(255), nullable=True)
+    thumbnail = Column(String(500), nullable=True)
+    category = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

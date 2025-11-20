@@ -11,15 +11,22 @@ export type AuctionCardProps = {
   currentPrice: number;
   timeLeftLabel: string;
   onBid: (id: number) => void;
+  onQuickView?: (id: number) => void;
 };
 
-function AuctionCardBase({ id, title, thumbnail, currentPrice, timeLeftLabel, onBid }: AuctionCardProps) {
+function AuctionCardBase({ id, title, thumbnail, currentPrice, timeLeftLabel, onBid, onQuickView }: AuctionCardProps) {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const handleNavigate = () => navigate(`/auction/${id}`);
   const handleBidClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     onBid(id);
+  };
+  const handleQuickView = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (onQuickView) {
+      onQuickView(id);
+    }
   };
   return (
     <Card
@@ -49,7 +56,12 @@ function AuctionCardBase({ id, title, thumbnail, currentPrice, timeLeftLabel, on
           <Text fw={700} style={{ lineHeight: 1.25, fontFamily: 'Inter, Poppins, sans-serif' }}>{title}</Text>
           <Group gap={4} wrap="nowrap">
             <Tooltip label="Quick view" withArrow>
-              <ActionIcon variant="light" aria-label="Quick view" color="gray">
+              <ActionIcon 
+                variant="light" 
+                aria-label="Quick view" 
+                color="gray"
+                onClick={handleQuickView}
+              >
                 <IconEye size={16} />
               </ActionIcon>
             </Tooltip>

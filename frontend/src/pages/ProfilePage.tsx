@@ -14,6 +14,7 @@ import {
     ThemeIcon,
     Box,
     Badge,
+    Tooltip,
 } from '@mantine/core';
 import {
     IconUser,
@@ -28,6 +29,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import MainLayout from '../layouts/MainLayout';
 
 // --- Types ---
 interface UserInfo {
@@ -107,18 +109,23 @@ export default function ProfilePage() {
     const completeness = calculateCompleteness();
 
     return (
+        <MainLayout>
         <Box bg="var(--mantine-color-gray-0)" style={{ minHeight: '100vh', paddingBottom: 80 }}>
             {/* Top Navigation */}
             <Container size="md" py="md">
-                <Button
-                    variant="subtle"
-                    color="gray"
-                    leftSection={<IconArrowLeft size={18} />}
-                    onClick={() => navigate('/')}
-                    styles={{ root: { paddingLeft: 0 } }}
-                >
-                    Back to Home
-                </Button>
+                <Group>
+                    <Tooltip label="Back to Home" withArrow>
+                        <ActionIcon
+                            variant="subtle"
+                            size="lg"
+                            radius="md"
+                            onClick={() => navigate('/')}
+                            aria-label="Back to Home"
+                        >
+                            <IconArrowLeft size={20} />
+                        </ActionIcon>
+                    </Tooltip>
+                </Group>
             </Container>
 
             <Container size="md" style={{ maxWidth: 860 }}>
@@ -270,5 +277,6 @@ export default function ProfilePage() {
                 </Grid>
             </Container>
         </Box>
+        </MainLayout>
     );
 }

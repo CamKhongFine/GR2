@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from database.connection import get_db
-from schemas import Auction, AuctionCreate, AuctionUpdate
+from schemas import Auction, AuctionCreate, AuctionUpdate, AuctionListResponse
 from services.auction_service import AuctionService
 
 router = APIRouter()
 
-@router.get("/", response_model=List[Auction])
+@router.get("/", response_model=AuctionListResponse)
 async def get_auctions(
     skip: int = 0,
     limit: int = 100,
@@ -19,12 +19,12 @@ async def get_auctions(
 ):
     """Get list of auctions"""
     if status_filter:
-        auctions = AuctionService.get_auctions_by_status(db, status=status_filter, skip=skip, limit=limit)
+      auctions = AuctionService.get_auctions_by_status(db, status=status_filter, skip=skip, limit=limit)
     else:
-        auctions = AuctionService.get_auctions(db, skip=skip, limit=limit)
-    return auctions
+      auctions = AuctionService.get_auctions(db, skip=skip, limit=limit)
+    return AuctionListResponse(auctions=auctions)
 
-@router.get("/active", response_model=List[Auction])
+@router.get("/active", response_model=AuctionListResponse)
 async def get_active_auctions(
     skip: int = 0,
     limit: int = 100,
@@ -32,7 +32,7 @@ async def get_active_auctions(
 ):
     """Get active auctions"""
     auctions = AuctionService.get_active_auctions(db, skip=skip, limit=limit)
-    return auctions
+    return AuctionListResponse(auctions=auctions)
 
 @router.get("/{auction_id}", response_model=Auction)
 async def get_auction(

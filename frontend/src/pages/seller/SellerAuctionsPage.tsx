@@ -166,8 +166,31 @@ export default function SellerAuctionsPage() {
       const response = await api.get('/auctions', {
         timeout: 10000,
       });
-      const fetchedAuctions = Array.isArray(response.data) ? response.data : [];
+      // Response format: { auctions: [...] }
+      const fetchedAuctions = Array.isArray(response.data?.auctions) ? response.data.auctions : [];
       const normalizedAuctions = fetchedAuctions.map(normalizeAuction);
+      
+      // Extract products from auction responses and merge into products state
+      const productsFromAuctions: Product[] = [];
+      fetchedAuctions.forEach((auction: any) => {
+        if (auction.product && auction.product_id) {
+          const normalizedProduct = normalizeProduct(auction.product);
+          productsFromAuctions.push(normalizedProduct);
+        }
+      });
+      
+      // Merge products from auctions with existing products
+      if (productsFromAuctions.length > 0) {
+        setProducts((prev) => {
+          const merged = new Map<number, Product>();
+          // Add existing products
+          prev.forEach(p => merged.set(p.id, p));
+          // Add/update products from auctions
+          productsFromAuctions.forEach(p => merged.set(p.id, p));
+          return Array.from(merged.values());
+        });
+      }
+      
       setAuctions(normalizedAuctions);
       setFilteredAuctions(normalizedAuctions);
     } catch (error: any) {
@@ -426,7 +449,6 @@ export default function SellerAuctionsPage() {
         buy_now_price: buyNowPrice,
         start_time: normalizedStart.toISOString(),
         end_time: normalizedEnd.toISOString(),
-        status: 'draft',
       };
 
       await api.post('/auctions', payload);
