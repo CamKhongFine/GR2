@@ -32,6 +32,8 @@ class Auction(Base):
     title = Column(String(255), nullable=True)
     thumbnail = Column(String(500), nullable=True)
     category = Column(String(255), nullable=True)
+    version = Column(Integer, nullable=False, default=0)
+    auto_extend_seconds = Column(Integer, nullable=False, default=10)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

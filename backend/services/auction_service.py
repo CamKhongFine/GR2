@@ -65,6 +65,8 @@ class AuctionService:
             title=title,
             thumbnail=thumbnail,
             category=category_name,
+            version=auction.version or 0,
+            auto_extend_seconds=auction.auto_extend_seconds or 10,
         )
         db.add(db_auction)
         db.commit()

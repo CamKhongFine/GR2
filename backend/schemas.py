@@ -182,6 +182,8 @@ class AuctionBase(BaseModel):
     end_time: datetime
     winner_id: Optional[int] = None
     status: Optional[str] = "active"
+    version: Optional[int] = 0
+    auto_extend_seconds: Optional[int] = 10
 
 class AuctionCreate(AuctionBase):
     """Schema for creating auction"""
@@ -196,6 +198,8 @@ class AuctionUpdate(BaseModel):
     end_time: Optional[datetime] = None
     winner_id: Optional[int] = None
     status: Optional[str] = None
+    version: Optional[int] = None
+    auto_extend_seconds: Optional[int] = None
 
 class AuctionInDB(AuctionBase):
     """Auction schema in database"""
@@ -203,6 +207,8 @@ class AuctionInDB(AuctionBase):
     title: Optional[str] = None
     thumbnail: Optional[str] = None
     category: Optional[str] = None
+    version: int
+    auto_extend_seconds: int
     created_at: datetime
     updated_at: datetime
 
@@ -225,7 +231,6 @@ class BidBase(BaseModel):
     auction_id: int
     bid_amount: Decimal
     bidder_id: int
-    is_highest: Optional[bool] = False
     status: Optional[str] = "valid"
 
 class BidCreate(BidBase):
@@ -236,7 +241,6 @@ class BidCreate(BidBase):
 class BidUpdate(BaseModel):
     """Schema for updating bid"""
     bid_amount: Optional[Decimal] = None
-    is_highest: Optional[bool] = None
     status: Optional[str] = None
 
 

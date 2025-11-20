@@ -1,8 +1,10 @@
 """
 Bid Service
 """
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from models.bid import Bid
+from models.auction import Auction
 from schemas import BidCreate, BidUpdate
 from typing import Optional, List
 
@@ -41,10 +43,10 @@ class BidService:
             auction_id=bid.auction_id,
             bidder_id=bid.bidder_id,
             bid_amount=bid.bid_amount,
-            is_highest=bid.is_highest if bid.is_highest is not None else False,
             status=bid.status or "valid",
         )
         db.add(db_bid)
+        BidService._apply_auction_bid_effects(db, bid.auction_id)
         db.commit()
         db.refresh(db_bid)
         return db_bid
@@ -61,6 +63,27 @@ class BidService:
         db.commit()
         db.refresh(db_bid)
         return db_bid
+
+    @staticmethod
+    def _apply_auction_bid_effects(db: Session, auction_id: int) -> None:
+        """Update auction metadata when a bid is placed"""
+        auction = db.query(Auction).filter(Auction.id == auction_id).first()
+        if not auction:
+            return
+
+        auction.version = (auction.version or 0) + 1
+
+        if auction.end_time:
+            end_time = auction.end_time
+            if end_time.tzinfo is None:
+                end_time = end_time.replace(tzinfo=timezone.utc)
+
+            now = datetime.now(timezone.utc)
+            extend_seconds = auction.auto_extend_seconds or 0
+            if extend_seconds > 0:
+                time_remaining = (end_time - now).total_seconds()
+                if time_remaining <= extend_seconds:
+                    auction.end_time = end_time + timedelta(seconds=extend_seconds)
     
     @staticmethod
     def delete_bid(db: Session, bid_id: int) -> bool:
