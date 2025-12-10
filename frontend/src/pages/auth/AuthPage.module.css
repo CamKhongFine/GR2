@@ -1,0 +1,94 @@
+.container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    background-color: #f0f2f5;
+}
+
+.leftSide {
+    display: none;
+    flex: 1;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+
+
+.rightSide {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background-color: #ffffff;
+}
+
+.authCard {
+    width: 100%;
+    max-width: 420px;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.08),
+        0 9px 28px 0 rgba(0, 0, 0, 0.05),
+        0 12px 48px 16px rgba(0, 0, 0, 0.03);
+    background: #fff;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.logoPlaceholder {
+    width: 48px;
+    height: 48px;
+    background-color: #1677ff;
+    border-radius: 8px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.socialLogin {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #f0f0f0;
+    text-align: center;
+}
+
+.authCard :global(.ant-form-item-label) {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.authCard :global(.ant-form-item-label > label) {
+    font-weight: 600 !important;
+}
+
+.authCard :global(.ant-form-item) {
+    margin-bottom: 16px !important;
+}
+
+@media (min-width: 768px) {
+    .container {
+        flex-direction: row;
+    }
+}
+
+@media (min-width: 992px) {
+    .leftSide {
+        display: block;
+        width: 50%;
+    }
+
+    .rightSide {
+        width: 50%;
+    }
+}
