@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-    Tabs,
     Form,
     Input,
     Button,
     Checkbox,
     Typography,
     message,
-    theme
+    theme,
+    Divider,
+    Space
 } from 'antd';
 import {
     GoogleOutlined,
     GithubOutlined
 } from '@ant-design/icons';
+import type { FormProps } from 'antd';
 import splashImage from '@/assets/images/splash.png';
 import styles from './AuthPage.module.css';
 
@@ -22,208 +24,48 @@ export interface AuthPageProps {
     imageSrc?: string;
     title?: string;
     subtitle?: string;
-    onLogin?: (data: { email: string; password: string }) => Promise<any>;
-    onRegister?: (data: { fullName: string; email: string; password: string }) => Promise<any>;
+    onLogin?: (data: { email: string; password: string; remember?: boolean }) => Promise<any>;
+}
+
+interface LoginFormValues {
+    email: string;
+    password: string;
+    remember?: boolean;
 }
 
 const AuthPage: React.FC<AuthPageProps> = ({
     imageSrc = splashImage,
     title = "Welcome Back",
     subtitle = "Please enter your details to sign in",
-    onLogin,
-    onRegister
+    onLogin
 }) => {
-    const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('login');
+    const [form] = Form.useForm<LoginFormValues>();
     const { token } = theme.useToken();
 
-    const handleLogin = async (values: any) => {
-        setLoading(true);
+    const handleLogin: FormProps<LoginFormValues>['onFinish'] = async (values) => {
         try {
             if (onLogin) {
                 await onLogin(values);
             } else {
+                // Demo mode
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 console.log('Login values:', values);
             }
             message.success('Successfully logged in!');
-        } catch (error) {
-            message.error('Login failed. Please try again.');
-        } finally {
-            setLoading(false);
+        } catch (error: any) {
+            const errorMessage = error?.message || 'Login failed. Please try again.';
+            message.error(errorMessage);
         }
     };
 
-    const handleRegister = async (values: any) => {
-        setLoading(true);
-        try {
-            if (onRegister) {
-                await onRegister(values);
-            } else {
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                console.log('Register values:', values);
-            }
-            message.success('Registration successful! Please log in.');
-            setActiveTab('login');
-        } catch (error) {
-            message.error('Registration failed. Please try again.');
-        } finally {
-            setLoading(false);
-        }
+    const handleForgotPassword = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault();
+        message.info('Password reset functionality to be implemented.');
     };
 
-    const tabItems = [
-        {
-            key: 'login',
-            label: 'Login',
-            children: (
-                <Form
-                    name="login_form"
-                    layout="vertical"
-                    onFinish={handleLogin}
-                    initialValues={{ remember: true }}
-                    size="large"
-                    requiredMark={false}
-                >
-                    <Form.Item
-                        name="email"
-                        label="Email"
-                        rules={[
-                            { required: true, message: 'Please input your Email!' },
-                            { type: 'email', message: 'Please enter a valid email!' }
-                        ]}
-                    >
-                        <Input
-                            placeholder="Email"
-                            autoFocus={activeTab === 'login'}
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="password"
-                        label="Password"
-                        rules={[
-                            { required: true, message: 'Please input your Password!' },
-                            { min: 8, message: 'Password must be at least 8 characters' }
-                        ]}
-                    >
-                        <Input.Password
-                            placeholder="Password"
-                        />
-                    </Form.Item>
-                    <Form.Item>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Form.Item name="remember" valuePropName="checked" noStyle>
-                                <Checkbox>Remember me</Checkbox>
-                            </Form.Item>
-                            <Link
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    message.info('Password reset functionality to be implemented.');
-                                }}
-                            >
-                                Forgot password?
-                            </Link>
-                        </div>
-                    </Form.Item>
-
-                    <Form.Item style={{ marginBottom: 0 }}>
-                        <Button type="primary" htmlType="submit" loading={loading} block>
-                            Log in
-                        </Button>
-                    </Form.Item>
-                </Form>
-            )
-        },
-        {
-            key: 'register',
-            label: 'Register',
-            children: (
-                <Form
-                    name="register_form"
-                    layout="vertical"
-                    onFinish={handleRegister}
-                    size="large"
-                    requiredMark={false}
-                >
-                    <Form.Item
-                        name="fullName"
-                        label="Full Name"
-                        rules={[{ required: true, message: 'Please input your Name!' }]}
-                    >
-                        <Input
-                            placeholder="Full Name"
-                            autoFocus={activeTab === 'register'}
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="email"
-                        label="Email"
-                        rules={[
-                            { required: true, message: 'Please input your Email!' },
-                            { type: 'email', message: 'Please enter a valid email!' }
-                        ]}
-                    >
-                        <Input
-                            placeholder="Email"
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="password"
-                        label="Password"
-                        rules={[
-                            { required: true, message: 'Please input your Password!' },
-                            { min: 8, message: 'Password must be at least 8 characters' }
-                        ]}
-                    >
-                        <Input.Password
-                            placeholder="Password"
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="confirmPassword"
-                        label="Confirm Password"
-                        dependencies={['password']}
-                        rules={[
-                            { required: true, message: 'Please confirm your password!' },
-                            ({ getFieldValue }) => ({
-                                validator(_, value) {
-                                    if (!value || getFieldValue('password') === value) {
-                                        return Promise.resolve();
-                                    }
-                                    return Promise.reject(new Error('The two passwords that you entered do not match!'));
-                                },
-                            }),
-                        ]}
-                    >
-                        <Input.Password
-                            placeholder="Confirm Password"
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="agreement"
-                        valuePropName="checked"
-                        rules={[
-                            {
-                                validator: (_, value) =>
-                                    value ? Promise.resolve() : Promise.reject(new Error('Should accept agreement')),
-                            },
-                        ]}
-                    >
-                        <Checkbox>
-                            I have read the <Link>agreement</Link>
-                        </Checkbox>
-                    </Form.Item>
-
-                    <Form.Item style={{ marginBottom: 0 }}>
-                        <Button type="primary" htmlType="submit" loading={loading} block>
-                            Register
-                        </Button>
-                    </Form.Item>
-                </Form>
-            )
-        }
-    ];
+    const handleSocialLogin = (provider: 'google' | 'github') => {
+        message.info(`${provider === 'google' ? 'Google' : 'GitHub'} login not implemented`);
+    };
 
     return (
         <div className={styles.container}>
@@ -236,32 +78,105 @@ const AuthPage: React.FC<AuthPageProps> = ({
             />
             <div className={styles.rightSide}>
                 <div className={styles.authCard}>
-
-                    {/* HEADER with reduced spacing */}
+                    {/* Header */}
                     <div className={styles.header}>
-                        <Title level={2} style={{ margin: 0, lineHeight: 1.2 }}>
-                            {activeTab === 'login' ? title : "Create an Account"}
+                        <Title level={2} className={styles.title}>
+                            {title}
                         </Title>
-                        <Text type="secondary" style={{ margin: 0 }}>
-                            {activeTab === 'login' ? subtitle : "Join us today!"}
+                        <Text type="secondary" className={styles.subtitle}>
+                            {subtitle}
                         </Text>
                     </div>
 
-                    <Tabs
-                        activeKey={activeTab}
-                        onChange={setActiveTab}
-                        centered
-                        items={tabItems}
-                    />
+                    {/* Login Form */}
+                    <Form
+                        form={form}
+                        name="login"
+                        layout="vertical"
+                        onFinish={handleLogin}
+                        initialValues={{ remember: true }}
+                        size="large"
+                        requiredMark={false}
+                        autoComplete="off"
+                    >
+                        <Form.Item
+                            name="email"
+                            label="Email"
+                            rules={[
+                                { required: true, message: 'Please input your email!' },
+                                { type: 'email', message: 'Please enter a valid email address!' }
+                            ]}
+                        >
+                            <Input
+                                placeholder="Enter your email"
+                                autoComplete="email"
+                                autoFocus
+                            />
+                        </Form.Item>
 
+                        <Form.Item
+                            name="password"
+                            label="Password"
+                            rules={[
+                                { required: true, message: 'Please input your password!' },
+                                { min: 8, message: 'Password must be at least 8 characters!' }
+                            ]}
+                        >
+                            <Input.Password
+                                placeholder="Enter your password"
+                                autoComplete="current-password"
+                            />
+                        </Form.Item>
+
+                        <Form.Item>
+                            <div className={styles.formFooter}>
+                                <Form.Item name="remember" valuePropName="checked" noStyle>
+                                    <Checkbox>Remember me</Checkbox>
+                                </Form.Item>
+                                <Link
+                                    onClick={handleForgotPassword}
+                                    className={styles.forgotLink}
+                                >
+                                    Forgot password?
+                                </Link>
+                            </div>
+                        </Form.Item>
+
+                        <Form.Item style={{ marginBottom: 0 }}>
+                            <Button
+                                type="primary"
+                                htmlType="submit"
+                                block
+                                className={styles.loginButton}
+                            >
+                                Sign In
+                            </Button>
+                        </Form.Item>
+                    </Form>
+
+                    {/* Social Login */}
                     <div className={styles.socialLogin}>
-                        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                            Or continue with
-                        </Text>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-                            <Button icon={<GoogleOutlined />} onClick={() => message.info('Social login not implemented')} />
-                            <Button icon={<GithubOutlined />} onClick={() => message.info('Social login not implemented')} />
-                        </div>
+                        <Divider plain>
+                            <Text type="secondary" className={styles.dividerText}>
+                                Or continue with
+                            </Text>
+                        </Divider>
+                        <Space size="middle" className={styles.socialButtons}>
+                            <Button
+                                icon={<GoogleOutlined />}
+                                onClick={() => handleSocialLogin('google')}
+                                className={styles.socialButton}
+                            >
+                                Google
+                            </Button>
+                            <Button
+                                icon={<GithubOutlined />}
+                                onClick={() => handleSocialLogin('github')}
+                                className={styles.socialButton}
+                            >
+                                GitHub
+                            </Button>
+                        </Space>
                     </div>
                 </div>
             </div>
