@@ -48,8 +48,6 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     @Override
     public String createInvitedUser(String email) {
-        log.info("Creating invited user in Keycloak for email: {}", email);
-
         UsersResource usersResource = getRealm().users();
         
         List<UserRepresentation> existingUsers = usersResource.searchByEmail(email, true);
@@ -77,7 +75,6 @@ public class KeycloakServiceImpl implements KeycloakService {
         if (response.getStatus() == Response.Status.CREATED.getStatusCode()) {
             String location = response.getLocation().getPath();
             String userId = getUserIdFromLocation(location);
-            log.info("Successfully created user in Keycloak with ID: {}", userId);
             response.close();
             return userId;
         } else {
@@ -98,7 +95,6 @@ public class KeycloakServiceImpl implements KeycloakService {
 
         try {
             userResource.executeActionsEmail(Arrays.asList("VERIFY_EMAIL", "UPDATE_PASSWORD"));
-            log.info("Successfully sent invitation email to user ID: {}", keycloakUserId);
         } catch (Exception e) {
             log.error("Failed to send invitation email to user ID: {}", keycloakUserId, e);
             throw new RuntimeException("Failed to send invitation email: " + e.getMessage(), e);

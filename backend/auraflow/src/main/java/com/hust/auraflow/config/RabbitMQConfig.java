@@ -1,13 +1,11 @@
 package com.hust.auraflow.config;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.QueueBuilder;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +20,7 @@ public class RabbitMQConfig {
 
     public static final String INVITE_USER_DLX = "invite.user.dlx";
     public static final String INVITE_USER_DLQ = "invite.user.dlq";
+    public static final String INVITE_USER_DLQ_KEY = "user.invite.dlq";
 
     @Bean
     public TopicExchange userExchange() {
@@ -32,7 +31,7 @@ public class RabbitMQConfig {
     public Queue inviteUserQueue() {
         return QueueBuilder.durable(INVITE_USER_COMMAND_QUEUE)
                 .withArgument("x-dead-letter-exchange", INVITE_USER_DLX)
-                .withArgument("x-dead-letter-routing-key", INVITE_USER_DLQ)
+                .withArgument("x-dead-letter-routing-key", INVITE_USER_DLQ_KEY)
                 .build();
     }
 
@@ -59,7 +58,7 @@ public class RabbitMQConfig {
         return BindingBuilder
                 .bind(inviteUserDlq())
                 .to(inviteUserDlx())
-                .with(INVITE_USER_DLQ);
+                .with(INVITE_USER_DLQ_KEY);
     }
 
     @Bean
@@ -79,6 +78,17 @@ public class RabbitMQConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter());
+
+        factory.setDefaultRequeueRejected(false);
+
+        factory.setAdviceChain(
+                RetryInterceptorBuilder.stateless()
+                        .maxRetries(3)
+                        .backOffOptions(2000, 2.0, 10000)
+                        .recoverer(new RejectAndDontRequeueRecoverer())
+                        .build()
+        );
+
         return factory;
     }
 }

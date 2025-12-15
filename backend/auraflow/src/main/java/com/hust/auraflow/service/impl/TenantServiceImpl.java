@@ -24,14 +24,11 @@ public class TenantServiceImpl implements TenantService {
     @Override
     @Transactional
     public TenantResponse createTenant(TenantRequest request) {
-        log.info("Creating tenant with name: {}", request.getName());
-
         Tenant tenant = new Tenant();
         tenant.setName(request.getName());
         tenant.setStatus(TenantStatus.ACTIVE);
 
         Tenant savedTenant = tenantRepository.save(tenant);
-        log.info("Successfully created tenant with ID: {}", savedTenant.getId());
 
         return TenantResponse.fromEntity(savedTenant);
     }
@@ -39,8 +36,6 @@ public class TenantServiceImpl implements TenantService {
     @Override
     @Transactional(readOnly = true)
     public TenantResponse getTenantById(Long id) {
-        log.info("Getting tenant by ID: {}", id);
-
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> {
                     log.error("Tenant not found with ID: {}", id);
@@ -53,8 +48,6 @@ public class TenantServiceImpl implements TenantService {
     @Override
     @Transactional(readOnly = true)
     public List<TenantResponse> getAllTenants() {
-        log.info("Getting all tenants");
-
         return tenantRepository.findAll().stream()
                 .map(TenantResponse::fromEntity)
                 .collect(Collectors.toList());
@@ -63,8 +56,6 @@ public class TenantServiceImpl implements TenantService {
     @Override
     @Transactional
     public TenantResponse updateTenant(Long id, TenantRequest request) {
-        log.info("Updating tenant with ID: {}", id);
-
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> {
                     log.error("Tenant not found with ID: {}", id);
@@ -83,15 +74,12 @@ public class TenantServiceImpl implements TenantService {
     @Override
     @Transactional
     public void deleteTenant(Long id) {
-        log.info("Deleting tenant with ID: {}", id);
-
         if (!tenantRepository.existsById(id)) {
             log.error("Tenant not found with ID: {}", id);
             throw new RuntimeException("Tenant not found with ID: " + id);
         }
 
         tenantRepository.deleteById(id);
-        log.info("Successfully deleted tenant with ID: {}", id);
     }
 }
 

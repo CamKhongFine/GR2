@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserInviteConsumer {
+public class rabbitMQConsumer {
 
     private final InviteRequestRepository inviteRequestRepository;
     private final UserRepository userRepository;
@@ -29,21 +29,15 @@ public class UserInviteConsumer {
     @Transactional
     public void handleInviteCommand(InviteUserCommand command) {
         Long inviteRequestId = command.getInviteRequestId();
-        log.info("Received InviteUserCommand inviteRequestId={}", inviteRequestId);
-
         InviteRequest inviteRequest = inviteRequestRepository.findById(inviteRequestId)
                 .orElse(null);
+
         if (inviteRequest == null) {
             log.warn("InviteRequest not found inviteRequestId={}", inviteRequestId);
             return;
         }
 
-        int currentAttempt = inviteRequest.getRetryCount() + 1;
-        log.info("Processing inviteRequestId={}, email={}, attempt={}",
-                inviteRequestId, inviteRequest.getEmail(), currentAttempt);
-
         if (inviteRequest.getStatus() == InviteRequestStatus.COMPLETED) {
-            log.info("InviteRequest already completed inviteRequestId={}", inviteRequestId);
             return;
         }
         if (inviteRequest.getStatus() == InviteRequestStatus.FAILED) {
@@ -56,7 +50,6 @@ public class UserInviteConsumer {
                 inviteRequest.setStatus(InviteRequestStatus.COMPLETED);
                 inviteRequest.setErrorMessage(null);
                 inviteRequestRepository.save(inviteRequest);
-                log.info("User already exists, marking invite as completed email={}", inviteRequest.getEmail());
                 return;
             }
 
@@ -76,7 +69,6 @@ public class UserInviteConsumer {
             inviteRequest.setErrorMessage(null);
             inviteRequestRepository.save(inviteRequest);
 
-            log.info("Invite processing completed inviteRequestId={}, email={}", inviteRequestId, inviteRequest.getEmail());
         } catch (Exception e) {
             log.error("Invite processing failed inviteRequestId={}, email={}, retryCount={}",
                     inviteRequestId, inviteRequest.getEmail(), inviteRequest.getRetryCount(), e);
