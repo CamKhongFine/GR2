@@ -1,5 +1,6 @@
 package com.hust.auraflow.service.impl;
 
+import com.hust.auraflow.common.enums.TenantStatus;
 import com.hust.auraflow.dto.TenantRequest;
 import com.hust.auraflow.dto.TenantResponse;
 import com.hust.auraflow.entity.Tenant;
@@ -27,7 +28,7 @@ public class TenantServiceImpl implements TenantService {
 
         Tenant tenant = new Tenant();
         tenant.setName(request.getName());
-        tenant.setStatus(request.getStatus());
+        tenant.setStatus(TenantStatus.ACTIVE);
 
         Tenant savedTenant = tenantRepository.save(tenant);
         log.info("Successfully created tenant with ID: {}", savedTenant.getId());
@@ -71,9 +72,7 @@ public class TenantServiceImpl implements TenantService {
                 });
 
         tenant.setName(request.getName());
-        if (request.getStatus() != null) {
-            tenant.setStatus(request.getStatus());
-        }
+        // Status update is not included in TenantRequest, so we don't update it here
 
         Tenant updatedTenant = tenantRepository.save(tenant);
         log.info("Successfully updated tenant with ID: {}", id);

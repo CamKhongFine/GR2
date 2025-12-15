@@ -3,16 +3,20 @@ package com.hust.auraflow.service.impl;
 import com.hust.auraflow.common.enums.UserStatus;
 import com.hust.auraflow.dto.InviteRequest;
 import com.hust.auraflow.dto.InviteResponse;
+import com.hust.auraflow.dto.UserInviteMessage;
 import com.hust.auraflow.dto.UserResponse;
 import com.hust.auraflow.entity.User;
 import com.hust.auraflow.repository.UserRepository;
 import com.hust.auraflow.service.AuthService;
 import com.hust.auraflow.service.KeycloakService;
+import com.hust.auraflow.service.UserInviteProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -21,6 +25,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final KeycloakService keycloakService;
     private final UserRepository userRepository;
+    private final UserInviteProducer userInviteProducer;
 
     @Override
     @Transactional
@@ -41,12 +46,24 @@ public class AuthServiceImpl implements AuthService {
                 .keycloakSub(null)
                 .build();
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        keycloakService.sendInviteEmail(keycloakUserId);
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        UserInviteMessage message = new UserInviteMessage(
+                                savedUser.getId(),
+                                savedUser.getEmail(),
+                                keycloakUserId
+                        );
+                        userInviteProducer.publishInviteMessage(message);
+                    }
+                }
+        );
 
-        log.info("Successfully invited user with email: {}", request.getEmail());
-        return new InviteResponse("Invitation email sent");
+        log.info("Successfully invited user with email: {}. Email will be sent asynchronously.", request.getEmail());
+        return new InviteResponse("Invitation email will be sent");
     }
 
     @Override

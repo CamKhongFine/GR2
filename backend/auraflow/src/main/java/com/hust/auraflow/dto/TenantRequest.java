@@ -11,7 +11,5 @@ import lombok.NoArgsConstructor;
 public class TenantRequest {
     @NotBlank(message = "Name is required")
     private String name;
-
-    private String status;
 }
 

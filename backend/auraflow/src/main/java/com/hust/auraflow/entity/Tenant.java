@@ -1,5 +1,6 @@
 package com.hust.auraflow.entity;
 
+import com.hust.auraflow.common.enums.TenantStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,8 +20,9 @@ public class Tenant {
     @Column(name = "name", length = Integer.MAX_VALUE)
     private String name;
 
-    @Column(name = "status", length = Integer.MAX_VALUE)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private TenantStatus status;
 
     @Column(name = "created_at")
     private Instant createdAt;

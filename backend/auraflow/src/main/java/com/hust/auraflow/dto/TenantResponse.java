@@ -1,5 +1,6 @@
 package com.hust.auraflow.dto;
 
+import com.hust.auraflow.common.enums.TenantStatus;
 import com.hust.auraflow.entity.Tenant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +16,7 @@ import java.time.Instant;
 public class TenantResponse {
     private Long id;
     private String name;
-    private String status;
+    private TenantStatus status;
     private Instant createdAt;
     private Instant updatedAt;
 
