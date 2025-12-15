@@ -10,7 +10,7 @@ import com.hust.auraflow.entity.User;
 import com.hust.auraflow.repository.InviteRequestRepository;
 import com.hust.auraflow.repository.UserRepository;
 import com.hust.auraflow.service.AuthService;
-import com.hust.auraflow.service.rabbitMQProducer;
+import com.hust.auraflow.service.RabbitMQProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -26,7 +26,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final InviteRequestRepository inviteRequestRepository;
-    private final rabbitMQProducer rabbitMQProducer;
+    private final RabbitMQProducer rabbitMQProducer;
 
     @Override
     @Transactional

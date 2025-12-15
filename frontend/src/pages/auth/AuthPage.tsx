@@ -36,26 +36,29 @@ interface LoginFormValues {
 const AuthPage: React.FC<AuthPageProps> = ({
     imageSrc = splashImage,
     title = "Welcome Back",
-    subtitle = "Please enter your details to sign in",
+    subtitle = "Sign in using your company SSO account",
     onLogin
 }) => {
     const [form] = Form.useForm<LoginFormValues>();
     const { token } = theme.useToken();
 
-    const handleLogin: FormProps<LoginFormValues>['onFinish'] = async (values) => {
-        try {
-            if (onLogin) {
-                await onLogin(values);
-            } else {
-                // Demo mode
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                console.log('Login values:', values);
-            }
-            message.success('Successfully logged in!');
-        } catch (error: any) {
-            const errorMessage = error?.message || 'Login failed. Please try again.';
-            message.error(errorMessage);
-        }
+    const redirectToKeycloak = () => {
+        const keycloakBaseUrl = import.meta.env.VITE_KEYCLOAK_BASE_URL || 'http://localhost:8080';
+        const keycloakRealm = import.meta.env.VITE_KEYCLOAK_REALM || 'auraflow';
+        const keycloakClientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'auraflow-frontend';
+        const redirectUri = encodeURIComponent(
+            import.meta.env.VITE_KEYCLOAK_REDIRECT_URI || `${window.location.origin}/auth/callback`
+        );
+
+        const authUrl =
+            `${keycloakBaseUrl}/realms/${encodeURIComponent(keycloakRealm)}` +
+            `/protocol/openid-connect/auth` +
+            `?client_id=${encodeURIComponent(keycloakClientId)}` +
+            `&response_type=code` +
+            `&scope=openid%20profile%20email` +
+            `&redirect_uri=${redirectUri}`;
+
+        window.location.href = authUrl;
     };
 
     const handleForgotPassword = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -88,68 +91,23 @@ const AuthPage: React.FC<AuthPageProps> = ({
                         </Text>
                     </div>
 
-                    {/* Login Form */}
+                    {/* Login via Keycloak SSO */}
                     <Form
                         form={form}
                         name="login"
                         layout="vertical"
-                        onFinish={handleLogin}
-                        initialValues={{ remember: true }}
                         size="large"
                         requiredMark={false}
                         autoComplete="off"
                     >
-                        <Form.Item
-                            name="email"
-                            label="Email"
-                            rules={[
-                                { required: true, message: 'Please input your email!' },
-                                { type: 'email', message: 'Please enter a valid email address!' }
-                            ]}
-                        >
-                            <Input
-                                placeholder="Enter your email"
-                                autoComplete="email"
-                                autoFocus
-                            />
-                        </Form.Item>
-
-                        <Form.Item
-                            name="password"
-                            label="Password"
-                            rules={[
-                                { required: true, message: 'Please input your password!' },
-                                { min: 8, message: 'Password must be at least 8 characters!' }
-                            ]}
-                        >
-                            <Input.Password
-                                placeholder="Enter your password"
-                                autoComplete="current-password"
-                            />
-                        </Form.Item>
-
-                        <Form.Item>
-                            <div className={styles.formFooter}>
-                                <Form.Item name="remember" valuePropName="checked" noStyle>
-                                    <Checkbox>Remember me</Checkbox>
-                                </Form.Item>
-                                <Link
-                                    onClick={handleForgotPassword}
-                                    className={styles.forgotLink}
-                                >
-                                    Forgot password?
-                                </Link>
-                            </div>
-                        </Form.Item>
-
                         <Form.Item style={{ marginBottom: 0 }}>
                             <Button
                                 type="primary"
-                                htmlType="submit"
                                 block
                                 className={styles.loginButton}
+                                onClick={redirectToKeycloak}
                             >
-                                Sign In
+                                Sign In with SSO
                             </Button>
                         </Form.Item>
                     </Form>

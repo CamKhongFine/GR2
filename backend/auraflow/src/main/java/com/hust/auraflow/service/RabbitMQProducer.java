@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class rabbitMQProducer {
+public class RabbitMQProducer {
 
     private final RabbitTemplate rabbitTemplate;
 
