@@ -1,6 +1,6 @@
 package com.hust.auraflow.controller;
 
-import com.hust.auraflow.dto.InviteRequest;
+import com.hust.auraflow.dto.InviteRequestDTO;
 import com.hust.auraflow.dto.InviteResponse;
 import com.hust.auraflow.dto.UserResponse;
 import com.hust.auraflow.service.AuthService;
@@ -20,10 +20,10 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/invite")
-    public ResponseEntity<InviteResponse> inviteUser(@Valid @RequestBody InviteRequest request) {
+    public ResponseEntity<InviteResponse> inviteUser(@Valid @RequestBody InviteRequestDTO request) {
         try {
             InviteResponse response = authService.inviteUser(request);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.accepted().body(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(new InviteResponse(e.getMessage()));

@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InviteRequest {
+public class InviteRequestDTO {
     @NotNull(message = "Email is required")
     @Email(message = "Email must be valid")
     private String email;

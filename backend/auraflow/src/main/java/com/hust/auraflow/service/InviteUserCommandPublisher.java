@@ -10,21 +10,19 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserInviteProducer {
+public class InviteUserCommandPublisher {
 
     private final RabbitTemplate rabbitTemplate;
 
-    public void publishInviteCommand(Long inviteRequestId) {
+    public void publish(Long inviteRequestId) {
         InviteUserCommand command = new InviteUserCommand(inviteRequestId);
-        log.info("Publishing invite command for inviteRequestId={}", inviteRequestId);
+        log.info("Publishing InviteUserCommand for inviteRequestId={}", inviteRequestId);
 
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.INVITE_USER_EXCHANGE,
                 RabbitMQConfig.INVITE_USER_COMMAND_KEY,
                 command
         );
-
-        log.info("Successfully published invite command for inviteRequestId={}", inviteRequestId);
     }
 }
 
