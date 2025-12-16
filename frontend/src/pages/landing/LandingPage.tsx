@@ -1,213 +1,318 @@
-import React from 'react';
-import { Typography, Button, Row, Col, Card } from 'antd';
+import React, { useEffect, useMemo } from 'react';
+import { Typography, Button, Row, Col, Card, Avatar, Dropdown } from 'antd';
+import type { MenuProps } from 'antd';
 import {
     RocketOutlined,
     TeamOutlined,
     SafetyCertificateOutlined,
     CheckCircleOutlined,
-    ThunderboltOutlined,
-    CloudOutlined
+    ArrowRightOutlined,
+    UserOutlined,
+    SettingOutlined,
+    LogoutOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { TypewriterEffectSmooth } from '@/components/ui/typewriter-effect';
+import { useUserStore } from '../../store/userStore';
 
-const { Title, Paragraph } = Typography;
+const { Title, Paragraph, Text } = Typography;
 
 const words = [
     {
         text: "Manage",
+        className: "text-white",
     },
     {
         text: "Tasks",
+        className: "text-white",
     },
     {
         text: "with",
+        className: "text-white",
     },
     {
         text: "AuraFlow.",
-        className: "text-blue-500 dark:text-blue-500",
+        className: "text-blue-300",
     },
 ];
 
 const LandingPage: React.FC = () => {
     const navigate = useNavigate();
+    const { user, loadUser, logout } = useUserStore();
+
+    useEffect(() => {
+        loadUser();
+    }, [loadUser]);
+
+    const userMenuItems: MenuProps['items'] = user
+        ? [
+            { key: 'dashboard', label: 'Manage', icon: <SettingOutlined /> },
+            { key: 'profile', label: 'Profile', icon: <UserOutlined /> },
+            { key: 'logout', label: 'Logout', icon: <LogoutOutlined /> },
+        ]
+        : [];
+
+    const handleUserMenuClick: MenuProps['onClick'] = ({ key }) => {
+        if (key === 'dashboard') {
+            navigate('/admin/tenants');
+        } else if (key === 'profile') {
+            navigate('/profile');
+        } else if (key === 'logout') {
+            logout();
+            navigate('/login');
+        }
+    };
+
+    const displayName = useMemo(() => {
+        if (!user) return 'Guest';
+        const firstName = user.firstName || '';
+        const lastName = user.lastName || '';
+        return `${firstName} ${lastName}`.trim() || user.email;
+    }, [user]);
 
     return (
         <div className="flex flex-col">
-            {/* Hero Section with Gradient Background */}
-            <div className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-24 px-8 overflow-hidden">
-                {/* Decorative Elements */}
-                <div className="absolute top-0 left-0 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-                <div className="absolute top-0 right-0 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-                <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+            {/* Hero Section with Integrated Header */}
+            <div className="relative bg-gradient-to-br from-[#1677FF] to-[#4096FF] py-6 px-8 min-h-[700px]">
+                {/* Header Navigation */}
+                <div className="relative max-w-7xl mx-auto mb-16 z-50">
+                    <div className="flex items-center justify-between">
+                        {/* Logo */}
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+                            <div className="text-2xl font-bold text-white">AuraFlow</div>
+                        </div>
 
-                <div className="relative max-w-6xl mx-auto flex flex-col items-center text-center z-10">
-                    <TypewriterEffectSmooth words={words} />
-                    <Paragraph className="text-xl text-gray-600 mb-10 max-w-2xl">
-                        A task management platform that helps teams collaborate efficiently, and manage work in one place
-                    </Paragraph>
-                    <div className="flex justify-center gap-4 mb-16">
-                        <Button
-                            type="primary"
-                            size="large"
-                            className="h-14 px-10 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
-                            onClick={() => navigate('/login')}
-                        >
-                            Get Started Free
-                        </Button>
-                        <Button
-                            size="large"
-                            className="h-14 px-10 text-lg font-semibold border-2 hover:border-blue-500 transition-all"
-                        >
-                            Watch Demo
-                        </Button>
-                    </div>
+                        {/* Navigation Menu */}
+                        <div className="hidden md:flex items-center gap-8">
+                            <a href="#features" className="text-white hover:text-blue-200 transition-colors">Features</a>
+                            <a href="#solutions" className="text-white hover:text-blue-200 transition-colors">Solutions</a>
+                            <a href="#pricing" className="text-white hover:text-blue-200 transition-colors">Pricing</a>
+                        </div>
 
-                    {/* Dashboard Preview with Enhanced Shadow */}
-                    <div className="w-full max-w-5xl">
-                        <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-white p-2">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-purple-500/10"></div>
-                            <img
-                                src="https://placehold.co/1200x600/f0f2f5/1677ff?text=Dashboard+Preview"
-                                alt="Dashboard Preview"
-                                className="w-full rounded-xl relative z-10"
-                            />
+                        {/* Auth Buttons */}
+                        <div className="flex items-center gap-4">
+                            {user ? (
+                                <Dropdown
+                                    menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
+                                    placement="bottomRight"
+                                    trigger={['click']}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 8 }}>
+                                        <Avatar
+                                            size="small"
+                                            src={user?.avatarUrl}
+                                            icon={!user?.avatarUrl ? <UserOutlined /> : undefined}
+                                        />
+                                        <span className="text-white">{displayName}</span>
+                                    </div>
+                                </Dropdown>
+                            ) : (
+                                <>
+                                    <Button
+                                        className="h-12 px-6 bg-white text-[#1677FF] hover:bg-[#ffe4a3] border-0 font-medium"
+                                        onClick={() => navigate('/login')}
+                                    >
+                                        Login
+                                    </Button>
+                                    <Button
+                                        className="h-12 px-6 bg-white text-[#1677FF] hover:bg-blue-50  border-0 font-medium"
+                                        onClick={() => navigate('/login')}
+                                    >
+                                        Try AuraFlow Free
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
+
+                {/* Decorative wave pattern */}
+                <div className="absolute inset-0 opacity-10 pointer-events-none">
+                    <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
+                        <path fill="currentColor" fillOpacity="0.3" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,138.7C960,139,1056,117,1152,101.3C1248,85,1344,75,1392,69.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    </svg>
+                </div>
+
+                <div className="relative max-w-7xl mx-auto w-full mt-8">
+                    <Row gutter={[64, 64]} align="middle">
+                        {/* Left Content */}
+                        <Col xs={24} lg={12}>
+                            <div className="text-white mb-8 lg:mb-0 relative z-20">
+                                <div className="mb-8">
+                                    <TypewriterEffectSmooth words={words} />
+                                </div>
+                                <Paragraph className="text-lg text-white/90 mb-8 leading-relaxed max-w-xl">
+                                    Project management software that enables your teams to collaborate, plan, analyze and manage everyday tasks
+                                </Paragraph>
+                                <Button
+                                    type="primary"
+                                    size="large"
+                                    className="h-14 px-8 text-base font-medium bg-white text-[#1677FF] hover:bg-blue-50 border-0 shadow-lg font-semibold"
+                                    onClick={() => navigate('/login')}
+                                    icon={<ArrowRightOutlined />}
+                                    iconPosition="end"
+                                >
+                                    Try AuraFlow Free
+                                </Button>
+                            </div>
+                        </Col>
+
+                        {/* Right Illustration */}
+                        <Col xs={24} lg={12}>
+                            <div className="relative z-10 lg:ml-8">
+                                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                                    <div className="bg-white rounded-xl p-6 shadow-2xl">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex gap-2">
+                                                <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                                                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                                                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                                            </div>
+                                        </div>
+                                        <Row gutter={[16, 16]}>
+                                            <Col span={12}>
+                                                <div className="bg-blue-100 rounded-lg p-4 h-32 flex items-center justify-center">
+                                                    <div className="w-20 h-20 rounded-full bg-blue-500"></div>
+                                                </div>
+                                            </Col>
+                                            <Col span={12}>
+                                                <div className="bg-purple-100 rounded-lg p-4 h-32">
+                                                    <div className="space-y-2">
+                                                        <div className="h-3 bg-purple-300 rounded w-3/4"></div>
+                                                        <div className="h-3 bg-purple-300 rounded w-1/2"></div>
+                                                        <div className="h-3 bg-purple-300 rounded w-2/3"></div>
+                                                    </div>
+                                                </div>
+                                            </Col>
+                                            <Col span={24}>
+                                                <div className="bg-yellow-100 rounded-lg p-4 h-24">
+                                                    <div className="flex gap-2">
+                                                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                                                            <div key={i} className="flex-1 bg-yellow-400 rounded" style={{ height: `${Math.random() * 60 + 20}px` }}></div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                    </div>
+                                </div>
+                            </div>
+                        </Col>
+                    </Row>
+                </div>
             </div>
 
-            {/* Features Section with Cards */}
-            <div className="py-24 px-8 bg-white">
-                <div className="max-w-6xl mx-auto">
+            {/* Features Section */}
+            <div id="features" className="py-24 px-8 bg-white">
+                <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
-                        <Title level={2} className="text-4xl font-bold mb-4">
-                            Everything you need to succeed
+                        <Title level={2} className="text-4xl md:text-5xl font-bold mb-4 text-[#212529]">
+                            Work together, anywhere
                         </Title>
-                        <Paragraph className="text-gray-500 text-lg max-w-2xl mx-auto">
-                            Powerful features designed to help your team work smarter, not harder
+                        <Paragraph className="text-lg text-gray-600 max-w-2xl mx-auto">
+                            Keep everyone on the same page with real-time collaboration and powerful project management tools
                         </Paragraph>
                     </div>
 
-                    <Row gutter={[32, 32]}>
+                    <Row gutter={[48, 48]}>
                         <Col xs={24} md={8}>
-                            <Card
-                                className="h-full border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 rounded-2xl"
-                                bodyStyle={{ padding: '32px' }}
-                            >
-                                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6">
-                                    <RocketOutlined className="text-3xl text-blue-600" />
+                            <div className="text-center">
+                                <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                    <RocketOutlined className="text-4xl text-[#1677FF]" />
                                 </div>
-                                <Title level={4} className="mb-3">Workflow Automation</Title>
+                                <Title level={4} className="mb-3 text-[#212529]">Workflow Automation</Title>
                                 <Paragraph className="text-gray-600">
-                                    Streamline your processes with customizable workflows that adapt to your team's unique needs.
+                                    Streamline your processes with customizable workflows that adapt to your team's unique needs
                                 </Paragraph>
-                            </Card>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <Card
-                                className="h-full border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 rounded-2xl"
-                                bodyStyle={{ padding: '32px' }}
-                            >
-                                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
-                                    <TeamOutlined className="text-3xl text-green-600" />
-                                </div>
-                                <Title level={4} className="mb-3">Real-time Collaboration</Title>
-                                <Paragraph className="text-gray-600">
-                                    Work together seamlessly with instant updates, comments, and notifications for your entire team.
-                                </Paragraph>
-                            </Card>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <Card
-                                className="h-full border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 rounded-2xl"
-                                bodyStyle={{ padding: '32px' }}
-                            >
-                                <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
-                                    <SafetyCertificateOutlined className="text-3xl text-purple-600" />
-                                </div>
-                                <Title level={4} className="mb-3">Enterprise Security</Title>
-                                <Paragraph className="text-gray-600">
-                                    Multi-tenant architecture ensures your data is isolated, secure, and always available when you need it.
-                                </Paragraph>
-                            </Card>
-                        </Col>
-                    </Row>
-                </div>
-            </div>
-
-            {/* Stats Section */}
-            <div className="py-20 px-8 bg-gradient-to-r from-blue-600 to-indigo-700">
-                <div className="max-w-6xl mx-auto">
-                    <Row gutter={[48, 48]} className="text-center text-white">
-                        <Col xs={24} md={8}>
-                            <div className="flex flex-col items-center">
-                                <Title level={1} className="text-white mb-2 text-5xl font-bold">10K+</Title>
-                                <Paragraph className="text-blue-100 text-lg">Active Users</Paragraph>
                             </div>
                         </Col>
                         <Col xs={24} md={8}>
-                            <div className="flex flex-col items-center">
-                                <Title level={1} className="text-white mb-2 text-5xl font-bold">99.9%</Title>
-                                <Paragraph className="text-blue-100 text-lg">Uptime</Paragraph>
+                            <div className="text-center">
+                                <div className="w-20 h-20 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                    <TeamOutlined className="text-4xl text-green-600" />
+                                </div>
+                                <Title level={4} className="mb-3 text-[#212529]">Real-time Collaboration</Title>
+                                <Paragraph className="text-gray-600">
+                                    Work together seamlessly with instant updates, comments, and notifications for your entire team
+                                </Paragraph>
                             </div>
                         </Col>
                         <Col xs={24} md={8}>
-                            <div className="flex flex-col items-center">
-                                <Title level={1} className="text-white mb-2 text-5xl font-bold">500K+</Title>
-                                <Paragraph className="text-blue-100 text-lg">Tasks Completed</Paragraph>
+                            <div className="text-center">
+                                <div className="w-20 h-20 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                    <SafetyCertificateOutlined className="text-4xl text-purple-600" />
+                                </div>
+                                <Title level={4} className="mb-3 text-[#212529]">Enterprise Security</Title>
+                                <Paragraph className="text-gray-600">
+                                    Multi-tenant architecture ensures your data is isolated, secure, and always available
+                                </Paragraph>
                             </div>
                         </Col>
                     </Row>
                 </div>
             </div>
 
-            {/* Additional Features */}
-            <div className="py-24 px-8 bg-gray-50">
-                <div className="max-w-6xl mx-auto">
-                    <Row gutter={[48, 48]} align="middle">
-                        <Col xs={24} md={12}>
-                            <Title level={2} className="text-3xl font-bold mb-6">
-                                Built for modern teams
-                            </Title>
-                            <div className="space-y-4">
-                                <div className="flex items-start gap-3">
-                                    <CheckCircleOutlined className="text-green-500 text-xl mt-1" />
-                                    <div>
-                                        <Title level={5} className="mb-1">Intuitive Interface</Title>
-                                        <Paragraph className="text-gray-600 mb-0">
-                                            Clean, modern design that your team will love to use every day
-                                        </Paragraph>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <ThunderboltOutlined className="text-yellow-500 text-xl mt-1" />
-                                    <div>
-                                        <Title level={5} className="mb-1">Lightning Fast</Title>
-                                        <Paragraph className="text-gray-600 mb-0">
-                                            Optimized performance ensures smooth experience even with large datasets
-                                        </Paragraph>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <CloudOutlined className="text-blue-500 text-xl mt-1" />
-                                    <div>
-                                        <Title level={5} className="mb-1">Cloud-Based</Title>
-                                        <Paragraph className="text-gray-600 mb-0">
-                                            Access your work from anywhere, on any device, at any time
-                                        </Paragraph>
-                                    </div>
+            {/* Use Case Section */}
+            <div id="solutions" className="py-24 px-8 bg-gradient-to-br from-[#1677FF] to-[#4096FF]">
+                <div className="max-w-7xl mx-auto">
+                    <Row gutter={[64, 48]} align="middle">
+                        <Col xs={24} lg={12}>
+                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 h-80 flex items-center justify-center">
+                                <div className="text-center text-white/60 text-6xl">
+                                    <TeamOutlined />
                                 </div>
                             </div>
                         </Col>
-                        <Col xs={24} md={12}>
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-gradient-to-tr from-blue-400 to-purple-400 rounded-3xl transform rotate-3"></div>
-                                <img
-                                    src="https://placehold.co/600x400/e0e7ff/4f46e5?text=Team+Collaboration"
-                                    alt="Team Collaboration"
-                                    className="relative rounded-3xl shadow-2xl w-full"
-                                />
+                        <Col xs={24} lg={12}>
+                            <div className="text-white">
+                                <Title level={2} className="text-white text-3xl md:text-4xl font-bold mb-6">
+                                    Use as Extension
+                                </Title>
+                                <Paragraph className="text-white/90 text-lg mb-8 leading-relaxed">
+                                    Use AuraFlow as your browser extension to manage tasks on the go. Access your projects from anywhere and stay productive wherever you are.
+                                </Paragraph>
+                                <Button
+                                    size="large"
+                                    className="h-12 px-8 bg-white text-[#1677FF] hover:bg-blue-50 border-0 font-semibold"
+                                    icon={<ArrowRightOutlined />}
+                                    iconPosition="end"
+                                >
+                                    Let's Go
+                                </Button>
+                            </div>
+                        </Col>
+                    </Row>
+                </div>
+            </div>
+
+            {/* Customization Section */}
+            <div className="py-24 px-8 bg-white">
+                <div className="max-w-7xl mx-auto">
+                    <Row gutter={[64, 48]} align="middle">
+                        <Col xs={24} lg={12} order={{ xs: 2, lg: 1 }}>
+                            <div className="text-[#212529]">
+                                <Title level={2} className="text-3xl md:text-4xl font-bold mb-6">
+                                    Customize it to your needs
+                                </Title>
+                                <Paragraph className="text-gray-600 text-lg mb-8 leading-relaxed">
+                                    Customize the app with plugins, custom themes and multiple text editors (Rich Text or Markdown). Or create your own scripts and plugins using the Extension API.
+                                </Paragraph>
+                                <Button
+                                    type="primary"
+                                    size="large"
+                                    className="h-12 px-8 bg-[#1677FF] hover:bg-[#4096FF] border-0"
+                                    icon={<ArrowRightOutlined />}
+                                    iconPosition="end"
+                                >
+                                    Let's Go
+                                </Button>
+                            </div>
+                        </Col>
+                        <Col xs={24} lg={12} order={{ xs: 1, lg: 2 }}>
+                            <div className="bg-blue-50 rounded-2xl p-8 h-80 flex items-center justify-center">
+                                <div className="text-center text-blue-300 text-6xl">
+                                    <RocketOutlined />
+                                </div>
                             </div>
                         </Col>
                     </Row>
@@ -215,106 +320,118 @@ const LandingPage: React.FC = () => {
             </div>
 
             {/* Pricing Section */}
-            <div className="py-24 px-8 bg-white">
-                <div className="max-w-6xl mx-auto">
+            <div id="pricing" className="py-24 px-8 bg-white">
+                <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
-                        <Title level={2} className="text-4xl font-bold mb-4">
-                            Simple, Transparent Pricing
+                        <Title level={2} className="text-4xl md:text-5xl font-bold mb-4 text-[#212529]">
+                            Choose Your Plan
                         </Title>
-                        <Paragraph className="text-gray-500 text-lg">
-                            Choose the plan that's right for your team
+                        <Paragraph className="text-lg text-gray-600">
+                            Whether you want to get organized, keep your personal life on track, or boost workplace productivity, AuraFlow has the right plan for you.
                         </Paragraph>
                     </div>
+
                     <Row gutter={[32, 32]} justify="center">
                         <Col xs={24} md={8}>
-                            <Card className="h-full text-center border-2 border-gray-200 rounded-2xl hover:border-blue-500 hover:shadow-xl transition-all duration-300">
-                                <Title level={3} className="mb-2">Starter</Title>
-                                <div className="text-5xl font-bold text-gray-900 mb-2">
-                                    $0
-                                    <span className="text-lg text-gray-400 font-normal">/mo</span>
+                            <Card className="h-full border border-[#FFE492] rounded-xl hover:shadow-xl transition-all p-6">
+                                <div className="mb-6">
+                                    <Title level={4} className="mb-2">Free</Title>
+                                    <div className="text-4xl font-bold text-[#212529] mb-1">
+                                        $0
+                                    </div>
+                                    <Text className="text-gray-500">Capture ideas and find them quickly</Text>
                                 </div>
-                                <Paragraph className="text-gray-500 mb-6">Perfect for small teams</Paragraph>
-                                <Button block size="large" className="mb-6 h-12 font-semibold">
+                                <div className="space-y-4 mb-8">
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#212529] mt-1" />
+                                        <Text>Sync unlimited devices</Text>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#212529] mt-1" />
+                                        <Text>10 GB monthly uploads</Text>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#212529] mt-1" />
+                                        <Text>200 MB max. note size</Text>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#212529] mt-1" />
+                                        <Text>Customize Home dashboard</Text>
+                                    </div>
+                                </div>
+                                <Button block size="large" className="h-12 border-2 border-[#FFE492] hover:bg-[#FFE492]">
                                     Get Started
                                 </Button>
-                                <div className="text-left space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>Up to 5 team members</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>Basic features</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>Community support</span>
-                                    </div>
-                                </div>
                             </Card>
                         </Col>
+
                         <Col xs={24} md={8}>
-                            <Card className="h-full text-center border-2 border-blue-500 rounded-2xl shadow-xl relative overflow-visible">
-                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
-                                    Most Popular
+                            <Card className="h-full bg-[#1677FF] border-0 rounded-xl shadow-2xl p-6 relative">
+                                <div className="mb-6">
+                                    <Title level={4} className="mb-2 text-white">Personal</Title>
+                                    <div className="text-4xl font-bold text-[#FFE492] mb-1">
+                                        $11.99
+                                    </div>
+                                    <Text className="text-blue-100">Keep home and family on track</Text>
                                 </div>
-                                <Title level={3} className="mb-2 mt-4">Pro</Title>
-                                <div className="text-5xl font-bold text-blue-600 mb-2">
-                                    $29
-                                    <span className="text-lg text-gray-400 font-normal">/mo</span>
+                                <div className="space-y-4 mb-8">
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#FFE492] mt-1" />
+                                        <Text className="text-white">Sync unlimited devices</Text>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#FFE492] mt-1" />
+                                        <Text className="text-white">10 GB monthly uploads</Text>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#FFE492] mt-1" />
+                                        <Text className="text-white">200 MB max. note size</Text>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#FFE492] mt-1" />
+                                        <Text className="text-white">Customize Home dashboard</Text>
+                                    </div>
                                 </div>
-                                <Paragraph className="text-gray-500 mb-6">For growing teams</Paragraph>
-                                <Button type="primary" block size="large" className="mb-6 h-12 font-semibold shadow-lg">
-                                    Start Free Trial
+                                <Button
+                                    block
+                                    size="large"
+                                    className="h-12 bg-[#4F9CF9] hover:bg-[#3d8ae5] text-white border-0"
+                                >
+                                    Get Started
                                 </Button>
-                                <div className="text-left space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>Unlimited team members</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>Advanced features</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>Priority support</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>Custom integrations</span>
-                                    </div>
-                                </div>
                             </Card>
                         </Col>
+
                         <Col xs={24} md={8}>
-                            <Card className="h-full text-center border-2 border-gray-200 rounded-2xl hover:border-blue-500 hover:shadow-xl transition-all duration-300">
-                                <Title level={3} className="mb-2">Enterprise</Title>
-                                <div className="text-5xl font-bold text-gray-900 mb-2">
-                                    Custom
+                            <Card className="h-full border border-[#FFE492] rounded-xl hover:shadow-xl transition-all p-6">
+                                <div className="mb-6">
+                                    <Title level={4} className="mb-2">Organization</Title>
+                                    <div className="text-4xl font-bold text-[#212529] mb-1">
+                                        $49.99
+                                    </div>
+                                    <Text className="text-gray-500">Capture ideas and find them quickly</Text>
                                 </div>
-                                <Paragraph className="text-gray-500 mb-6">For large organizations</Paragraph>
-                                <Button block size="large" className="mb-6 h-12 font-semibold">
-                                    Contact Sales
+                                <div className="space-y-4 mb-8">
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#212529] mt-1" />
+                                        <Text>Sync unlimited devices</Text>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#212529] mt-1" />
+                                        <Text>10 GB monthly uploads</Text>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#212529] mt-1" />
+                                        <Text>200 MB max. note size</Text>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircleOutlined className="text-[#212529] mt-1" />
+                                        <Text>Customize Home dashboard</Text>
+                                    </div>
+                                </div>
+                                <Button block size="large" className="h-12 border-2 border-[#FFE492] hover:bg-[#FFE492]">
+                                    Get Started
                                 </Button>
-                                <div className="text-left space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>Everything in Pro</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>Dedicated support</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>SLA guarantee</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircleOutlined className="text-green-500" />
-                                        <span>Custom contracts</span>
-                                    </div>
-                                </div>
                             </Card>
                         </Col>
                     </Row>
@@ -322,20 +439,22 @@ const LandingPage: React.FC = () => {
             </div>
 
             {/* CTA Section */}
-            <div className="py-24 px-8 bg-gradient-to-r from-blue-600 to-indigo-700">
+            <div className="py-20 px-8 bg-gradient-to-r from-[#1677FF] to-[#4096FF]">
                 <div className="max-w-4xl mx-auto text-center">
-                    <Title level={2} className="text-white text-4xl font-bold mb-6">
-                        Ready to transform your workflow?
+                    <Title level={2} className="text-white text-3xl md:text-5xl font-bold mb-6">
+                        Your work, everywhere you are
                     </Title>
-                    <Paragraph className="text-blue-100 text-xl mb-10">
-                        Join thousands of teams already using AuraFlow to manage their work better
+                    <Paragraph className="text-white/90 text-lg mb-10 max-w-2xl mx-auto">
+                        Access your notes from your computer, phone or tablet by synchronising with various services. AuraFlow is available on all platforms.
                     </Paragraph>
                     <Button
                         size="large"
-                        className="h-14 px-12 text-lg font-semibold bg-white text-blue-600 hover:bg-gray-100 border-0 shadow-xl"
+                        className="h-14 px-12 text-base font-medium bg-white text-[#1677FF] hover:bg-blue-50 border-0 shadow-xl font-semibold"
                         onClick={() => navigate('/login')}
+                        icon={<ArrowRightOutlined />}
+                        iconPosition="end"
                     >
-                        Get Started for Free
+                        Try AuraFlow Free
                     </Button>
                 </div>
             </div>

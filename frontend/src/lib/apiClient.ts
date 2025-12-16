@@ -31,10 +31,9 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            // Handle unauthorized - redirect to login
-            window.location.href = '/login';
-        }
+        // Don't automatically redirect on 401
+        // Let individual components handle authentication errors
+        // This allows public pages (like landing page) to load without authentication
         return Promise.reject(error);
     }
 );
