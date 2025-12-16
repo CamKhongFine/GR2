@@ -1,7 +1,10 @@
 package com.hust.auraflow.service.impl;
 
+import com.hust.auraflow.entity.Role;
+import com.hust.auraflow.repository.RoleRepository;
 import com.hust.auraflow.service.KeycloakService;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
@@ -14,11 +17,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class KeycloakServiceImpl implements KeycloakService {
+
+    private final RoleRepository roleRepository;
 
     @Value("${keycloak.server-url}")
     private String serverUrl;
@@ -47,7 +55,7 @@ public class KeycloakServiceImpl implements KeycloakService {
     }
 
     @Override
-    public String createInvitedUser(String email) {
+    public String createInvitedUser(String email, Long tenantId, Long roleId) {
         UsersResource usersResource = getRealm().users();
         
         List<UserRepresentation> existingUsers = usersResource.searchByEmail(email, true);
@@ -62,7 +70,19 @@ public class KeycloakServiceImpl implements KeycloakService {
         user.setEmailVerified(false);
         user.setUsername(email);
         user.setEmail(email);
-        
+
+        // set metadata attributes for tenant and role
+        Map<String, List<String>> attributes = new HashMap<>();
+        attributes.put("tenantId", Collections.singletonList(String.valueOf(tenantId)));
+
+        if (roleId != null) {
+            Role role = roleRepository.findById(roleId).orElse(null);
+            if (role != null && role.getName() != null) {
+                attributes.put("roleName", Collections.singletonList(role.getName()));
+            }
+        }
+        user.setAttributes(attributes);
+
         user.setCredentials(Collections.emptyList());
 
         user.setRequiredActions(Arrays.asList(

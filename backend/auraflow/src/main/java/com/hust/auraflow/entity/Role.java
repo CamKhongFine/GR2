@@ -1,6 +1,9 @@
 package com.hust.auraflow.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,13 +19,12 @@ public class Role {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Tenant tenant;
-
     @Column(name = "name", length = Integer.MAX_VALUE)
     private String name;
+
+    @NotNull
+    @Column(name = "level", nullable = false)
+    private Integer level;
 
     @Column(name = "description", length = Integer.MAX_VALUE)
     private String description;

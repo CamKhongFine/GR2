@@ -1,0 +1,76 @@
+package com.hust.auraflow.service.impl;
+
+import com.hust.auraflow.dto.RoleRequest;
+import com.hust.auraflow.dto.RoleResponse;
+import com.hust.auraflow.entity.Role;
+import com.hust.auraflow.repository.RoleRepository;
+import com.hust.auraflow.service.RoleService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class RoleServiceImpl implements RoleService {
+
+    private final RoleRepository roleRepository;
+
+    @Override
+    public List<RoleResponse> getAllRoles() {
+        return roleRepository.findAll()
+                .stream()
+                .map(RoleResponse::fromEntity)
+                .toList();
+    }
+
+    @Override
+    public RoleResponse getRoleById(Long id) {
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Role not found with id: " + id));
+        return RoleResponse.fromEntity(role);
+    }
+
+    @Override
+    public RoleResponse createRole(RoleRequest request) {
+        Role role = new Role();
+        role.setName(request.getName());
+        role.setLevel(request.getLevel());
+        role.setDescription(request.getDescription());
+        role.setCreatedAt(Instant.now());
+        role.setUpdatedAt(Instant.now());
+
+        Role saved = roleRepository.save(role);
+        log.info("Created role with id {}", saved.getId());
+        return RoleResponse.fromEntity(saved);
+    }
+
+    @Override
+    public RoleResponse updateRole(Long id, RoleRequest request) {
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Role not found with id: " + id));
+
+        role.setName(request.getName());
+        role.setLevel(request.getLevel());
+        role.setDescription(request.getDescription());
+        role.setUpdatedAt(Instant.now());
+
+        Role updated = roleRepository.save(role);
+        log.info("Updated role with id {}", updated.getId());
+        return RoleResponse.fromEntity(updated);
+    }
+
+    @Override
+    public void deleteRole(Long id) {
+        if (!roleRepository.existsById(id)) {
+            throw new IllegalArgumentException("Role not found with id: " + id);
+        }
+        roleRepository.deleteById(id);
+        log.info("Deleted role with id {}", id);
+    }
+}
+
+

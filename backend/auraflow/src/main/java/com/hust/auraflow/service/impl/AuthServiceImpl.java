@@ -40,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
         InviteRequest inviteRequest = new InviteRequest();
         inviteRequest.setEmail(request.getEmail());
         inviteRequest.setTenantId(request.getTenantId());
+        inviteRequest.setRoleId(request.getRoleId());
         inviteRequest.setStatus(InviteRequestStatus.PENDING);
         inviteRequest.setRetryCount(0);
 

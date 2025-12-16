@@ -53,7 +53,11 @@ public class RabbitMQConsumer {
                 return;
             }
 
-            String keycloakUserId = keycloakService.createInvitedUser(inviteRequest.getEmail());
+            String keycloakUserId = keycloakService.createInvitedUser(
+                    inviteRequest.getEmail(),
+                    inviteRequest.getTenantId(),
+                    inviteRequest.getRoleId()
+            );
 
             User user = User.builder()
                     .email(inviteRequest.getEmail())
