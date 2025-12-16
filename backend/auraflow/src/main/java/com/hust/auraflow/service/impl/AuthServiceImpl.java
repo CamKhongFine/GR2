@@ -10,7 +10,6 @@ import com.hust.auraflow.entity.UserRole;
 import com.hust.auraflow.repository.InviteRequestRepository;
 import com.hust.auraflow.repository.UserRepository;
 import com.hust.auraflow.repository.UserRoleRepository;
-import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.AuthService;
 import com.hust.auraflow.service.KeycloakService;
 import com.hust.auraflow.service.RabbitMQProducer;
@@ -68,28 +67,6 @@ public class AuthServiceImpl implements AuthService {
         });
 
         return new InviteResponse("Invite request accepted");
-    }
-
-    @Override
-    @Transactional
-    public UserResponse getCurrentUser(UserPrincipal principal) {
-        if (principal == null || principal.getUserId() == null) {
-            log.warn("UserPrincipal is null or userId is null");
-            throw new IllegalArgumentException("UserPrincipal is required");
-        }
-
-        User user = userRepository.findById(principal.getUserId())
-                .orElseThrow(() -> {
-                    log.error("User not found in database for userId: {}", principal.getUserId());
-                    return new RuntimeException("User not found");
-                });
-        
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            log.warn("User status is not ACTIVE for userId: {}", principal.getUserId());
-            throw new IllegalStateException("User is not active");
-        }
-        
-        return UserResponse.fromEntity(user);
     }
 
     @Override

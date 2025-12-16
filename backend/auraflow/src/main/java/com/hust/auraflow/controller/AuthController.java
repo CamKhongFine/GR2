@@ -3,8 +3,6 @@ package com.hust.auraflow.controller;
 import com.hust.auraflow.common.Config;
 import com.hust.auraflow.dto.InviteRequestDTO;
 import com.hust.auraflow.dto.InviteResponse;
-import com.hust.auraflow.dto.UserResponse;
-import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -33,16 +30,6 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(new InviteResponse(e.getMessage()));
-        }
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal UserPrincipal principal) {
-        try {
-            UserResponse response = authService.getCurrentUser(principal);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 

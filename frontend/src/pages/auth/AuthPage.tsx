@@ -46,7 +46,6 @@ const AuthPage: React.FC<AuthPageProps> = ({
         const keycloakClientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'auraflow-frontend';
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
         
-        // Force redirect_uri to backend, ignore env variable if set incorrectly
         const redirectUri = `${apiBaseUrl}/api/auth/callback`;
         const encodedRedirectUri = encodeURIComponent(redirectUri);
 

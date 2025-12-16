@@ -4,6 +4,7 @@ import LandingPage from '../pages/landing/LandingPage';
 import AuthPage from '../pages/auth/AuthPage';
 import AppWorkspace from '../pages/AppWorkspace';
 import SuperAdminTenantManagementPage from '../pages/admin/SuperAdminTenantManagementPage';
+import UserProfilePage from '../pages/profile/UserProfilePage';
 
 export const router = createBrowserRouter([
     {
@@ -27,5 +28,9 @@ export const router = createBrowserRouter([
     {
         path: '/admin/tenants',
         element: <SuperAdminTenantManagementPage />,
+    },
+    {
+        path: '/profile',
+        element: <UserProfilePage />,
     },
 ]);
