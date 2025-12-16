@@ -15,8 +15,31 @@ export interface TenantRequest {
     status?: TenantStatus;
 }
 
-export const fetchTenants = async (): Promise<TenantResponse[]> => {
-    const response = await apiClient.get<TenantResponse[]>('/api/tenants');
+export interface PagedResponse<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    size: number;
+    number: number;
+}
+
+export const fetchTenants = async (
+    page: number = 0,
+    size: number = 10,
+    id?: string,
+    name?: string,
+    status?: string
+): Promise<PagedResponse<TenantResponse>> => {
+    const params = new URLSearchParams({
+        page: page.toString(),
+        size: size.toString(),
+    });
+
+    if (id) params.append('id', id);
+    if (name) params.append('name', name);
+    if (status && status !== 'all') params.append('status', status);
+
+    const response = await apiClient.get<PagedResponse<TenantResponse>>(`/api/tenants?${params.toString()}`);
     return response.data;
 };
 

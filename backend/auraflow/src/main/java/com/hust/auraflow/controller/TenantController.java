@@ -5,6 +5,8 @@ import com.hust.auraflow.dto.TenantResponse;
 import com.hust.auraflow.service.TenantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,8 +37,12 @@ public class TenantController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TenantResponse>> getAllTenants() {
-        List<TenantResponse> response = tenantService.getAllTenants();
+    public ResponseEntity<Page<TenantResponse>> getAllTenants(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String status,
+            Pageable pageable) {
+        Page<TenantResponse> response = tenantService.getAllTenants(id, name, status, pageable);
         return ResponseEntity.ok(response);
     }
 

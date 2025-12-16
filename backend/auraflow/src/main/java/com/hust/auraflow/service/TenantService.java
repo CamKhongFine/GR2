@@ -2,6 +2,8 @@ package com.hust.auraflow.service;
 
 import com.hust.auraflow.dto.TenantRequest;
 import com.hust.auraflow.dto.TenantResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -23,11 +25,15 @@ public interface TenantService {
     TenantResponse getTenantById(Long id);
 
     /**
-     * Gets all tenants.
+     * Gets all tenants with pagination and filtering.
      * 
-     * @return List of tenant responses
+     * @param id Tenant ID filter
+     * @param name Tenant name filter
+     * @param status Status filter
+     * @param pageable Pagination parameters
+     * @return Page of tenant responses
      */
-    List<TenantResponse> getAllTenants();
+    Page<TenantResponse> getAllTenants(Long id, String name, String status, Pageable pageable);
 
     /**
      * Updates a tenant.

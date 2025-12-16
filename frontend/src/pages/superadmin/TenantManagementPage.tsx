@@ -25,15 +25,20 @@ const TenantManagementPage: React.FC = () => {
     const [selectedTenant, setSelectedTenant] = useState<TenantResponse | null>(null);
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
     const [createForm] = Form.useForm();
     const [editForm] = Form.useForm();
     const queryClient = useQueryClient();
 
-    // Fetch tenants
-    const { data: tenants = [], isLoading } = useQuery({
-        queryKey: ['tenants'],
-        queryFn: fetchTenants,
+    // Fetch tenants with pagination
+    const { data, isLoading } = useQuery({
+        queryKey: ['tenants', page, pageSize, searchText, statusFilter],
+        queryFn: () => fetchTenants(page, pageSize, undefined, searchText, statusFilter),
     });
+
+    const tenants = data?.content || [];
+    const totalElements = data?.totalElements || 0;
 
     // Create tenant mutation
     const createMutation = useMutation({
@@ -177,15 +182,6 @@ const TenantManagementPage: React.FC = () => {
         }
     };
 
-    // Filter tenants based on search and status
-    const filteredTenants = tenants.filter(tenant => {
-        const matchesSearch = searchText === '' ||
-            tenant.name.toLowerCase().includes(searchText.toLowerCase()) ||
-            tenant.id.toString().includes(searchText);
-        const matchesStatus = statusFilter === 'all' || tenant.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
-
     const columns: ColumnsType<TenantResponse> = [
         {
             title: 'ID',
@@ -317,13 +313,21 @@ const TenantManagementPage: React.FC = () => {
             >
                 <Table
                     columns={columns}
-                    dataSource={filteredTenants}
+                    dataSource={tenants}
                     rowKey="id"
                     loading={isLoading}
                     pagination={{
-                        pageSize: 10,
+                        current: page + 1,
+                        pageSize: pageSize,
+                        total: totalElements,
                         showSizeChanger: true,
-                        showTotal: (total) => `Total ${total} tenants`,
+                        onChange: (newPage, newPageSize) => {
+                            setPage(newPage - 1);
+                            if (newPageSize !== pageSize) {
+                                setPageSize(newPageSize);
+                                setPage(0);
+                            }
+                        },
                     }}
                 />
             </Card>

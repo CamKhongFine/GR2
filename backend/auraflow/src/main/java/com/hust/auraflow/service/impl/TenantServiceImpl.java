@@ -8,6 +8,8 @@ import com.hust.auraflow.repository.TenantRepository;
 import com.hust.auraflow.service.TenantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,10 +49,9 @@ public class TenantServiceImpl implements TenantService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TenantResponse> getAllTenants() {
-        return tenantRepository.findAll().stream()
-                .map(TenantResponse::fromEntity)
-                .collect(Collectors.toList());
+    public Page<TenantResponse> getAllTenants(Long id, String name, String status, Pageable pageable) {
+        Page<Tenant> tenants = tenantRepository.findByFilters(id, name, status, pageable);
+        return tenants.map(TenantResponse::fromEntity);
     }
 
     @Override
