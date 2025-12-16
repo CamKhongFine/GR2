@@ -1,13 +1,16 @@
 package com.hust.auraflow.service.impl;
 
 import com.hust.auraflow.common.enums.InviteRequestStatus;
+import com.hust.auraflow.common.enums.TenantStatus;
 import com.hust.auraflow.common.enums.UserStatus;
 import com.hust.auraflow.dto.*;
 import com.hust.auraflow.entity.InviteRequest;
 import com.hust.auraflow.entity.Role;
+import com.hust.auraflow.entity.Tenant;
 import com.hust.auraflow.entity.User;
 import com.hust.auraflow.entity.UserRole;
 import com.hust.auraflow.repository.InviteRequestRepository;
+import com.hust.auraflow.repository.TenantRepository;
 import com.hust.auraflow.repository.UserRepository;
 import com.hust.auraflow.repository.UserRoleRepository;
 import com.hust.auraflow.service.AuthService;
@@ -41,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final SessionService sessionService;
     private final KeycloakService keycloakService;
     private final JwtDecoder jwtDecoder;
+    private final TenantRepository tenantRepository;
 
     @Override
     @Transactional
@@ -81,6 +85,17 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userRepository.findByKeycloakSub(sub)
                 .orElseThrow(() -> new IllegalStateException("User not found for sub=" + sub));
+
+        Tenant tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
+        
+        if (tenant == null) {
+            log.warn("Login attempt blocked for user {} - tenant {} does not exist", user.getEmail(), user.getTenantId());
+            throw new IllegalStateException("Your tenant account does not exist. Please contact support.");
+        }
+        if (tenant.getStatus() == TenantStatus.INACTIVE) {
+            log.warn("Login attempt blocked for user {} - tenant {} is INACTIVE", user.getEmail(), tenant.getName());
+            throw new IllegalStateException("Your tenant account has been deactivated. Please contact support.");
+        }
 
         if (user.getStatus() == UserStatus.INVITED) {
             user.setStatus(UserStatus.ACTIVE);

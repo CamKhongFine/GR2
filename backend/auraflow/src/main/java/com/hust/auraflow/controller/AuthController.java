@@ -39,21 +39,21 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response) throws java.io.IOException {
         try {
-            log.info("Processing callback with code: {}", code != null ? code.substring(0, Math.min(10, code.length())) + "..." : "null");
-            
+
             String scheme = request.getScheme();
             String host = request.getHeader("Host");
             String contextPath = request.getContextPath();
             String redirectUri = scheme + "://" + host + contextPath + "/api/auth/callback";
             
             String sessionId = authService.handleKeycloakCallback(code, redirectUri);
-            
+
             boolean isSecure = "https".equalsIgnoreCase(scheme);
             ResponseCookie sessionCookie = ResponseCookie.from("AURAFLOW_SESSION", sessionId)
                     .httpOnly(true)
                     .secure(isSecure)
                     .sameSite("Lax")
                     .path("/")
+                    .maxAge(86400) // 24 hours
                     .build();
             response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, sessionCookie.toString());
 

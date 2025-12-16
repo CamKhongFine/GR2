@@ -7,6 +7,7 @@ export interface UserResponse {
     firstName: string | null;
     lastName: string | null;
     title: string | null;
+    avatarUrl: string | null;
     division: DivisionResponse | null;
     department: DepartmentResponse | null;
     roles: RoleResponse[];

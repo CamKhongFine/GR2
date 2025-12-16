@@ -1,286 +1,399 @@
-import React, { useMemo, useState } from 'react';
-import {
-    Layout,
-    Menu,
-    Breadcrumb,
-    Card,
-    Table,
-    Avatar,
-    Dropdown,
-    Space,
-    Typography,
-    Button,
-    Tag,
-} from 'antd';
-import type { MenuProps } from 'antd';
+import React, { useState } from 'react';
+import { Card, Table, Button, Typography, Tag, Modal, Form, Input, message, Dropdown } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    DashboardOutlined,
-    ApartmentOutlined,
-    TeamOutlined,
-    SettingOutlined,
-    BellOutlined,
-    SoundOutlined,
-    UserOutlined,
-    MenuUnfoldOutlined,
-    MenuFoldOutlined,
-} from '@ant-design/icons';
-import { useLocation, useNavigate } from 'react-router-dom';
+    fetchTenants,
+    createTenant,
+    updateTenant,
+    deleteTenant,
+    deactivateTenant,
+    activateTenant,
+    type TenantResponse,
+    type TenantRequest,
+} from '../../api/tenant.api';
 
-const { Header, Sider, Content } = Layout;
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
-type TenantStatus = 'Active' | 'Suspended';
+const TenantManagementPage: React.FC = () => {
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+    const [isActivateModalOpen, setIsActivateModalOpen] = useState(false);
+    const [selectedTenant, setSelectedTenant] = useState<TenantResponse | null>(null);
+    const [createForm] = Form.useForm();
+    const [editForm] = Form.useForm();
+    const queryClient = useQueryClient();
 
-interface Tenant {
-    key: string;
-    name: string;
-    tenantId: string;
-    plan: string;
-    status: TenantStatus;
-    createdAt: string;
-}
+    // Fetch tenants
+    const { data: tenants = [], isLoading } = useQuery({
+        queryKey: ['tenants'],
+        queryFn: fetchTenants,
+    });
 
-const SuperAdminTenantManagementPage: React.FC = () => {
-    const [collapsed, setCollapsed] = useState(false);
-    const location = useLocation();
-    const navigate = useNavigate();
+    // Create tenant mutation
+    const createMutation = useMutation({
+        mutationFn: createTenant,
+        onSuccess: () => {
+            message.success('Tenant created successfully');
+            queryClient.invalidateQueries({ queryKey: ['tenants'] });
+            setIsCreateModalOpen(false);
+            createForm.resetFields();
+        },
+        onError: () => {
+            message.error('Failed to create tenant');
+        },
+    });
 
-    const menuItems: MenuProps['items'] = useMemo(
-        () => [
-            {
-                key: '/admin/dashboard',
-                icon: <DashboardOutlined />,
-                label: 'Dashboard',
-            },
-            {
-                key: '/admin/tenants',
-                icon: <ApartmentOutlined />,
-                label: 'Tenant Management',
-            },
-            {
-                key: '/admin/users',
-                icon: <TeamOutlined />,
-                label: 'User Management',
-            },
-            {
-                key: '/admin/settings',
-                icon: <SettingOutlined />,
-                label: 'System Settings',
-            },
-        ],
-        []
-    );
+    // Update tenant mutation
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: number; data: TenantRequest }) => updateTenant(id, data),
+        onSuccess: () => {
+            message.success('Tenant updated successfully');
+            queryClient.invalidateQueries({ queryKey: ['tenants'] });
+            setIsEditModalOpen(false);
+            setSelectedTenant(null);
+            editForm.resetFields();
+        },
+        onError: () => {
+            message.error('Failed to update tenant');
+        },
+    });
 
-    const userMenuItems: MenuProps['items'] = useMemo(
-        () => [
-            { key: 'profile', label: 'Profile' },
-            { key: 'logout', label: 'Logout' },
-        ],
-        []
-    );
+    // Delete tenant mutation
+    const deleteMutation = useMutation({
+        mutationFn: deleteTenant,
+        onSuccess: () => {
+            message.success('Tenant deleted successfully');
+            queryClient.invalidateQueries({ queryKey: ['tenants'] });
+            setIsDeleteModalOpen(false);
+            setSelectedTenant(null);
+        },
+        onError: () => {
+            message.error('Failed to delete tenant');
+        },
+    });
 
-    const tenants: Tenant[] = [
+    // Deactivate tenant mutation
+    const deactivateMutation = useMutation({
+        mutationFn: deactivateTenant,
+        onSuccess: () => {
+            message.success('Tenant deactivated successfully');
+            queryClient.invalidateQueries({ queryKey: ['tenants'] });
+            setIsDeactivateModalOpen(false);
+            setSelectedTenant(null);
+        },
+        onError: () => {
+            message.error('Failed to deactivate tenant');
+        },
+    });
+
+    // Activate tenant mutation
+    const activateMutation = useMutation({
+        mutationFn: activateTenant,
+        onSuccess: () => {
+            message.success('Tenant activated successfully');
+            queryClient.invalidateQueries({ queryKey: ['tenants'] });
+            setIsActivateModalOpen(false);
+            setSelectedTenant(null);
+        },
+        onError: () => {
+            message.error('Failed to activate tenant');
+        },
+    });
+
+    const handleCreate = async () => {
+        try {
+            const values = await createForm.validateFields();
+            createMutation.mutate(values);
+        } catch (error) {
+            console.error('Validation failed:', error);
+        }
+    };
+
+    const handleEdit = (tenant: TenantResponse) => {
+        setSelectedTenant(tenant);
+        editForm.setFieldsValue({ name: tenant.name });
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdate = async () => {
+        if (!selectedTenant) return;
+        try {
+            const values = await editForm.validateFields();
+            updateMutation.mutate({ id: selectedTenant.id, data: values });
+        } catch (error) {
+            console.error('Validation failed:', error);
+        }
+    };
+
+    const handleDelete = (tenant: TenantResponse) => {
+        setSelectedTenant(tenant);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDeactivate = (tenant: TenantResponse) => {
+        setSelectedTenant(tenant);
+        setIsDeactivateModalOpen(true);
+    };
+
+    const handleActivate = (tenant: TenantResponse) => {
+        setSelectedTenant(tenant);
+        setIsActivateModalOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (selectedTenant) {
+            deleteMutation.mutate(selectedTenant.id);
+        }
+    };
+
+    const confirmDeactivate = () => {
+        if (selectedTenant) {
+            deactivateMutation.mutate(selectedTenant);
+        }
+    };
+
+    const confirmActivate = () => {
+        if (selectedTenant) {
+            activateMutation.mutate(selectedTenant);
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'ACTIVE':
+                return 'green';
+            case 'INACTIVE':
+                return 'default';
+            case 'SUSPENDED':
+                return 'red';
+            default:
+                return 'default';
+        }
+    };
+
+    const columns: ColumnsType<TenantResponse> = [
         {
-            key: '1',
-            name: 'Acme Corp',
-            tenantId: 'TEN-0001',
-            plan: 'Enterprise',
-            status: 'Active',
-            createdAt: '2023-01-12',
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+            width: 80,
         },
         {
-            key: '2',
-            name: 'Globex Industries',
-            tenantId: 'TEN-0002',
-            plan: 'Business',
-            status: 'Active',
-            createdAt: '2023-03-05',
-        },
-        {
-            key: '3',
-            name: 'Innotech Labs',
-            tenantId: 'TEN-0003',
-            plan: 'Starter',
-            status: 'Suspended',
-            createdAt: '2022-11-20',
-        },
-    ];
-
-    const columns: ColumnsType<Tenant> = [
-        {
-            title: 'Tenant Name',
+            title: 'Name',
             dataIndex: 'name',
             key: 'name',
-        },
-        {
-            title: 'Tenant ID',
-            dataIndex: 'tenantId',
-            key: 'tenantId',
-        },
-        {
-            title: 'Plan',
-            dataIndex: 'plan',
-            key: 'plan',
         },
         {
             title: 'Status',
             dataIndex: 'status',
             key: 'status',
-            render: (status: TenantStatus) => (
-                <Tag color={status === 'Active' ? 'green' : 'red'}>{status}</Tag>
+            render: (status: string) => (
+                <Tag color={getStatusColor(status)}>{status}</Tag>
             ),
         },
         {
             title: 'Created At',
             dataIndex: 'createdAt',
             key: 'createdAt',
+            render: (date: string) => new Date(date).toLocaleString(),
+        },
+        {
+            title: 'Updated At',
+            dataIndex: 'updatedAt',
+            key: 'updatedAt',
+            render: (date: string) => new Date(date).toLocaleString(),
         },
         {
             title: 'Actions',
             key: 'actions',
-            render: (_, record) => (
-                <Space>
-                    <Button type="link" size="small">
-                        View
-                    </Button>
-                    <Button type="link" size="small" danger>
-                        {record.status === 'Active' ? 'Suspend' : 'Activate'}
-                    </Button>
-                </Space>
-            ),
+            width: 80,
+            align: 'center',
+            render: (_, record) => {
+                const menuItems = [
+                    {
+                        key: 'edit',
+                        label: 'Edit',
+                        icon: <EditOutlined />,
+                        onClick: () => handleEdit(record),
+                    },
+                ];
+
+                if (record.status === 'ACTIVE') {
+                    menuItems.push({
+                        key: 'deactivate',
+                        label: 'Deactivate',
+                        icon: <StopOutlined />,
+                        onClick: () => handleDeactivate(record),
+                    });
+                } else if (record.status === 'INACTIVE') {
+                    menuItems.push({
+                        key: 'activate',
+                        label: 'Activate',
+                        icon: <CheckCircleOutlined />,
+                        onClick: () => handleActivate(record),
+                    });
+                }
+
+                menuItems.push({
+                    key: 'delete',
+                    label: 'Delete',
+                    icon: <DeleteOutlined />,
+                    danger: true,
+                    onClick: () => handleDelete(record),
+                });
+
+                return (
+                    <Dropdown
+                        menu={{ items: menuItems }}
+                        trigger={['click']}
+                        overlayStyle={{ marginLeft: 2000 }}
+                    >
+                        <Button type="text" icon={<MoreOutlined style={{ fontSize: 20 }} />} />
+                    </Dropdown>
+                );
+            },
         },
     ];
 
-    const siderWidth = collapsed ? 80 : 220;
-
     return (
-        <Layout style={{ minHeight: '100vh', background: '#f5f5f5' }}>
-            <Sider
-                collapsible
-                collapsed={collapsed}
-                onCollapse={setCollapsed}
-                width={220}
-                collapsedWidth={80}
-                theme="dark"
-                trigger={null}
-                style={{
-                    position: 'fixed',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    height: '100vh',
-                }}
-            >
-                <div
-                    style={{
-                        height: 64,
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '0 16px',
-                        gap: 8,
-                    }}
-                >
-                    <div
-                        style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 8,
-                            background: '#1677ff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#fff',
-                            fontSize: 18,
-                        }}
+        <>
+            <div style={{ marginBottom: 16 }}>
+                <Title level={3} style={{ marginBottom: 4 }}>
+                    Tenant Management
+                </Title>
+            </div>
+
+            <Card
+                style={{ width: '100%', background: '#fff' }}
+                extra={
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => setIsCreateModalOpen(true)}
                     >
-                        <SoundOutlined />
-                    </div>
-                    {!collapsed && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 600 }}>
-                                AuraFlow
-                            </Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>
-                                Super Admin
-                            </Text>
-                        </div>
-                    )}
-                </div>
-
-                <Menu
-                    theme="dark"
-                    mode="inline"
-                    selectedKeys={[location.pathname]}
-                    items={menuItems}
-                    onClick={({ key }) => navigate(key)}
-                />
-            </Sider>
-
-            <Layout style={{ marginLeft: siderWidth }}>
-                <Header
-                    style={{
-                        padding: '0 24px',
-                        background: '#ffffff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
+                        Create Tenant
+                    </Button>
+                }
+            >
+                <Table
+                    columns={columns}
+                    dataSource={tenants}
+                    rowKey="id"
+                    loading={isLoading}
+                    pagination={{
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        showTotal: (total) => `Total ${total} tenants`,
                     }}
-                >
-                    <Space>
-                        {collapsed ? (
-                            <MenuUnfoldOutlined
-                                style={{ fontSize: 18, cursor: 'pointer' }}
-                                onClick={() => setCollapsed(false)}
-                            />
-                        ) : (
-                            <MenuFoldOutlined
-                                style={{ fontSize: 18, cursor: 'pointer' }}
-                                onClick={() => setCollapsed(true)}
-                            />
-                        )}
-                    </Space>
+                />
+            </Card>
 
-                    <Space size="large" align="center">
-                        <BellOutlined style={{ fontSize: 18 }} />
-                        <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
-                            <Space style={{ cursor: 'pointer' }}>
-                                <Avatar size="small" icon={<UserOutlined />} />
-                                <Text>SuperAdmin</Text>
-                            </Space>
-                        </Dropdown>
-                    </Space>
-                </Header>
+            {/* Create Modal */}
+            <Modal
+                title="Create Tenant"
+                open={isCreateModalOpen}
+                onOk={handleCreate}
+                onCancel={() => {
+                    setIsCreateModalOpen(false);
+                    createForm.resetFields();
+                }}
+                confirmLoading={createMutation.isPending}
+            >
+                <Form form={createForm} layout="vertical">
+                    <Form.Item
+                        label="Tenant Name"
+                        name="name"
+                        rules={[{ required: true, message: 'Please enter tenant name' }]}
+                    >
+                        <Input placeholder="Enter tenant name" />
+                    </Form.Item>
+                </Form>
+            </Modal>
 
-                <Content style={{ padding: 24, background: '#f5f5f5' }}>
-                    <Breadcrumb style={{ marginBottom: 16 }}>
-                        <Breadcrumb.Item>Home</Breadcrumb.Item>
-                        <Breadcrumb.Item>Admin</Breadcrumb.Item>
-                        <Breadcrumb.Item>Tenant Management</Breadcrumb.Item>
-                    </Breadcrumb>
+            {/* Edit Modal */}
+            <Modal
+                title="Edit Tenant"
+                open={isEditModalOpen}
+                onOk={handleUpdate}
+                onCancel={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedTenant(null);
+                    editForm.resetFields();
+                }}
+                confirmLoading={updateMutation.isPending}
+            >
+                <Form form={editForm} layout="vertical">
+                    <Form.Item
+                        label="Tenant Name"
+                        name="name"
+                        rules={[{ required: true, message: 'Please enter tenant name' }]}
+                    >
+                        <Input placeholder="Enter tenant name" />
+                    </Form.Item>
+                </Form>
+            </Modal>
 
-                    <div style={{ marginBottom: 24 }}>
-                        <Title level={3} style={{ marginBottom: 4 }}>
-                            Tenant Management
-                        </Title>
-                        <Text type="secondary">
-                            Manage all tenants across the AuraFlow platform
-                        </Text>
-                    </div>
+            {/* Delete Modal */}
+            <Modal
+                title="Delete Tenant"
+                open={isDeleteModalOpen}
+                onOk={confirmDelete}
+                onCancel={() => {
+                    setIsDeleteModalOpen(false);
+                    setSelectedTenant(null);
+                }}
+                confirmLoading={deleteMutation.isPending}
+                okText="Delete"
+                okButtonProps={{ danger: true }}
+            >
+                <p>
+                    Are you sure you want to delete tenant <strong>{selectedTenant?.name}</strong>?
+                    This action cannot be undone.
+                </p>
+            </Modal>
 
-                    <Card title="Tenant List" bordered={false}>
-                        <Table<Tenant>
-                            columns={columns}
-                            dataSource={tenants}
-                            pagination={{ pageSize: 5 }}
-                        />
-                    </Card>
-                </Content>
-            </Layout>
-        </Layout>
+            {/* Deactivate Modal */}
+            <Modal
+                title="Deactivate Tenant"
+                open={isDeactivateModalOpen}
+                onOk={confirmDeactivate}
+                onCancel={() => {
+                    setIsDeactivateModalOpen(false);
+                    setSelectedTenant(null);
+                }}
+                confirmLoading={deactivateMutation.isPending}
+                okText="Deactivate"
+                okButtonProps={{ danger: true }}
+            >
+                <p>
+                    Are you sure you want to deactivate tenant <strong>{selectedTenant?.name}</strong>?
+                    Users from this tenant will not be able to log in until the tenant is reactivated.
+                </p>
+            </Modal>
+
+            {/* Activate Modal */}
+            <Modal
+                title="Activate Tenant"
+                open={isActivateModalOpen}
+                onOk={confirmActivate}
+                onCancel={() => {
+                    setIsActivateModalOpen(false);
+                    setSelectedTenant(null);
+                }}
+                confirmLoading={activateMutation.isPending}
+                okText="Activate"
+            >
+                <p>
+                    Are you sure you want to activate tenant <strong>{selectedTenant?.name}</strong>?
+                    Users from this tenant will be able to log in again.
+                </p>
+            </Modal>
+        </>
     );
 };
 
-export default SuperAdminTenantManagementPage;
-
-
+export default TenantManagementPage;

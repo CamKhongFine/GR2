@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import {
     Card,
-    Descriptions,
     Form,
     Input,
     Button,
     Select,
-    Space,
     Typography,
     message,
     Spin,
+    Tabs,
+    Row,
+    Col,
+    Avatar,
+    Upload,
 } from 'antd';
-import { UserOutlined, SaveOutlined } from '@ant-design/icons';
+import { SaveOutlined, UserOutlined, UploadOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchCurrentUser,
     updateCurrentUser,
-    fetchDivisions,
-    fetchDepartments,
     UserResponse,
     UpdateUserRequest,
 } from '../../api/auth.api';
@@ -26,7 +27,7 @@ const { Title } = Typography;
 
 const UserProfilePage: React.FC = () => {
     const [form] = Form.useForm();
-    const [isEditing, setIsEditing] = useState(false);
+    const [passwordForm] = Form.useForm();
     const queryClient = useQueryClient();
 
     // Fetch user data
@@ -35,25 +36,12 @@ const UserProfilePage: React.FC = () => {
         queryFn: fetchCurrentUser,
     });
 
-    // Fetch divisions and departments
-    const { data: divisions = [] } = useQuery({
-        queryKey: ['divisions'],
-        queryFn: fetchDivisions,
-    });
-
-    const { data: departments = [] } = useQuery({
-        queryKey: ['departments'],
-        queryFn: fetchDepartments,
-        enabled: !!user?.tenantId,
-    });
-
     // Update user mutation
     const updateMutation = useMutation({
         mutationFn: updateCurrentUser,
         onSuccess: (updatedUser) => {
             message.success('Profile updated successfully');
             queryClient.setQueryData(['currentUser'], updatedUser);
-            setIsEditing(false);
         },
         onError: () => {
             message.error('Failed to update profile');
@@ -66,9 +54,8 @@ const UserProfilePage: React.FC = () => {
             form.setFieldsValue({
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
+                email: user.email,
                 title: user.title || '',
-                divisionId: user.division?.id || undefined,
-                departmentId: user.department?.id || undefined,
             });
         }
     }, [user, form]);
@@ -80,8 +67,6 @@ const UserProfilePage: React.FC = () => {
                 firstName: values.firstName || null,
                 lastName: values.lastName || null,
                 title: values.title || null,
-                divisionId: values.divisionId || null,
-                departmentId: values.departmentId || null,
             };
             updateMutation.mutate(updateData);
         } catch (error) {
@@ -89,9 +74,15 @@ const UserProfilePage: React.FC = () => {
         }
     };
 
-    const handleCancel = () => {
-        form.resetFields();
-        setIsEditing(false);
+    const handlePasswordChange = async () => {
+        try {
+            const values = await passwordForm.validateFields();
+            // TODO: Implement password change API
+            message.info('Password change functionality will be implemented');
+            passwordForm.resetFields();
+        } catch (error) {
+            console.error('Validation failed:', error);
+        }
     };
 
     if (userLoading) {
@@ -109,144 +100,217 @@ const UserProfilePage: React.FC = () => {
     // Get role names
     const roleNames = user.roles.map((role) => role.name).join(', ') || 'No roles assigned';
 
-    return (
-        <div style={{ padding: '24px' }}>
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                <Title level={2}>
-                    <UserOutlined /> User Profile
-                </Title>
-
-                <Card>
-                    {!isEditing ? (
-                        <>
-                            <Descriptions
-                                title="User Information"
-                                bordered
-                                column={2}
-                                extra={
-                                    <Button type="primary" onClick={() => setIsEditing(true)}>
-                                        Edit Profile
-                                    </Button>
-                                }
-                            >
-                                <Descriptions.Item label="Email">{user.email}</Descriptions.Item>
-                                <Descriptions.Item label="Status">{user.status}</Descriptions.Item>
-                                <Descriptions.Item label="First Name">
-                                    {user.firstName || 'N/A'}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Last Name">
-                                    {user.lastName || 'N/A'}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Title">{user.title || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Tenant ID">{user.tenantId}</Descriptions.Item>
-                                <Descriptions.Item label="Division">
-                                    {user.division?.name || 'N/A'}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Department">
-                                    {user.department?.name || 'N/A'}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Roles" span={2}>
-                                    {roleNames}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Created At">
-                                    {new Date(user.createdAt).toLocaleString()}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Updated At">
-                                    {new Date(user.updatedAt).toLocaleString()}
-                                </Descriptions.Item>
-                            </Descriptions>
-                        </>
-                    ) : (
+    const tabItems = [
+        {
+            key: 'info',
+            label: 'Personal Info',
+            children: (
+                <Row gutter={24}>
+                    <Col span={16}>
                         <Form
                             form={form}
                             layout="vertical"
                             onFinish={handleSave}
                         >
-                            <Form.Item
-                                label="First Name"
-                                name="firstName"
+                            <Title level={5} style={{ marginBottom: 16 }}>Overview</Title>
+                            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
+                                Basic information, such as your name and address, that you use on the platform
+                            </Typography.Text>
+
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Form.Item
+                                        label="First Name"
+                                        name="firstName"
+                                    >
+                                        <Input placeholder="Enter first name" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item
+                                        label="Last Name"
+                                        name="lastName"
+                                    >
+                                        <Input placeholder="Enter last name" />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Form.Item
+                                        label="Email"
+                                        name="email"
+                                    >
+                                        <Input disabled />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item
+                                        label="Title"
+                                        name="title"
+                                    >
+                                        <Input placeholder="Enter title" />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Form.Item label="Roles">
+                                        <Select
+                                            mode="multiple"
+                                            value={user.roles.map(r => r.name)}
+                                            disabled
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item label="Status">
+                                        <Input value={user.status} disabled />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Form.Item>
+                                <Button
+                                    type="default"
+                                    style={{ marginRight: 8 }}
+                                    onClick={() => form.resetFields()}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    icon={<SaveOutlined />}
+                                    loading={updateMutation.isPending}
+                                >
+                                    Update
+                                </Button>
+                            </Form.Item>
+                        </Form>
+                    </Col>
+                    <Col span={8}>
+                        <div style={{ textAlign: 'center' }}>
+                            <Typography.Text strong style={{ display: 'block', marginBottom: 16 }}>
+                                Avatar
+                            </Typography.Text>
+                            <Avatar
+                                size={120}
+                                src={user.avatarUrl}
+                                icon={!user.avatarUrl ? <UserOutlined /> : undefined}
+                                style={{ marginBottom: 16 }}
+                            />
+                            <div>
+                                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                                    Format: JPG, PNG, WebP (Max 5MB)
+                                </Typography.Text>
+                            </div>
+                            <Upload
+                                showUploadList={false}
+                                beforeUpload={() => {
+                                    message.info('Avatar upload will be implemented');
+                                    return false;
+                                }}
                             >
-                                <Input placeholder="Enter first name" />
+                                <Button icon={<UploadOutlined />} style={{ marginTop: 16 }}>
+                                    Upload Avatar
+                                </Button>
+                            </Upload>
+                        </div>
+                    </Col>
+                </Row>
+            ),
+        },
+        {
+            key: 'password',
+            label: 'Password',
+            children: (
+                <Row gutter={24}>
+                    <Col span={16}>
+                        <Form
+                            form={passwordForm}
+                            layout="vertical"
+                            onFinish={handlePasswordChange}
+                        >
+                            <Title level={5} style={{ marginBottom: 16 }}>Change Password</Title>
+                            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
+                                Update your password to keep your account secure
+                            </Typography.Text>
+
+                            <Form.Item
+                                label="Current Password"
+                                name="currentPassword"
+                                rules={[{ required: true, message: 'Please enter your current password' }]}
+                            >
+                                <Input.Password placeholder="Enter current password" />
                             </Form.Item>
 
                             <Form.Item
-                                label="Last Name"
-                                name="lastName"
+                                label="New Password"
+                                name="newPassword"
+                                rules={[
+                                    { required: true, message: 'Please enter new password' },
+                                    { min: 8, message: 'Password must be at least 8 characters' }
+                                ]}
                             >
-                                <Input placeholder="Enter last name" />
+                                <Input.Password placeholder="Enter new password" />
                             </Form.Item>
 
                             <Form.Item
-                                label="Title"
-                                name="title"
+                                label="Confirm New Password"
+                                name="confirmPassword"
+                                dependencies={['newPassword']}
+                                rules={[
+                                    { required: true, message: 'Please confirm your password' },
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            if (!value || getFieldValue('newPassword') === value) {
+                                                return Promise.resolve();
+                                            }
+                                            return Promise.reject(new Error('Passwords do not match'));
+                                        },
+                                    }),
+                                ]}
                             >
-                                <Input placeholder="Enter title" />
-                            </Form.Item>
-
-                            <Form.Item
-                                label="Division"
-                                name="divisionId"
-                            >
-                                <Select
-                                    placeholder="Select division"
-                                    allowClear
-                                    showSearch
-                                    optionFilterProp="children"
-                                    filterOption={(input, option) =>
-                                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                    }
-                                    options={divisions.map((div) => ({
-                                        value: div.id,
-                                        label: div.name,
-                                    }))}
-                                />
-                            </Form.Item>
-
-                            <Form.Item
-                                label="Department"
-                                name="departmentId"
-                            >
-                                <Select
-                                    placeholder="Select department"
-                                    allowClear
-                                    showSearch
-                                    optionFilterProp="children"
-                                    filterOption={(input, option) =>
-                                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                    }
-                                    options={departments.map((dept) => ({
-                                        value: dept.id,
-                                        label: dept.name,
-                                    }))}
-                                />
-                            </Form.Item>
-
-                            <Form.Item label="Email">
-                                <Input value={user.email} disabled />
-                            </Form.Item>
-
-                            <Form.Item label="Roles">
-                                <Input value={roleNames} disabled />
+                                <Input.Password placeholder="Confirm new password" />
                             </Form.Item>
 
                             <Form.Item>
-                                <Space>
-                                    <Button
-                                        type="primary"
-                                        htmlType="submit"
-                                        icon={<SaveOutlined />}
-                                        loading={updateMutation.isPending}
-                                    >
-                                        Save Changes
-                                    </Button>
-                                    <Button onClick={handleCancel}>Cancel</Button>
-                                </Space>
+                                <Button
+                                    type="default"
+                                    style={{ marginRight: 8 }}
+                                    onClick={() => passwordForm.resetFields()}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                >
+                                    Change Password
+                                </Button>
                             </Form.Item>
                         </Form>
-                    )}
-                </Card>
-            </Space>
-        </div>
+                    </Col>
+                </Row>
+            ),
+        },
+    ];
+
+    return (
+        <>
+            <div style={{ marginBottom: 24 }}>
+                <Title level={3} style={{ marginBottom: 4 }}>
+                    User Profile
+                </Title>
+            </div>
+
+            <Card style={{ width: '100%', background: '#fff' }}>
+                <Tabs defaultActiveKey="info" items={tabItems} />
+            </Card>
+        </>
     );
 };
 

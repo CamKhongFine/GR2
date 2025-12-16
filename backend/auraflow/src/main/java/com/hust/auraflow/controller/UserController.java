@@ -6,11 +6,13 @@ import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ public class UserController {
             UserResponse response = userService.getCurrentUser(principal);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("Error getting current user", e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }

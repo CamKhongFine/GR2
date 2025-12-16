@@ -20,6 +20,7 @@ public class UserResponse {
     private String firstName;
     private String lastName;
     private String title;
+    private String avatarUrl;
     private DivisionResponse division;
     private DepartmentResponse department;
     private List<RoleResponse> roles;

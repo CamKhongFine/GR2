@@ -58,6 +58,15 @@ const DashboardLayout: React.FC = () => {
         },
     ];
 
+    const handleUserMenuClick = ({ key }: { key: string }) => {
+        if (key === 'profile') {
+            navigate('/profile');
+        } else if (key === 'logout') {
+            // Handle logout logic here
+            console.log('Logout clicked');
+        }
+    };
+
     const userMenu = {
         items: [
             {
@@ -70,6 +79,7 @@ const DashboardLayout: React.FC = () => {
                 danger: true,
             },
         ],
+        onClick: handleUserMenuClick,
     };
 
     return (

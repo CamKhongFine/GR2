@@ -8,6 +8,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +20,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RequiredArgsConstructor
 public class SessionAuthenticationFilter extends OncePerRequestFilter {
 
@@ -41,8 +43,10 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
         try {
             String sessionId = resolveSessionId(request);
             if (sessionId != null) {
+                log.debug("Found session cookie: {}", sessionId.substring(0, Math.min(8, sessionId.length())) + "...");
                 SessionData sessionData = sessionService.getSession(sessionId);
                 if (sessionData != null) {
+                    log.debug("Session data found for userId: {}", sessionData.getUserId());
                     UserPrincipal principal = UserPrincipal.builder()
                             .userId(sessionData.getUserId())
                             .tenantId(sessionData.getTenantId())
@@ -56,13 +60,17 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
 
                     var authentication = new UsernamePasswordAuthenticationToken(principal, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("Authentication set in SecurityContext for userId: {}", principal.getUserId());
                 } else {
+                    log.warn("Session data not found for sessionId: {}", sessionId.substring(0, Math.min(8, sessionId.length())) + "...");
                     SecurityContextHolder.clearContext();
                 }
             } else {
+                log.debug("No session cookie found for path: {}", request.getRequestURI());
                 SecurityContextHolder.clearContext();
             }
         } catch (Exception ex) {
+            log.error("Error in SessionAuthenticationFilter", ex);
             SecurityContextHolder.clearContext();
         }
 

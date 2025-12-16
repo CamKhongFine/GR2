@@ -63,10 +63,12 @@ public class TenantServiceImpl implements TenantService {
                 });
 
         tenant.setName(request.getName());
-        // Status update is not included in TenantRequest, so we don't update it here
+        
+        if (request.getStatus() != null) {
+            tenant.setStatus(request.getStatus());
+        }
 
         Tenant updatedTenant = tenantRepository.save(tenant);
-        log.info("Successfully updated tenant with ID: {}", id);
 
         return TenantResponse.fromEntity(updatedTenant);
     }

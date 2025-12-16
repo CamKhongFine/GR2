@@ -34,18 +34,13 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse getCurrentUser(UserPrincipal principal) {
         if (principal == null || principal.getUserId() == null) {
-            log.warn("UserPrincipal is null or userId is null");
             throw new IllegalArgumentException("UserPrincipal is required");
         }
 
         User user = userRepository.findById(principal.getUserId())
-                .orElseThrow(() -> {
-                    log.error("User not found in database for userId: {}", principal.getUserId());
-                    return new RuntimeException("User not found");
-                });
+                .orElseThrow(() -> new RuntimeException("User not found"));
         
         if (user.getStatus() != UserStatus.ACTIVE) {
-            log.warn("User status is not ACTIVE for userId: {}", principal.getUserId());
             throw new IllegalStateException("User is not active");
         }
         
@@ -82,6 +77,7 @@ public class UserServiceImpl implements UserService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .title(user.getTitle())
+                .avatarUrl(user.getAvatarUrl())
                 .division(divisionResponse)
                 .department(departmentResponse)
                 .roles(roles)

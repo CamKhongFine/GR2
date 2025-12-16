@@ -1,9 +1,11 @@
 import { createBrowserRouter } from 'react-router-dom';
 import LandingLayout from '../layouts/LandingLayout';
+import AdminLayout from '../layouts/AdminLayout';
 import LandingPage from '../pages/landing/LandingPage';
 import AuthPage from '../pages/auth/AuthPage';
 import AppWorkspace from '../pages/AppWorkspace';
-import SuperAdminTenantManagementPage from '../pages/admin/SuperAdminTenantManagementPage';
+import TenantManagementPage from '../pages/superadmin/TenantManagementPage';
+import UserManagementPage from '../pages/superadmin/UserManagementPage';
 import UserProfilePage from '../pages/profile/UserProfilePage';
 
 export const router = createBrowserRouter([
@@ -26,11 +28,27 @@ export const router = createBrowserRouter([
         element: <AppWorkspace />,
     },
     {
-        path: '/admin/tenants',
-        element: <SuperAdminTenantManagementPage />,
+        path: '/admin',
+        element: <AdminLayout />,
+        children: [
+            {
+                path: 'tenants',
+                element: <TenantManagementPage />,
+            },
+            {
+                path: 'users',
+                element: <UserManagementPage />,
+            },
+        ],
     },
     {
         path: '/profile',
-        element: <UserProfilePage />,
+        element: <AdminLayout />,
+        children: [
+            {
+                index: true,
+                element: <UserProfilePage />,
+            },
+        ],
     },
 ]);
