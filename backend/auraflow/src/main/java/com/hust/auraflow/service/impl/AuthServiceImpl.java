@@ -10,6 +10,7 @@ import com.hust.auraflow.entity.UserRole;
 import com.hust.auraflow.repository.InviteRequestRepository;
 import com.hust.auraflow.repository.UserRepository;
 import com.hust.auraflow.repository.UserRoleRepository;
+import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.AuthService;
 import com.hust.auraflow.service.KeycloakService;
 import com.hust.auraflow.service.RabbitMQProducer;
@@ -71,37 +72,29 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public UserResponse getCurrentUser(Jwt jwt) {
-        if (jwt == null) {
-            log.warn("JWT token is null");
-            throw new IllegalArgumentException("JWT token is required");
+    public UserResponse getCurrentUser(UserPrincipal principal) {
+        if (principal == null || principal.getUserId() == null) {
+            log.warn("UserPrincipal is null or userId is null");
+            throw new IllegalArgumentException("UserPrincipal is required");
         }
 
-        String sub = jwt.getClaimAsString("sub");
-        String email = jwt.getClaimAsString("email");
-        Boolean emailVerified = jwt.getClaimAsBoolean("email_verified");
-
-        if (emailVerified == null || !emailVerified) {
-            log.warn("Email not verified for user: {}", email);
-            throw new IllegalStateException("Email not verified");
-        }
-
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findById(principal.getUserId())
                 .orElseThrow(() -> {
-                    log.error("User not found in database for email: {}", email);
+                    log.error("User not found in database for userId: {}", principal.getUserId());
                     return new RuntimeException("User not found");
                 });
-        if (user.getStatus() != UserStatus.ACTIVE || user.getKeycloakSub() == null) {
-            user.setKeycloakSub(sub);
-            user.setStatus(UserStatus.ACTIVE);
-            userRepository.save(user);
+        
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            log.warn("User status is not ACTIVE for userId: {}", principal.getUserId());
+            throw new IllegalStateException("User is not active");
         }
+        
         return UserResponse.fromEntity(user);
     }
 
     @Override
-    public String handleKeycloakCallback(String code) {
-        KeycloakTokenResult tokenResult = keycloakService.exchangeCodeForTokens(code);
+    public String handleKeycloakCallback(String code, String redirectUri) {
+        KeycloakTokenResult tokenResult = keycloakService.exchangeCodeForTokens(code, redirectUri);
 
         Jwt jwt = jwtDecoder.decode(tokenResult.getIdToken());
         String sub = jwt.getClaimAsString("sub");
@@ -111,6 +104,11 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userRepository.findByKeycloakSub(sub)
                 .orElseThrow(() -> new IllegalStateException("User not found for sub=" + sub));
+
+        if (user.getStatus() == UserStatus.INVITED) {
+            user.setStatus(UserStatus.ACTIVE);
+            userRepository.save(user);
+        }
 
         List<UserRole> userRoles = userRoleRepository.findByIdUserId(user.getId());
         Set<Long> roleIds = userRoles.stream()
@@ -134,5 +132,10 @@ public class AuthServiceImpl implements AuthService {
 
         sessionService.saveSession(sessionId, sessionData, tokenResult.getRefreshExpiresIn());
         return sessionId;
+    }
+
+    @Override
+    public SessionData getSessionData(String sessionId) {
+        return sessionService.getSession(sessionId);
     }
 }

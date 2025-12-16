@@ -1,9 +1,7 @@
 import React from 'react';
 import {
     Form,
-    Input,
     Button,
-    Checkbox,
     Typography,
     message,
     theme,
@@ -14,11 +12,10 @@ import {
     GoogleOutlined,
     GithubOutlined
 } from '@ant-design/icons';
-import type { FormProps } from 'antd';
 import splashImage from '@/assets/images/splash.png';
 import styles from './AuthPage.module.css';
 
-const { Title, Text, Link } = Typography;
+const { Title, Text } = Typography;
 
 export interface AuthPageProps {
     imageSrc?: string;
@@ -37,18 +34,29 @@ const AuthPage: React.FC<AuthPageProps> = ({
     imageSrc = splashImage,
     title = "Welcome Back",
     subtitle = "Sign in using your company SSO account",
-    onLogin
+    onLogin: _onLogin
 }) => {
     const [form] = Form.useForm<LoginFormValues>();
     const { token } = theme.useToken();
+
 
     const redirectToKeycloak = () => {
         const keycloakBaseUrl = import.meta.env.VITE_KEYCLOAK_BASE_URL || 'http://localhost:8080';
         const keycloakRealm = import.meta.env.VITE_KEYCLOAK_REALM || 'auraflow';
         const keycloakClientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'auraflow-frontend';
-        const redirectUri = encodeURIComponent(
-            import.meta.env.VITE_KEYCLOAK_REDIRECT_URI || `${window.location.origin}/auth/callback`
-        );
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        
+        // Force redirect_uri to backend, ignore env variable if set incorrectly
+        const redirectUri = `${apiBaseUrl}/api/auth/callback`;
+        const encodedRedirectUri = encodeURIComponent(redirectUri);
+
+        console.log('Redirecting to Keycloak with:', {
+            keycloakBaseUrl,
+            keycloakRealm,
+            keycloakClientId,
+            redirectUri,
+            encodedRedirectUri
+        });
 
         const authUrl =
             `${keycloakBaseUrl}/realms/${encodeURIComponent(keycloakRealm)}` +
@@ -56,14 +64,9 @@ const AuthPage: React.FC<AuthPageProps> = ({
             `?client_id=${encodeURIComponent(keycloakClientId)}` +
             `&response_type=code` +
             `&scope=openid%20profile%20email` +
-            `&redirect_uri=${redirectUri}`;
+            `&redirect_uri=${encodedRedirectUri}`;
 
         window.location.href = authUrl;
-    };
-
-    const handleForgotPassword = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        e.preventDefault();
-        message.info('Password reset functionality to be implemented.');
     };
 
     const handleSocialLogin = (provider: 'google' | 'github') => {

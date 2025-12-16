@@ -24,9 +24,10 @@ public interface KeycloakService {
      * Exchanges authorization code for tokens with Keycloak.
      *
      * @param code authorization code
+     * @param redirectUri redirect URI used in the initial authorization request
      * @return tokens from Keycloak
      */
-    KeycloakTokenResult exchangeCodeForTokens(String code);
+    KeycloakTokenResult exchangeCodeForTokens(String code, String redirectUri);
 }
 
 

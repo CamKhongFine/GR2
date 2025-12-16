@@ -120,13 +120,14 @@ public class KeycloakServiceImpl implements KeycloakService {
     }
 
     @Override
-    public KeycloakTokenResult exchangeCodeForTokens(String code) {
+    public KeycloakTokenResult exchangeCodeForTokens(String code, String redirectUri) {
         String tokenEndpoint = serverUrl + "/realms/" + realm + "/protocol/openid-connect/token";
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "authorization_code");
         body.add("code", code);
         body.add("client_id", clientId);
+        body.add("redirect_uri", redirectUri);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
