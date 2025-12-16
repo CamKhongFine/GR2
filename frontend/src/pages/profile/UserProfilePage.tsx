@@ -22,6 +22,7 @@ import {
     UserResponse,
     UpdateUserRequest,
 } from '../../api/auth.api';
+import { useUserStore } from '../../store/userStore';
 
 const { Title } = Typography;
 
@@ -29,6 +30,9 @@ const UserProfilePage: React.FC = () => {
     const [form] = Form.useForm();
     const [passwordForm] = Form.useForm();
     const queryClient = useQueryClient();
+
+    // Use global user store
+    const { setUser } = useUserStore();
 
     // Fetch user data
     const { data: user, isLoading: userLoading } = useQuery<UserResponse>({
@@ -42,6 +46,8 @@ const UserProfilePage: React.FC = () => {
         onSuccess: (updatedUser) => {
             message.success('Profile updated successfully');
             queryClient.setQueryData(['currentUser'], updatedUser);
+            // Sync with global store
+            setUser(updatedUser);
         },
         onError: () => {
             message.error('Failed to update profile');

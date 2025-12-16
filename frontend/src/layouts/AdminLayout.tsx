@@ -19,33 +19,29 @@ import {
     UserOutlined,
     MenuUnfoldOutlined,
     MenuFoldOutlined,
+    LogoutOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
-import { fetchCurrentUser, type UserResponse } from '../api/auth.api';
+import { LAYOUT_CONFIG } from '../config/layout.config';
+import { useUserStore } from '../store/userStore';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
 const AdminLayout: React.FC = () => {
     const [collapsed, setCollapsed] = useState(false);
-    const [user, setUser] = useState<UserResponse | null>(null);
     const location = useLocation();
     const navigate = useNavigate();
 
-    const siderWidth = collapsed ? 80 : 220;
+    // Use global user store
+    const { user, loadUser, logout } = useUserStore();
+
+    const siderWidth = collapsed ? LAYOUT_CONFIG.SIDEBAR_COLLAPSED_WIDTH : LAYOUT_CONFIG.SIDEBAR_WIDTH;
 
     // Fetch current user information
     useEffect(() => {
-        const loadUser = async () => {
-            try {
-                const userData = await fetchCurrentUser();
-                setUser(userData);
-            } catch (error) {
-                console.error('Failed to fetch user:', error);
-            }
-        };
         loadUser();
-    }, []);
+    }, [loadUser]);
 
     // Get display name from user data
     const displayName = useMemo(() => {
@@ -57,6 +53,11 @@ const AdminLayout: React.FC = () => {
 
     const menuItems: MenuProps['items'] = useMemo(
         () => [
+            {
+                key: '/',
+                icon: <DashboardOutlined />,
+                label: 'Home',
+            },
             {
                 key: '/admin/dashboard',
                 icon: <DashboardOutlined />,
@@ -83,8 +84,8 @@ const AdminLayout: React.FC = () => {
 
     const userMenuItems: MenuProps['items'] = useMemo(
         () => [
-            { key: 'profile', label: 'Profile' },
-            { key: 'logout', label: 'Logout' },
+            { key: 'profile', label: 'Profile', icon: <UserOutlined /> },
+            { key: 'logout', label: 'Logout', icon: <LogoutOutlined /> },
         ],
         []
     );
@@ -94,11 +95,8 @@ const AdminLayout: React.FC = () => {
             navigate('/profile');
         }
         if (key === 'logout') {
-            localStorage.clear();
-            sessionStorage.clear();
-
+            logout();
             navigate('/login');
-
             console.log('Logged out successfully');
         }
     };
@@ -110,8 +108,8 @@ const AdminLayout: React.FC = () => {
                 collapsible
                 collapsed={collapsed}
                 onCollapse={setCollapsed}
-                width={220}
-                collapsedWidth={80}
+                width={LAYOUT_CONFIG.SIDEBAR_WIDTH}
+                collapsedWidth={LAYOUT_CONFIG.SIDEBAR_COLLAPSED_WIDTH}
                 theme="dark"
                 trigger={null}
                 style={{
@@ -119,12 +117,13 @@ const AdminLayout: React.FC = () => {
                     left: 0,
                     top: 0,
                     bottom: 0,
+                    zIndex: LAYOUT_CONFIG.SIDEBAR_Z_INDEX,
                 }}
             >
                 {/* Logo */}
                 <div
                     style={{
-                        height: 64,
+                        height: LAYOUT_CONFIG.HEADER_HEIGHT,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: collapsed ? 'center' : 'flex-start',
