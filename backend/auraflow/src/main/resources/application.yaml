@@ -45,4 +45,3 @@ keycloak:
   admin-username: admin
   admin-password: admin
   client-id: auraflow-app
-  client-secret: your-secret
