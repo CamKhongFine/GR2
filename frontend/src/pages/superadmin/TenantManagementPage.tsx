@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Table, Button, Typography, Tag, Modal, Form, Input, message, Dropdown } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Typography, Tag, Modal, Form, Input, message, Dropdown, Select, Space } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined, StopOutlined, CheckCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -23,6 +23,8 @@ const TenantManagementPage: React.FC = () => {
     const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
     const [isActivateModalOpen, setIsActivateModalOpen] = useState(false);
     const [selectedTenant, setSelectedTenant] = useState<TenantResponse | null>(null);
+    const [searchText, setSearchText] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
     const [createForm] = Form.useForm();
     const [editForm] = Form.useForm();
     const queryClient = useQueryClient();
@@ -175,17 +177,28 @@ const TenantManagementPage: React.FC = () => {
         }
     };
 
+    // Filter tenants based on search and status
+    const filteredTenants = tenants.filter(tenant => {
+        const matchesSearch = searchText === '' ||
+            tenant.name.toLowerCase().includes(searchText.toLowerCase()) ||
+            tenant.id.toString().includes(searchText);
+        const matchesStatus = statusFilter === 'all' || tenant.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+
     const columns: ColumnsType<TenantResponse> = [
         {
             title: 'ID',
             dataIndex: 'id',
             key: 'id',
             width: 80,
+            sorter: (a, b) => a.id - b.id,
         },
         {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
+            sorter: (a, b) => a.name.localeCompare(b.name),
         },
         {
             title: 'Status',
@@ -194,18 +207,21 @@ const TenantManagementPage: React.FC = () => {
             render: (status: string) => (
                 <Tag color={getStatusColor(status)}>{status}</Tag>
             ),
+            sorter: (a, b) => a.status.localeCompare(b.status),
         },
         {
             title: 'Created At',
             dataIndex: 'createdAt',
             key: 'createdAt',
             render: (date: string) => new Date(date).toLocaleString(),
+            sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         },
         {
             title: 'Updated At',
             dataIndex: 'updatedAt',
             key: 'updatedAt',
             render: (date: string) => new Date(date).toLocaleString(),
+            sorter: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
         },
         {
             title: 'Actions',
@@ -262,26 +278,46 @@ const TenantManagementPage: React.FC = () => {
     return (
         <>
             <div style={{ marginBottom: 16 }}>
-                <Title level={3} style={{ marginBottom: 4 }}>
-                    Tenant Management
-                </Title>
+                <Title level={2}>Tenant Management</Title>
+            </div>
+
+            {/* Search and Filter Bar */}
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Space size="middle">
+                    <Input
+                        placeholder="Search by name or ID"
+                        prefix={<SearchOutlined />}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        style={{ width: 300 }}
+                        allowClear
+                    />
+                    <Select
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        style={{ width: 150 }}
+                    >
+                        <Select.Option value="all">All Status</Select.Option>
+                        <Select.Option value="ACTIVE">Active</Select.Option>
+                        <Select.Option value="INACTIVE">Inactive</Select.Option>
+                        <Select.Option value="SUSPENDED">Suspended</Select.Option>
+                    </Select>
+                </Space>
+                <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsCreateModalOpen(true)}
+                >
+                    Create Tenant
+                </Button>
             </div>
 
             <Card
                 style={{ width: '100%', background: '#fff' }}
-                extra={
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={() => setIsCreateModalOpen(true)}
-                    >
-                        Create Tenant
-                    </Button>
-                }
             >
                 <Table
                     columns={columns}
-                    dataSource={tenants}
+                    dataSource={filteredTenants}
                     rowKey="id"
                     loading={isLoading}
                     pagination={{
