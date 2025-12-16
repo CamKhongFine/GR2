@@ -4,9 +4,11 @@ import com.hust.auraflow.dto.InviteRequestDTO;
 import com.hust.auraflow.dto.InviteResponse;
 import com.hust.auraflow.dto.UserResponse;
 import com.hust.auraflow.service.AuthService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -38,6 +40,19 @@ public class AuthController {
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+    }
+
+    @GetMapping("/callback")
+    public ResponseEntity<Void> callback(@RequestParam("code") String code, HttpServletResponse response) {
+        String sessionId = authService.handleKeycloakCallback(code);
+        ResponseCookie sessionCookie = ResponseCookie.from("AURAFLOW_SESSION", sessionId)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .build();
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, sessionCookie.toString());
+        return ResponseEntity.ok().build();
     }
 }
 

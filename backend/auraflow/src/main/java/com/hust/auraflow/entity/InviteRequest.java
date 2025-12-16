@@ -23,9 +23,6 @@ public class InviteRequest {
     @Column(name = "tenant_id", nullable = false)
     private Long tenantId;
 
-    @Column(name = "role_id", nullable = false)
-    private Long roleId;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private InviteRequestStatus status;

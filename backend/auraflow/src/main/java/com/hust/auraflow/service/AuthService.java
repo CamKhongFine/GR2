@@ -21,5 +21,7 @@ public interface AuthService {
      * @return User response
      */
     UserResponse getCurrentUser(Jwt jwt);
+
+    String handleKeycloakCallback(String code);
 }
 

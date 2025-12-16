@@ -16,8 +16,5 @@ public class InviteRequestDTO {
 
     @NotNull(message = "Tenant ID is required")
     private Long tenantId;
-
-    @NotNull(message = "Role ID is required")
-    private Long roleId;
 }
 
