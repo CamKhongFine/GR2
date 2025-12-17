@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Typography, Button, Row, Col, Card, Avatar, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -33,6 +33,27 @@ const { Title, Paragraph, Text } = Typography;
 const LandingPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, roleLevel, loadUser, loadUserRole, logout } = useUserStore();
+    const [isVisible, setIsVisible] = useState(true);
+    const lastScrollY = useRef(0);
+
+    useEffect(() => {
+        const controlNavbar = () => {
+            if (typeof window !== 'undefined') {
+                const currentScrollY = window.scrollY;
+
+                if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+                    setIsVisible(false);
+                } else {
+                    setIsVisible(true);
+                }
+
+                lastScrollY.current = currentScrollY;
+            }
+        };
+
+        window.addEventListener('scroll', controlNavbar);
+        return () => window.removeEventListener('scroll', controlNavbar);
+    }, []);
 
     useEffect(() => {
         loadUser();
@@ -101,7 +122,7 @@ const LandingPage: React.FC = () => {
     return (
         <div className="flex flex-col bg-white">
             {/* Header Navigation */}
-            <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 border-b border-gray-700 py-4 px-8 sticky top-0 z-50 shadow-sm">
+            <div className={`bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 border-b border-gray-700 py-4 px-8 sticky top-0 z-50 shadow-sm transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
                 <div className="max-w-7xl mx-auto">
                     <div className="flex items-center justify-between">
                         {/* Logo */}
