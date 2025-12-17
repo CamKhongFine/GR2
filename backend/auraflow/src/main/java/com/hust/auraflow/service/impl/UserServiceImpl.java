@@ -296,6 +296,33 @@ public class UserServiceImpl implements UserService {
         return buildUserResponse(updatedUser);
     }
     
+    @Override
+    @Transactional(readOnly = true)
+    public UserRoleResponse getUserRole(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", userId);
+                    return new RuntimeException("User not found with ID: " + userId);
+                });
+        
+        // Get all roles for the user
+        List<UserRole> userRoles = userRoleRepository.findByIdUserId(userId);
+        
+        // Calculate effective role level (minimum level = highest privilege)
+        int effectiveRoleLevel = userRoles.stream()
+                .map(UserRole::getRole)
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(role -> role.getLevel())
+                .min()
+                .orElse(4); // Default to STAFF (level 4) if no roles
+        
+        return UserRoleResponse.builder()
+                .userId(userId.toString())
+                .tenantId(user.getTenantId() != null ? user.getTenantId().toString() : null)
+                .effectiveRoleLevel(effectiveRoleLevel)
+                .build();
+    }
+    
     private UserResponse buildUserResponse(User user) {
         List<UserRole> userRoles = userRoleRepository.findByIdUserId(user.getId());
         List<RoleResponse> roles = userRoles.stream()

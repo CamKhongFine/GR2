@@ -22,7 +22,7 @@ import {
     DeleteOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchRoles, deleteRole, createRole, RoleResponse } from '../../api/role.api';
+import { fetchRoles, deleteRole, createRole, updateRole, RoleResponse } from '../../api/role.api';
 
 const { Title, Text } = Typography;
 
@@ -32,7 +32,10 @@ const RoleManagementPage: React.FC = () => {
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedRole, setSelectedRole] = useState<RoleResponse | null>(null);
     const [createForm] = Form.useForm();
+    const [editForm] = Form.useForm();
     const queryClient = useQueryClient();
 
     // Fetch roles with pagination
@@ -76,6 +79,21 @@ const RoleManagementPage: React.FC = () => {
         },
     });
 
+    // Update role mutation
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: number; data: any }) => updateRole(id, data),
+        onSuccess: () => {
+            message.success('Role updated successfully');
+            queryClient.invalidateQueries({ queryKey: ['roles'] });
+            setIsEditModalOpen(false);
+            setSelectedRole(null);
+            editForm.resetFields();
+        },
+        onError: () => {
+            message.error('Failed to update role');
+        },
+    });
+
     const handleCreate = async () => {
         try {
             const values = await createForm.validateFields();
@@ -87,6 +105,29 @@ const RoleManagementPage: React.FC = () => {
 
     const handleDelete = async (id: number) => {
         deleteMutation.mutate(id);
+    };
+
+    const handleEdit = (role: RoleResponse) => {
+        setSelectedRole(role);
+        editForm.setFieldsValue({
+            name: role.name,
+            level: role.level,
+            description: role.description,
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSubmit = async () => {
+        if (!selectedRole) return;
+        try {
+            const values = await editForm.validateFields();
+            updateMutation.mutate({
+                id: selectedRole.id,
+                data: values,
+            });
+        } catch (error) {
+            console.error('Validation failed:', error);
+        }
     };
 
     const columns: ColumnsType<RoleResponse> = [
@@ -140,7 +181,7 @@ const RoleManagementPage: React.FC = () => {
                         key: 'edit',
                         label: 'Edit',
                         icon: <EditOutlined />,
-                        onClick: () => console.log('Edit', record.id),
+                        onClick: () => handleEdit(record),
                     },
                     {
                         key: 'delete',
@@ -250,6 +291,43 @@ const RoleManagementPage: React.FC = () => {
                         rules={[{ required: true, message: 'Please enter level' }]}
                     >
                         <Input type="number" placeholder="1" min={1} max={5} />
+                    </Form.Item>
+                    <Form.Item
+                        label="Description"
+                        name="description"
+                    >
+                        <Input.TextArea placeholder="Enter description" rows={3} />
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            {/* Edit Role Modal */}
+            <Modal
+                title="Edit Role"
+                open={isEditModalOpen}
+                onOk={handleEditSubmit}
+                onCancel={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedRole(null);
+                    editForm.resetFields();
+                }}
+                confirmLoading={updateMutation.isPending}
+                okText="Save Changes"
+            >
+                <Form form={editForm} layout="vertical" style={{ marginTop: 20 }}>
+                    <Form.Item
+                        label="Role Name"
+                        name="name"
+                        rules={[{ required: true, message: 'Please enter role name' }]}
+                    >
+                        <Input placeholder="Enter role name" />
+                    </Form.Item>
+                    <Form.Item
+                        label="Level"
+                        name="level"
+                        rules={[{ required: true, message: 'Please enter level' }]}
+                    >
+                        <Input type="number" placeholder="1" min={0} max={5} />
                     </Form.Item>
                     <Form.Item
                         label="Description"

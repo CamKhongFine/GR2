@@ -32,25 +32,43 @@ const { Title, Paragraph, Text } = Typography;
 
 const LandingPage: React.FC = () => {
     const navigate = useNavigate();
-    const { user, loadUser, logout } = useUserStore();
+    const { user, roleLevel, loadUser, loadUserRole, logout } = useUserStore();
 
     useEffect(() => {
         loadUser();
     }, [loadUser]);
 
+    useEffect(() => {
+        if (user && roleLevel === null) {
+            loadUserRole();
+        }
+    }, [user, roleLevel, loadUserRole]);
+
+    // Get management label based on role level
+    const getManagementLabel = () => {
+        if (roleLevel === null) return 'Manage';
+        switch (roleLevel) {
+            case 0: return 'System Management';
+            case 1: return 'Company Management';
+            case 2: return 'Department Management';
+            case 3: return 'Division Management';
+            default: return 'Workspace';
+        }
+    };
+
     const userMenuItems: MenuProps['items'] = user
         ? [
             { key: 'profile', label: 'Profile', icon: <UserOutlined /> },
-            { key: 'dashboard', label: 'Manage', icon: <SettingOutlined /> },
+            { key: 'dashboard', label: getManagementLabel(), icon: <SettingOutlined /> },
             { key: 'logout', label: 'Logout', icon: <LogoutOutlined /> },
         ]
         : [];
 
     const handleUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
         if (key === 'dashboard') {
-            navigate('/super-admin/dashboard');
+            navigate('/app'); // Use /app entry point for role-based redirect
         } else if (key === 'profile') {
-            navigate('/profile');
+            navigate('/app'); // Navigate to /app which will redirect to appropriate profile
         } else if (key === 'logout') {
             try {
                 const apiClient = (await import('../../lib/apiClient')).default;
@@ -109,7 +127,7 @@ const LandingPage: React.FC = () => {
                                         menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
                                         placement="bottomRight"
                                         trigger={['click']}
-                                        align={{ offset: [0, 10] }}
+                                        align={{ offset: [15, 10] }}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 8 }}>
                                             <Avatar

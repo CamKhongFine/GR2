@@ -1,8 +1,8 @@
 package com.hust.auraflow.controller;
 
-import com.hust.auraflow.dto.CreateUserRequest;
 import com.hust.auraflow.dto.UpdateUserRequest;
 import com.hust.auraflow.dto.UserResponse;
+import com.hust.auraflow.dto.UserRoleResponse;
 import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.UserService;
 import jakarta.validation.Valid;
@@ -110,6 +110,17 @@ public class UserController {
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             log.error("Error deactivating user", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+    
+    @GetMapping("/{id}/role")
+    public ResponseEntity<UserRoleResponse> getUserRole(@PathVariable Long id) {
+        try {
+            UserRoleResponse response = userService.getUserRole(id);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            log.error("Error getting user role", e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }

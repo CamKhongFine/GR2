@@ -14,6 +14,8 @@ import {
     Form,
     Dropdown,
     Checkbox,
+    Row,
+    Col,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -34,6 +36,7 @@ import {
     deleteUser,
     activateUser,
     deactivateUser,
+    updateUser,
     UserResponse,
 } from '../../api/user.api';
 import { inviteUser } from '../../api/auth.api';
@@ -49,9 +52,11 @@ const UserManagementPage: React.FC = () => {
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAssignRolesModalOpen, setIsAssignRolesModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
     const [inviteForm] = Form.useForm();
+    const [editForm] = Form.useForm();
     const [assignRolesForm] = Form.useForm();
     const queryClient = useQueryClient();
 
@@ -140,6 +145,21 @@ const UserManagementPage: React.FC = () => {
         },
     });
 
+    // Update user mutation
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: number; data: any }) => updateUser(id, data),
+        onSuccess: () => {
+            message.success('User updated successfully');
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            setIsEditModalOpen(false);
+            setSelectedUser(null);
+            editForm.resetFields();
+        },
+        onError: () => {
+            message.error('Failed to update user');
+        },
+    });
+
     const handleInvite = async () => {
         try {
             const values = await inviteForm.validateFields();
@@ -166,6 +186,29 @@ const UserManagementPage: React.FC = () => {
         const currentRoleIds = user.roles?.map(r => r.id) || [];
         assignRolesForm.setFieldsValue({ roleIds: currentRoleIds });
         setIsAssignRolesModalOpen(true);
+    };
+
+    const handleEdit = (user: UserResponse) => {
+        setSelectedUser(user);
+        editForm.setFieldsValue({
+            firstName: user.firstName,
+            lastName: user.lastName,
+            title: user.title,
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSubmit = async () => {
+        if (!selectedUser) return;
+        try {
+            const values = await editForm.validateFields();
+            updateMutation.mutate({
+                id: selectedUser.id,
+                data: values,
+            });
+        } catch (error) {
+            console.error('Validation failed:', error);
+        }
     };
 
     const handleAssignRolesSubmit = async () => {
@@ -253,7 +296,7 @@ const UserManagementPage: React.FC = () => {
                         key: 'edit',
                         label: 'Edit',
                         icon: <EditOutlined />,
-                        onClick: () => console.log('Edit', record.id),
+                        onClick: () => handleEdit(record),
                     },
                     {
                         key: 'assign-roles',
@@ -445,7 +488,49 @@ const UserManagementPage: React.FC = () => {
                         </Checkbox.Group>
                     </Form.Item>
                 </Form>
-            </Modal >
+            </Modal>
+
+            {/* Edit User Modal */}
+            <Modal
+                title={`Edit User: ${selectedUser?.email || ''}`}
+                open={isEditModalOpen}
+                onOk={handleEditSubmit}
+                onCancel={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedUser(null);
+                    editForm.resetFields();
+                }}
+                confirmLoading={updateMutation.isPending}
+                width={600}
+                okText="Save Changes"
+            >
+                <Form form={editForm} layout="vertical" style={{ marginTop: 20 }}>
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item
+                                label="First Name"
+                                name="firstName"
+                            >
+                                <Input placeholder="Enter first name" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item
+                                label="Last Name"
+                                name="lastName"
+                            >
+                                <Input placeholder="Enter last name" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Form.Item
+                        label="Title"
+                        name="title"
+                    >
+                        <Input placeholder="Enter title" />
+                    </Form.Item>
+                </Form>
+            </Modal>
         </>
     );
 };

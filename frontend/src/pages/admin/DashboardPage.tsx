@@ -11,7 +11,7 @@ import { Column, Pie } from '@ant-design/charts';
 const { Title } = Typography;
 
 const DashboardPage: React.FC = () => {
-    // Mock data for tenant admin dashboard
+    // Mock data for admin dashboard
     const mockStats = {
         totalUsers: 45,
         activeUsers: 38,
@@ -38,7 +38,7 @@ const DashboardPage: React.FC = () => {
         data: usersByDivisionData,
         xField: 'division',
         yField: 'users',
-        color: '#722ed1', // Purple color for tenant admin
+        color: '#722ed1', // Purple color for admin
         label: {
             position: 'top' as const,
             style: {

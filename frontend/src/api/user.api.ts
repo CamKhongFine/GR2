@@ -1,4 +1,5 @@
 import apiClient from '../lib/apiClient';
+import { RoleResponse } from './role.api';
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE';
 
@@ -10,6 +11,7 @@ export interface UserResponse {
     lastName?: string;
     title?: string;
     avatarUrl?: string;
+    roles?: RoleResponse[];
     status: UserStatus;
     createdAt: string;
     updatedAt: string;

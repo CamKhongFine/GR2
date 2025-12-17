@@ -2,9 +2,14 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import LandingLayout from '../layouts/LandingLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import TenantAdminLayout from '../layouts/TenantAdminLayout';
+import DepartmentLayout from '../layouts/DepartmentLayout';
+import DivisionLayout from '../layouts/DivisionLayout';
+import RequireRoleLevel from '../components/guards/RequireRoleLevel';
 import LandingPage from '../pages/landing/LandingPage';
 import AuthPage from '../pages/auth/AuthPage';
+import AppEntry from '../pages/AppEntry';
 import AppWorkspace from '../pages/AppWorkspace';
+import ForbiddenPage from '../pages/ForbiddenPage';
 import TenantManagementPage from '../pages/super-admin/TenantManagementPage';
 import SuperAdminUserManagementPage from '../pages/super-admin/UserManagementPage';
 import RoleManagementPage from '../pages/super-admin/RoleManagementPage';
@@ -13,9 +18,12 @@ import TenantAdminDashboardPage from '../pages/admin/DashboardPage';
 import TenantAdminUserManagementPage from '../pages/admin/UserManagementPage';
 import DivisionManagementPage from '../pages/admin/DivisionManagementPage';
 import WorkflowManagementPage from '../pages/admin/WorkflowManagementPage';
+import DepartmentDashboardPage from '../pages/department/DashboardPage';
+import DivisionDashboardPage from '../pages/division/DashboardPage';
 import UserProfilePage from '../pages/profile/UserProfilePage';
 
 export const router = createBrowserRouter([
+    // Landing page
     {
         path: '/',
         element: <LandingLayout />,
@@ -26,17 +34,24 @@ export const router = createBrowserRouter([
             },
         ],
     },
+    // Auth page
     {
         path: '/login',
         element: <AuthPage />,
     },
+    // Entry point - redirects based on role
     {
         path: '/app',
-        element: <AppWorkspace />,
+        element: <AppEntry />,
     },
+    // Super Admin routes (role level 0)
     {
         path: '/super-admin',
-        element: <AdminLayout />,
+        element: (
+            <RequireRoleLevel maxLevel={0}>
+                <AdminLayout />
+            </RequireRoleLevel>
+        ),
         children: [
             {
                 index: true,
@@ -64,9 +79,14 @@ export const router = createBrowserRouter([
             },
         ],
     },
+    // Admin routes (role level ≤ 1)
     {
         path: '/admin',
-        element: <TenantAdminLayout />,
+        element: (
+            <RequireRoleLevel maxLevel={1}>
+                <TenantAdminLayout />
+            </RequireRoleLevel>
+        ),
         children: [
             {
                 index: true,
@@ -94,5 +114,76 @@ export const router = createBrowserRouter([
             },
         ],
     },
+    // Department routes (role level ≤ 2)
+    {
+        path: '/department',
+        element: (
+            <RequireRoleLevel maxLevel={2}>
+                <DepartmentLayout />
+            </RequireRoleLevel>
+        ),
+        children: [
+            {
+                index: true,
+                element: <Navigate to="/department/dashboard" replace />,
+            },
+            {
+                path: 'dashboard',
+                element: <DepartmentDashboardPage />,
+            },
+            {
+                path: 'team',
+                element: <div>Team Management Page (To be implemented)</div>,
+            },
+            {
+                path: 'reports',
+                element: <div>Reports Page (To be implemented)</div>,
+            },
+            {
+                path: 'profile',
+                element: <UserProfilePage />,
+            },
+        ],
+    },
+    // Division routes (role level ≤ 3)
+    {
+        path: '/division',
+        element: (
+            <RequireRoleLevel maxLevel={3}>
+                <DivisionLayout />
+            </RequireRoleLevel>
+        ),
+        children: [
+            {
+                index: true,
+                element: <Navigate to="/division/dashboard" replace />,
+            },
+            {
+                path: 'dashboard',
+                element: <DivisionDashboardPage />,
+            },
+            {
+                path: 'tasks',
+                element: <div>Division Tasks Page (To be implemented)</div>,
+            },
+            {
+                path: 'team',
+                element: <div>Team Page (To be implemented)</div>,
+            },
+            {
+                path: 'profile',
+                element: <UserProfilePage />,
+            },
+        ],
+    },
+    // Workspace routes (all authenticated users)
+    {
+        path: '/workspace',
+        element: <AppWorkspace />,
+    },
+    // 403 Forbidden page
+    {
+        path: '/403',
+        element: <ForbiddenPage />,
+    },
 ]);
-
