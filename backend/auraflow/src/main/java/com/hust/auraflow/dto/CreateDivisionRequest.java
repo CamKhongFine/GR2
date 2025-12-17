@@ -1,22 +1,18 @@
 package com.hust.auraflow.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DivisionResponse {
-    private Long id;
-    private Long tenantId;
+public class CreateDivisionRequest {
+    @NotBlank(message = "Name is required")
     private String name;
+    
     private String description;
-    private Instant createdAt;
-    private Instant updatedAt;
 }
-

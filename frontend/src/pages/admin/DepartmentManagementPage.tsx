@@ -18,80 +18,80 @@ import {
     MoreOutlined,
     EditOutlined,
     DeleteOutlined,
-    ApartmentOutlined,
+    BranchesOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    fetchTenantDivisions,
-    createDivision,
-    updateDivision,
-    deleteDivision,
-    DivisionResponse,
-    CreateDivisionRequest,
-    UpdateDivisionRequest,
-} from '../../api/division.api';
+    fetchTenantDepartments,
+    createDepartment,
+    updateDepartment,
+    deleteDepartment,
+    DepartmentResponse,
+    CreateDepartmentRequest,
+    UpdateDepartmentRequest,
+} from '../../api/department.api';
 
 const { Title, Text } = Typography;
 
-const DivisionManagementPage: React.FC = () => {
+const DepartmentManagementPage: React.FC = () => {
     const [searchText, setSearchText] = useState('');
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedDivision, setSelectedDivision] = useState<DivisionResponse | null>(null);
+    const [selectedDepartment, setSelectedDepartment] = useState<DepartmentResponse | null>(null);
     const [createForm] = Form.useForm();
     const [editForm] = Form.useForm();
     const queryClient = useQueryClient();
 
-    // Fetch divisions in current tenant
+    // Fetch departments in current tenant
     const { data, isLoading } = useQuery({
-        queryKey: ['admin-divisions', page, pageSize, searchText],
-        queryFn: () => fetchTenantDivisions(page, pageSize, searchText),
+        queryKey: ['admin-departments', page, pageSize, searchText],
+        queryFn: () => fetchTenantDepartments(page, pageSize, searchText),
     });
 
-    const divisions = data?.content || [];
+    const departments = data?.content || [];
     const totalElements = data?.totalElements || 0;
 
-    // Create division mutation
+    // Create department mutation
     const createMutation = useMutation({
-        mutationFn: createDivision,
+        mutationFn: createDepartment,
         onSuccess: () => {
-            message.success('Division created successfully');
-            queryClient.invalidateQueries({ queryKey: ['admin-divisions'] });
+            message.success('Department created successfully');
+            queryClient.invalidateQueries({ queryKey: ['admin-departments'] });
             setIsCreateModalOpen(false);
             createForm.resetFields();
         },
         onError: (error: any) => {
-            message.error(error.response?.data?.message || 'Failed to create division');
+            message.error(error.response?.data?.message || 'Failed to create department');
         },
     });
 
-    // Update division mutation
+    // Update department mutation
     const updateMutation = useMutation({
-        mutationFn: ({ id, data }: { id: number; data: UpdateDivisionRequest }) =>
-            updateDivision(id, data),
+        mutationFn: ({ id, data }: { id: number; data: UpdateDepartmentRequest }) =>
+            updateDepartment(id, data),
         onSuccess: () => {
-            message.success('Division updated successfully');
-            queryClient.invalidateQueries({ queryKey: ['admin-divisions'] });
+            message.success('Department updated successfully');
+            queryClient.invalidateQueries({ queryKey: ['admin-departments'] });
             setIsEditModalOpen(false);
-            setSelectedDivision(null);
+            setSelectedDepartment(null);
             editForm.resetFields();
         },
         onError: () => {
-            message.error('Failed to update division');
+            message.error('Failed to update department');
         },
     });
 
-    // Delete division mutation
+    // Delete department mutation
     const deleteMutation = useMutation({
-        mutationFn: deleteDivision,
+        mutationFn: deleteDepartment,
         onSuccess: () => {
-            message.success('Division deleted successfully');
-            queryClient.invalidateQueries({ queryKey: ['admin-divisions'] });
+            message.success('Department deleted successfully');
+            queryClient.invalidateQueries({ queryKey: ['admin-departments'] });
         },
         onError: () => {
-            message.error('Failed to delete division');
+            message.error('Failed to delete department');
         },
     });
 
@@ -104,21 +104,21 @@ const DivisionManagementPage: React.FC = () => {
         }
     };
 
-    const handleEdit = (division: DivisionResponse) => {
-        setSelectedDivision(division);
+    const handleEdit = (department: DepartmentResponse) => {
+        setSelectedDepartment(department);
         editForm.setFieldsValue({
-            name: division.name,
-            description: division.description,
+            name: department.name,
+            description: department.description,
         });
         setIsEditModalOpen(true);
     };
 
     const handleEditSubmit = async () => {
-        if (!selectedDivision) return;
+        if (!selectedDepartment) return;
         try {
             const values = await editForm.validateFields();
             updateMutation.mutate({
-                id: selectedDivision.id,
+                id: selectedDepartment.id,
                 data: values,
             });
         } catch (error) {
@@ -128,15 +128,15 @@ const DivisionManagementPage: React.FC = () => {
 
     const handleDelete = (id: number) => {
         Modal.confirm({
-            title: 'Delete Division',
-            content: 'Are you sure you want to delete this division? This action cannot be undone.',
+            title: 'Delete Department',
+            content: 'Are you sure you want to delete this department? This action cannot be undone.',
             okText: 'Delete',
             okType: 'danger',
             onOk: () => deleteMutation.mutate(id),
         });
     };
 
-    const columns: ColumnsType<DivisionResponse> = [
+    const columns: ColumnsType<DepartmentResponse> = [
         {
             title: 'Name',
             dataIndex: 'name',
@@ -144,7 +144,7 @@ const DivisionManagementPage: React.FC = () => {
             sorter: (a, b) => a.name.localeCompare(b.name),
             render: (name: string) => (
                 <Space>
-                    <ApartmentOutlined style={{ color: '#1890ff' }} />
+                    <BranchesOutlined style={{ color: '#1890ff' }} />
                     <Text strong>{name}</Text>
                 </Space>
             ),
@@ -208,7 +208,7 @@ const DivisionManagementPage: React.FC = () => {
     return (
         <>
             <div style={{ marginBottom: 16 }}>
-                <Title level={2}>Division Management</Title>
+                <Title level={2}>Department Management</Title>
             </div>
 
             {/* Search and Create Bar */}
@@ -226,14 +226,14 @@ const DivisionManagementPage: React.FC = () => {
                     icon={<PlusOutlined />}
                     onClick={() => setIsCreateModalOpen(true)}
                 >
-                    Create Division
+                    Create Department
                 </Button>
             </div>
 
             <Card style={{ width: '100%', background: '#fff' }}>
-                <Table<DivisionResponse>
+                <Table<DepartmentResponse>
                     columns={columns}
-                    dataSource={divisions}
+                    dataSource={departments}
                     rowKey="id"
                     loading={isLoading}
                     pagination={{
@@ -252,9 +252,9 @@ const DivisionManagementPage: React.FC = () => {
                 />
             </Card>
 
-            {/* Create Division Modal */}
+            {/* Create Department Modal */}
             <Modal
-                title="Create Division"
+                title="Create Department"
                 open={isCreateModalOpen}
                 onOk={handleCreate}
                 onCancel={() => {
@@ -267,30 +267,30 @@ const DivisionManagementPage: React.FC = () => {
                     <Form.Item
                         label="Name"
                         name="name"
-                        rules={[{ required: true, message: 'Please enter division name' }]}
+                        rules={[{ required: true, message: 'Please enter department name' }]}
                     >
-                        <Input placeholder="Enter division name" />
+                        <Input placeholder="Enter department name" />
                     </Form.Item>
                     <Form.Item
                         label="Description"
                         name="description"
                     >
                         <Input.TextArea
-                            placeholder="Enter division description (optional)"
+                            placeholder="Enter department description (optional)"
                             rows={4}
                         />
                     </Form.Item>
                 </Form>
             </Modal>
 
-            {/* Edit Division Modal */}
+            {/* Edit Department Modal */}
             <Modal
-                title={`Edit Division: ${selectedDivision?.name || ''}`}
+                title={`Edit Department: ${selectedDepartment?.name || ''}`}
                 open={isEditModalOpen}
                 onOk={handleEditSubmit}
                 onCancel={() => {
                     setIsEditModalOpen(false);
-                    setSelectedDivision(null);
+                    setSelectedDepartment(null);
                     editForm.resetFields();
                 }}
                 confirmLoading={updateMutation.isPending}
@@ -300,16 +300,16 @@ const DivisionManagementPage: React.FC = () => {
                     <Form.Item
                         label="Name"
                         name="name"
-                        rules={[{ required: true, message: 'Please enter division name' }]}
+                        rules={[{ required: true, message: 'Please enter department name' }]}
                     >
-                        <Input placeholder="Enter division name" />
+                        <Input placeholder="Enter department name" />
                     </Form.Item>
                     <Form.Item
                         label="Description"
                         name="description"
                     >
                         <Input.TextArea
-                            placeholder="Enter division description (optional)"
+                            placeholder="Enter department description (optional)"
                             rows={4}
                         />
                     </Form.Item>
@@ -319,4 +319,4 @@ const DivisionManagementPage: React.FC = () => {
     );
 };
 
-export default DivisionManagementPage;
+export default DepartmentManagementPage;

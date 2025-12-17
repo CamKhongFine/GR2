@@ -1,6 +1,7 @@
 package com.hust.auraflow.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,6 +16,10 @@ public class Division {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
+
+    @NotNull
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
 
     @Column(name = "name", length = Integer.MAX_VALUE)
     private String name;

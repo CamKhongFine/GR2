@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,5 +16,7 @@ public class DepartmentResponse {
     private Long tenantId;
     private String name;
     private String description;
+    private Instant createdAt;
+    private Instant updatedAt;
 }
 

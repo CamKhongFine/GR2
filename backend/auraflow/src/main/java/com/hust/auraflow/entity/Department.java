@@ -21,6 +21,10 @@ public class Department {
     @Column(name = "tenant_id", nullable = false)
     private Long tenantId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "division_id")
+    private Division division;
+
     @Column(name = "name", length = Integer.MAX_VALUE)
     private String name;
 
