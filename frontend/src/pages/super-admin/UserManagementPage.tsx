@@ -43,6 +43,8 @@ import { inviteUser } from '../../api/auth.api';
 import { assignRolesToUser } from '../../api/userRole.api';
 import { fetchRoles, RoleResponse } from '../../api/role.api';
 import { fetchTenants } from '../../api/tenant.api';
+import dayjs from 'dayjs';
+import { DATE_FORMAT } from '../../config/date.config';
 
 const { Title, Text } = Typography;
 
@@ -294,12 +296,20 @@ const UserManagementPage: React.FC = () => {
             },
         },
         {
-            title: 'Updated At',
+            title: 'Joined Date',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            width: 200,
+            sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+            render: (date: string) => dayjs(date).format(DATE_FORMAT),
+        },
+        {
+            title: 'Last Sync',
             dataIndex: 'updatedAt',
             key: 'updatedAt',
-            width: 250,
+            width: 200,
             sorter: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
-            render: (date: string) => new Date(date).toLocaleString(),
+            render: (date: string) => dayjs(date).format(DATE_FORMAT),
         },
         {
             title: 'Actions',
@@ -362,7 +372,7 @@ const UserManagementPage: React.FC = () => {
     return (
         <>
             <div style={{ marginBottom: 16 }}>
-                <Title level={2}>User Management</Title>
+                <Title level={3}>User Management</Title>
             </div>
 
             {/* Search and Filter Bar */}

@@ -23,6 +23,8 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchRoles, deleteRole, createRole, updateRole, RoleResponse } from '../../api/role.api';
+import dayjs from 'dayjs';
+import { DATE_FORMAT } from '../../config/date.config';
 
 const { Title, Text } = Typography;
 
@@ -157,18 +159,18 @@ const RoleManagementPage: React.FC = () => {
             ),
         },
         {
-            title: 'Created At',
+            title: 'Created Date',
             dataIndex: 'createdAt',
             key: 'createdAt',
             sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-            render: (date: string) => new Date(date).toLocaleString(),
+            render: (date: string) => dayjs(date).format(DATE_FORMAT),
         },
         {
-            title: 'Updated At',
+            title: 'Last Sync',
             dataIndex: 'updatedAt',
             key: 'updatedAt',
             sorter: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
-            render: (date: string) => new Date(date).toLocaleString(),
+            render: (date: string) => dayjs(date).format(DATE_FORMAT),
         },
         {
             title: 'Actions',
@@ -208,7 +210,7 @@ const RoleManagementPage: React.FC = () => {
     return (
         <>
             <div style={{ marginBottom: 16 }}>
-                <Title level={2}>Role Management</Title>
+                <Title level={3}>Role Management</Title>
             </div>
 
             {/* Search and Filter Bar */}

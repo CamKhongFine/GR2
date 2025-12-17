@@ -32,6 +32,8 @@ import {
     UpdateDepartmentRequest,
 } from '../../api/department.api';
 import { fetchTenantDivisions } from '../../api/division.api';
+import dayjs from 'dayjs';
+import { DATE_FORMAT } from '../../config/date.config';
 
 const { Title, Text } = Typography;
 
@@ -179,20 +181,20 @@ const DepartmentManagementPage: React.FC = () => {
             render: (description: string) => description || <Text type="secondary">No description</Text>,
         },
         {
-            title: 'Created At',
+            title: 'Created Date',
             dataIndex: 'createdAt',
             key: 'createdAt',
             width: 200,
             sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-            render: (date: string) => new Date(date).toLocaleString(),
+            render: (date: string) => dayjs(date).format(DATE_FORMAT),
         },
         {
-            title: 'Updated At',
+            title: 'Last Sync',
             dataIndex: 'updatedAt',
             key: 'updatedAt',
             width: 200,
             sorter: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
-            render: (date: string) => new Date(date).toLocaleString(),
+            render: (date: string) => dayjs(date).format(DATE_FORMAT),
         },
         {
             title: 'Actions',
@@ -231,7 +233,7 @@ const DepartmentManagementPage: React.FC = () => {
     return (
         <>
             <div style={{ marginBottom: 16 }}>
-                <Title level={2}>Department Management</Title>
+                <Title level={3}>Department Management</Title>
             </div>
 
             {/* Search and Filter Bar */}

@@ -21,7 +21,7 @@ const DivisionDashboardPage: React.FC = () => {
     return (
         <>
             <div style={{ marginBottom: 24 }}>
-                <Title level={3} style={{ marginBottom: 4 }}>
+                <Title level={2} style={{ marginBottom: 4 }}>
                     Division Dashboard
                 </Title>
             </div>

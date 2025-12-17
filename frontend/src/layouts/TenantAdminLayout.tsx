@@ -21,6 +21,7 @@ import {
     BellOutlined,
     SoundOutlined,
     HomeOutlined,
+    NodeIndexOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { LAYOUT_CONFIG } from '../config/layout.config';
@@ -81,7 +82,7 @@ const TenantAdminLayout: React.FC = () => {
             },
             {
                 key: '/admin/workflows',
-                icon: <BranchesOutlined />,
+                icon: <NodeIndexOutlined />,
                 label: 'Workflow',
             },
             {

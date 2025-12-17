@@ -13,6 +13,8 @@ import {
     type TenantResponse,
     type TenantRequest,
 } from '../../api/tenant.api';
+import dayjs from 'dayjs';
+import { DATE_FORMAT } from '../../config/date.config';
 
 const { Title } = Typography;
 
@@ -199,17 +201,17 @@ const TenantManagementPage: React.FC = () => {
             sorter: (a, b) => a.status.localeCompare(b.status),
         },
         {
-            title: 'Created At',
+            title: 'Created Date',
             dataIndex: 'createdAt',
             key: 'createdAt',
-            render: (date: string) => new Date(date).toLocaleString(),
+            render: (date: string) => dayjs(date).format(DATE_FORMAT),
             sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         },
         {
-            title: 'Updated At',
+            title: 'Last Sync',
             dataIndex: 'updatedAt',
             key: 'updatedAt',
-            render: (date: string) => new Date(date).toLocaleString(),
+            render: (date: string) => dayjs(date).format(DATE_FORMAT),
             sorter: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
         },
         {
@@ -267,7 +269,7 @@ const TenantManagementPage: React.FC = () => {
     return (
         <>
             <div style={{ marginBottom: 16 }}>
-                <Title level={2}>Tenant Management</Title>
+                <Title level={3}>Tenant Management</Title>
             </div>
 
             {/* Search and Filter Bar */}

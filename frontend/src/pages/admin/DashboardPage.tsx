@@ -82,8 +82,8 @@ const DashboardPage: React.FC = () => {
     };
 
     return (
-        <div style={{ padding: '24px' }}>
-            <Title level={2}>Tenant Dashboard</Title>
+        <div>
+            <Title level={3}>Tenant Dashboard</Title>
 
             {/* Statistics Cards */}
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
