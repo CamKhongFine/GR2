@@ -40,8 +40,8 @@ const LandingPage: React.FC = () => {
 
     const userMenuItems: MenuProps['items'] = user
         ? [
-            { key: 'dashboard', label: 'Manage', icon: <SettingOutlined /> },
             { key: 'profile', label: 'Profile', icon: <UserOutlined /> },
+            { key: 'dashboard', label: 'Manage', icon: <SettingOutlined /> },
             { key: 'logout', label: 'Logout', icon: <LogoutOutlined /> },
         ]
         : [];
@@ -83,7 +83,7 @@ const LandingPage: React.FC = () => {
     return (
         <div className="flex flex-col bg-white">
             {/* Header Navigation */}
-            <div style={{ backgroundColor: '#0f172a ' }} className="border-b border-gray-100 py-4 px-8 sticky top-0 z-50 shadow-sm">
+            <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 border-b border-gray-700 py-4 px-8 sticky top-0 z-50 shadow-sm">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex items-center justify-between">
                         {/* Logo */}
@@ -782,12 +782,6 @@ const LandingPage: React.FC = () => {
                                         </a>
                                     </li>
                                 </ul>
-                                <div className="flex items-center gap-2 text-gray-300 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                                    <MailOutlined className="text-blue-400" />
-                                    <a href="mailto:contact@auraflow.com" className="hover:text-blue-400 transition-colors text-sm">
-                                        contact@auraflow.com
-                                    </a>
-                                </div>
                             </div>
                         </Col>
                     </Row>
