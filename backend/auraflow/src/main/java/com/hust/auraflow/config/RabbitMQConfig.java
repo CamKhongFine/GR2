@@ -22,6 +22,15 @@ public class RabbitMQConfig {
     public static final String INVITE_USER_DLQ = "invite.user.dlq";
     public static final String INVITE_USER_DLQ_KEY = "user.invite.dlq";
 
+    // User Deletion Queue Configuration
+    public static final String DELETE_USER_EXCHANGE = "delete.user.exchange";
+    public static final String DELETE_USER_COMMAND_QUEUE = "delete.user.queue";
+    public static final String DELETE_USER_COMMAND_KEY = "user.delete.command";
+    
+    public static final String DELETE_USER_DLX = "delete.user.dlx";
+    public static final String DELETE_USER_DLQ = "delete.user.dlq";
+    public static final String DELETE_USER_DLQ_KEY = "user.delete.dlq";
+
     @Bean
     public TopicExchange userExchange() {
         return new TopicExchange(INVITE_USER_EXCHANGE, true, false);
@@ -59,6 +68,46 @@ public class RabbitMQConfig {
                 .bind(inviteUserDlq())
                 .to(inviteUserDlx())
                 .with(INVITE_USER_DLQ_KEY);
+    }
+
+    // User Deletion Beans
+    @Bean
+    public TopicExchange deleteUserExchange() {
+        return new TopicExchange(DELETE_USER_EXCHANGE, true, false);
+    }
+
+    @Bean
+    public Queue deleteUserQueue() {
+        return QueueBuilder.durable(DELETE_USER_COMMAND_QUEUE)
+                .withArgument("x-dead-letter-exchange", DELETE_USER_DLX)
+                .withArgument("x-dead-letter-routing-key", DELETE_USER_DLQ_KEY)
+                .build();
+    }
+
+    @Bean
+    public TopicExchange deleteUserDlx() {
+        return new TopicExchange(DELETE_USER_DLX, true, false);
+    }
+
+    @Bean
+    public Queue deleteUserDlq() {
+        return QueueBuilder.durable(DELETE_USER_DLQ).build();
+    }
+
+    @Bean
+    public Binding deleteUserBinding() {
+        return BindingBuilder
+                .bind(deleteUserQueue())
+                .to(deleteUserExchange())
+                .with(DELETE_USER_COMMAND_KEY);
+    }
+
+    @Bean
+    public Binding deleteUserDlqBinding() {
+        return BindingBuilder
+                .bind(deleteUserDlq())
+                .to(deleteUserDlx())
+                .with(DELETE_USER_DLQ_KEY);
     }
 
     @Bean

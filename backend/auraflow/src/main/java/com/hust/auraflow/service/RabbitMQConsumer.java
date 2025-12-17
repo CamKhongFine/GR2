@@ -4,6 +4,7 @@ import com.hust.auraflow.common.Config;
 import com.hust.auraflow.common.enums.InviteRequestStatus;
 import com.hust.auraflow.common.enums.UserStatus;
 import com.hust.auraflow.config.RabbitMQConfig;
+import com.hust.auraflow.dto.DeleteUserCommand;
 import com.hust.auraflow.dto.InviteUserCommand;
 import com.hust.auraflow.entity.InviteRequest;
 import com.hust.auraflow.entity.User;
@@ -92,5 +93,21 @@ public class RabbitMQConsumer {
         }
     }
 
-}
+    @RabbitListener(queues = RabbitMQConfig.DELETE_USER_COMMAND_QUEUE)
+    public void handleDeleteUserCommand(DeleteUserCommand command) {
+        String keycloakSub = command.getKeycloakSub();
+        String email = command.getEmail();
+        
+        log.info("Received DeleteUserCommand for keycloakSub={}, email={}", keycloakSub, email);
+        
+        try {
+            keycloakService.deleteUserFromKeycloak(keycloakSub);
+            log.info("Successfully deleted user from Keycloak: {}", email);
+        } catch (Exception e) {
+            log.error("Failed to delete user from Keycloak: keycloakSub={}, email={}", 
+                    keycloakSub, email, e);
+            throw e;
+        }
+    }
 
+}

@@ -1,6 +1,7 @@
 package com.hust.auraflow.service;
 
 import com.hust.auraflow.config.RabbitMQConfig;
+import com.hust.auraflow.dto.DeleteUserCommand;
 import com.hust.auraflow.dto.InviteUserCommand;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,5 +25,15 @@ public class RabbitMQProducer {
                 command
         );
     }
-}
 
+    public void publishDeleteUserMessage(String keycloakSub, String email) {
+        DeleteUserCommand command = new DeleteUserCommand(keycloakSub, email);
+        log.info("Publishing DeleteUserCommand for keycloakSub={}, email={}", keycloakSub, email);
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.DELETE_USER_EXCHANGE,
+                RabbitMQConfig.DELETE_USER_COMMAND_KEY,
+                command
+        );
+    }
+}

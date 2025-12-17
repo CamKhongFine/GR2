@@ -95,7 +95,6 @@ const UserManagementPage: React.FC = () => {
         },
     });
 
-    // Activate user mutation
     const activateMutation = useMutation({
         mutationFn: activateUser,
         onSuccess: () => {
@@ -107,7 +106,6 @@ const UserManagementPage: React.FC = () => {
         },
     });
 
-    // Deactivate user mutation
     const deactivateMutation = useMutation({
         mutationFn: deactivateUser,
         onSuccess: () => {
@@ -229,16 +227,17 @@ const UserManagementPage: React.FC = () => {
             ),
         },
         {
-            title: 'Created At',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+            title: 'Updated At',
+            dataIndex: 'updatedAt',
+            key: 'updatedAt',
+            width: 250,
+            sorter: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
             render: (date: string) => new Date(date).toLocaleString(),
         },
         {
             title: 'Actions',
             key: 'actions',
-            width: 80,
+            width: 150,
             align: 'center',
             render: (_, record) => {
                 const menuItems = [
@@ -284,7 +283,7 @@ const UserManagementPage: React.FC = () => {
                     <Dropdown
                         menu={{ items: menuItems }}
                         trigger={['click']}
-                        overlayStyle={{ marginLeft: 2000 }}
+                        overlayStyle={{ marginLeft: 10000 }}
                     >
                         <Button type="text" icon={<MoreOutlined style={{ fontSize: 20 }} />} />
                     </Dropdown>

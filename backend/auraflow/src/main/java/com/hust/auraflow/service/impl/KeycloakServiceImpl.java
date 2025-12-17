@@ -163,9 +163,42 @@ public class KeycloakServiceImpl implements KeycloakService {
                 .build();
     }
 
+    @Override
+    public void deleteUserFromKeycloak(String keycloakSub) {
+        log.info("Deleting user from Keycloak with sub: {}", keycloakSub);
+        
+        try {
+            UsersResource usersResource = getRealm().users();
+            UserResource userResource = usersResource.get(keycloakSub);
+            
+            // Verify user exists before deleting
+            UserRepresentation user = userResource.toRepresentation();
+            if (user == null) {
+                log.warn("User with sub {} not found in Keycloak", keycloakSub);
+                return;
+            }
+            
+            // Delete the user
+            Response response = usersResource.delete(keycloakSub);
+            
+            if (response.getStatus() == Response.Status.NO_CONTENT.getStatusCode()) {
+                log.info("Successfully deleted user from Keycloak: {}", keycloakSub);
+            } else {
+                String errorMessage = response.readEntity(String.class);
+                log.error("Failed to delete user from Keycloak. Status: {}, Error: {}", 
+                        response.getStatus(), errorMessage);
+                throw new RuntimeException("Failed to delete user from Keycloak: " + errorMessage);
+            }
+            response.close();
+            
+        } catch (Exception e) {
+            log.error("Error deleting user from Keycloak: {}", keycloakSub, e);
+            throw new RuntimeException("Failed to delete user from Keycloak: " + e.getMessage(), e);
+        }
+    }
+
     private String getUserIdFromLocation(String location) {
         String[] parts = location.split("/");
         return parts[parts.length - 1];
     }
 }
-

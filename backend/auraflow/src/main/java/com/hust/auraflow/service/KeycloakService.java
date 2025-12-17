@@ -28,6 +28,11 @@ public interface KeycloakService {
      * @return tokens from Keycloak
      */
     KeycloakTokenResult exchangeCodeForTokens(String code, String redirectUri);
+
+    /**
+     * Deletes a user from Keycloak by their subject ID.
+     *
+     * @param keycloakSub Keycloak subject ID
+     */
+    void deleteUserFromKeycloak(String keycloakSub);
 }
-
-

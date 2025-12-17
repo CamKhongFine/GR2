@@ -11,6 +11,7 @@ import com.hust.auraflow.repository.DivisionRepository;
 import com.hust.auraflow.repository.UserRepository;
 import com.hust.auraflow.repository.UserRoleRepository;
 import com.hust.auraflow.security.UserPrincipal;
+import com.hust.auraflow.service.RabbitMQProducer;
 import com.hust.auraflow.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ public class UserServiceImpl implements UserService {
     private final UserRoleRepository userRoleRepository;
     private final DivisionRepository divisionRepository;
     private final DepartmentRepository departmentRepository;
+    private final RabbitMQProducer rabbitMQProducer;
 
     @Override
     @Transactional
@@ -242,12 +244,26 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            log.error("User not found with ID: {}", id);
-            throw new RuntimeException("User not found with ID: " + id);
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", id);
+                    return new RuntimeException("User not found with ID: " + id);
+                });
+        
+        String keycloakSub = user.getKeycloakSub();
+        String email = user.getEmail();
+        
+        // Delete from database first
         userRepository.deleteById(id);
-        log.info("Deleted user with id {}", id);
+        log.info("Deleted user from database with id {}", id);
+        
+        // Send message to RabbitMQ to delete from Keycloak asynchronously
+        if (keycloakSub != null && !keycloakSub.isEmpty()) {
+            rabbitMQProducer.publishDeleteUserMessage(keycloakSub, email);
+            log.info("Published delete user message to RabbitMQ for keycloakSub={}", keycloakSub);
+        } else {
+            log.warn("User {} has no Keycloak sub, skipping Keycloak deletion", email);
+        }
     }
     
     @Override
