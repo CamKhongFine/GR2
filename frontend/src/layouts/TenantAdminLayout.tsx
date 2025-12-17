@@ -191,7 +191,7 @@ const TenantAdminLayout: React.FC = () => {
             </Sider>
 
             {/* Main */}
-            <Layout style={{ marginLeft: siderWidth }}>
+            <Layout style={{ marginLeft: siderWidth, background: '#f5f5f5' }}>
                 {/* Header */}
                 <Header
                     style={{
