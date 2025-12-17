@@ -4,10 +4,10 @@ import AdminLayout from '../layouts/AdminLayout';
 import LandingPage from '../pages/landing/LandingPage';
 import AuthPage from '../pages/auth/AuthPage';
 import AppWorkspace from '../pages/AppWorkspace';
-import TenantManagementPage from '../pages/superadmin/TenantManagementPage';
-import UserManagementPage from '../pages/superadmin/UserManagementPage';
-import RoleManagementPage from '../pages/superadmin/RoleManagementPage';
-import DashboardPage from '../pages/superadmin/DashboardPage';
+import TenantManagementPage from '../pages/super-admin/TenantManagementPage';
+import UserManagementPage from '../pages/super-admin/UserManagementPage';
+import RoleManagementPage from '../pages/super-admin/RoleManagementPage';
+import DashboardPage from '../pages/super-admin/DashboardPage';
 import UserProfilePage from '../pages/profile/UserProfilePage';
 
 export const router = createBrowserRouter([
@@ -35,7 +35,7 @@ export const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <Navigate to="/superadmin/dashboard" replace />,
+                element: <Navigate to="/super-admin/dashboard" replace />,
             },
             {
                 path: 'dashboard',
