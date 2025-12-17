@@ -2,6 +2,7 @@ package com.hust.auraflow.service.impl;
 
 import com.hust.auraflow.dto.KeycloakTokenResult;
 import com.hust.auraflow.service.KeycloakService;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,11 +13,7 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -200,5 +197,27 @@ public class KeycloakServiceImpl implements KeycloakService {
     private String getUserIdFromLocation(String location) {
         String[] parts = location.split("/");
         return parts[parts.length - 1];
+    }
+
+    @Override
+    public void logoutUser(String keycloakSub) {
+        
+        try {
+            UsersResource usersResource = getRealm().users();
+            UserResource userResource = usersResource.get(keycloakSub);
+            
+            UserRepresentation user = userResource.toRepresentation();
+            if (user == null) {
+                log.warn("User not found in Keycloak, skipping logout: {}", keycloakSub);
+                return;
+            }
+            
+            userResource.logout();            
+        } catch (NotFoundException e) {
+            log.warn("User not found in Keycloak during logout: {}", keycloakSub);
+        } catch (Exception e) {
+            log.error("Failed to logout user from Keycloak: {}", keycloakSub, e);
+            throw new RuntimeException("Failed to logout user from Keycloak: " + keycloakSub, e);
+        }
     }
 }

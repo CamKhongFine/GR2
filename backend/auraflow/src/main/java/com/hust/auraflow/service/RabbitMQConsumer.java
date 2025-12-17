@@ -6,6 +6,7 @@ import com.hust.auraflow.common.enums.UserStatus;
 import com.hust.auraflow.config.RabbitMQConfig;
 import com.hust.auraflow.dto.DeleteUserCommand;
 import com.hust.auraflow.dto.InviteUserCommand;
+import com.hust.auraflow.dto.LogoutUserCommand;
 import com.hust.auraflow.entity.InviteRequest;
 import com.hust.auraflow.entity.User;
 import com.hust.auraflow.repository.InviteRequestRepository;
@@ -59,6 +60,8 @@ public class RabbitMQConsumer {
                     inviteRequest.getTenantId()
             );
 
+            keycloakService.sendInviteEmail(keycloakUserId);
+
             User user = User.builder()
                     .email(inviteRequest.getEmail())
                     .tenantId(inviteRequest.getTenantId())
@@ -66,8 +69,6 @@ public class RabbitMQConsumer {
                     .keycloakSub(keycloakUserId)
                     .build();
             userRepository.save(user);
-
-            keycloakService.sendInviteEmail(keycloakUserId);
 
             inviteRequest.setStatus(InviteRequestStatus.COMPLETED);
             inviteRequest.setErrorMessage(null);
@@ -94,6 +95,7 @@ public class RabbitMQConsumer {
     }
 
     @RabbitListener(queues = RabbitMQConfig.DELETE_USER_COMMAND_QUEUE)
+    @Transactional
     public void handleDeleteUserCommand(DeleteUserCommand command) {
         String keycloakSub = command.getKeycloakSub();
         String email = command.getEmail();
@@ -104,10 +106,20 @@ public class RabbitMQConsumer {
             keycloakService.deleteUserFromKeycloak(keycloakSub);
             log.info("Successfully deleted user from Keycloak: {}", email);
         } catch (Exception e) {
-            log.error("Failed to delete user from Keycloak: keycloakSub={}, email={}", 
-                    keycloakSub, email, e);
-            throw e;
+            log.error("Failed to delete user from Keycloak: {}", email, e);
+            throw new AmqpRejectAndDontRequeueException("Failed to delete user from Keycloak", e);
         }
     }
 
+    @RabbitListener(queues = RabbitMQConfig.LOGOUT_USER_COMMAND_QUEUE)
+    public void handleLogoutCommand(LogoutUserCommand command) {
+        String keycloakSub = command.getKeycloakSub();
+        String email = command.getEmail();        
+        try {
+            keycloakService.logoutUser(keycloakSub);
+            log.info("Successfully logged out user from Keycloak: {}", email);
+        } catch (Exception e) {
+            log.error("Failed to logout user from Keycloak: {}", email, e);
+        }
+    }
 }

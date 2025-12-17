@@ -31,6 +31,15 @@ public class RabbitMQConfig {
     public static final String DELETE_USER_DLQ = "delete.user.dlq";
     public static final String DELETE_USER_DLQ_KEY = "user.delete.dlq";
 
+    // Logout User Queue Configuration
+    public static final String LOGOUT_USER_EXCHANGE = "logout.user.exchange";
+    public static final String LOGOUT_USER_COMMAND_QUEUE = "logout.user.queue";
+    public static final String LOGOUT_USER_COMMAND_KEY = "user.logout.command";
+    
+    public static final String LOGOUT_USER_DLX = "logout.user.dlx";
+    public static final String LOGOUT_USER_DLQ = "logout.user.dlq";
+    public static final String LOGOUT_USER_DLQ_KEY = "user.logout.dlq";
+
     @Bean
     public TopicExchange userExchange() {
         return new TopicExchange(INVITE_USER_EXCHANGE, true, false);
@@ -108,6 +117,46 @@ public class RabbitMQConfig {
                 .bind(deleteUserDlq())
                 .to(deleteUserDlx())
                 .with(DELETE_USER_DLQ_KEY);
+    }
+
+    // Logout User Beans
+    @Bean
+    public TopicExchange logoutUserExchange() {
+        return new TopicExchange(LOGOUT_USER_EXCHANGE, true, false);
+    }
+
+    @Bean
+    public Queue logoutUserQueue() {
+        return QueueBuilder.durable(LOGOUT_USER_COMMAND_QUEUE)
+                .withArgument("x-dead-letter-exchange", LOGOUT_USER_DLX)
+                .withArgument("x-dead-letter-routing-key", LOGOUT_USER_DLQ_KEY)
+                .build();
+    }
+
+    @Bean
+    public TopicExchange logoutUserDlx() {
+        return new TopicExchange(LOGOUT_USER_DLX, true, false);
+    }
+
+    @Bean
+    public Queue logoutUserDlq() {
+        return QueueBuilder.durable(LOGOUT_USER_DLQ).build();
+    }
+
+    @Bean
+    public Binding logoutUserBinding() {
+        return BindingBuilder
+                .bind(logoutUserQueue())
+                .to(logoutUserExchange())
+                .with(LOGOUT_USER_COMMAND_KEY);
+    }
+
+    @Bean
+    public Binding logoutUserDlqBinding() {
+        return BindingBuilder
+                .bind(logoutUserDlq())
+                .to(logoutUserDlx())
+                .with(LOGOUT_USER_DLQ_KEY);
     }
 
     @Bean

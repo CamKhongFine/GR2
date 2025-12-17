@@ -26,6 +26,7 @@ import {
     StopOutlined,
     CheckCircleOutlined,
     SafetyCertificateOutlined,
+    PlusOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -33,11 +34,12 @@ import {
     deleteUser,
     activateUser,
     deactivateUser,
-    UserResponse
+    UserResponse,
 } from '../../api/user.api';
 import { inviteUser } from '../../api/auth.api';
 import { assignRolesToUser } from '../../api/userRole.api';
 import { fetchRoles, RoleResponse } from '../../api/role.api';
+import { fetchTenants } from '../../api/tenant.api';
 
 const { Title, Text } = Typography;
 
@@ -61,13 +63,19 @@ const UserManagementPage: React.FC = () => {
 
     // Fetch all roles for assignment
     const { data: rolesData } = useQuery({
-        queryKey: ['roles-all'],
-        queryFn: () => fetchRoles(0, 100), // Fetch first 100 roles
+        queryKey: ['roles'],
+        queryFn: () => fetchRoles(0, 100),
+    });
+
+    const { data: tenantsData } = useQuery({
+        queryKey: ['tenants'],
+        queryFn: () => fetchTenants(0, 100),
     });
 
     const users = data?.content || [];
     const totalElements = data?.totalElements || 0;
     const allRoles = rolesData?.content || [];
+    const tenants = tenantsData?.content || [];
 
     // Invite user mutation
     const inviteMutation = useMutation({
@@ -373,18 +381,34 @@ const UserManagementPage: React.FC = () => {
                         <Input placeholder="user@example.com" />
                     </Form.Item>
                     <Form.Item
-                        label="Tenant ID"
+                        label="Tenant"
                         name="tenantId"
-                        rules={[{ required: true, message: 'Please enter tenant ID' }]}
+                        rules={[{ required: true, message: 'Please select a tenant' }]}
                     >
-                        <Input type="number" placeholder="1" />
+                        <Select
+                            placeholder="Select a tenant"
+                            showSearch
+                            optionFilterProp="children"
+                            filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                            options={tenants.map(tenant => ({
+                                value: tenant.id,
+                                label: tenant.name,
+                            }))}
+                        />
                     </Form.Item>
                 </Form>
             </Modal>
 
             {/* Assign Roles Modal */}
             <Modal
-                title={`Assign Roles to ${selectedUser?.email}`}
+                title={
+                    selectedUser?.firstName || selectedUser?.lastName
+                        ? `Assign roles to ${selectedUser?.firstName ?? ''} ${selectedUser?.lastName ?? ''}`.trim()
+                        : `Assign roles to ${selectedUser?.email ?? 'N/A'}`
+                }
+
                 open={isAssignRolesModalOpen}
                 onOk={handleAssignRolesSubmit}
                 onCancel={() => {
@@ -399,14 +423,14 @@ const UserManagementPage: React.FC = () => {
                     <Form.Item
                         label="Select Roles"
                         name="roleIds"
+                        style={{ marginTop: 20 }}
                         rules={[{ required: true, message: 'Please select at least one role' }]}
                     >
-                        <Checkbox.Group style={{ width: '100%' }}>
+                        <Checkbox.Group style={{ width: '100%', marginTop: 5 }}>
                             <Space direction="vertical" style={{ width: '100%' }}>
                                 {allRoles.map((role: RoleResponse) => (
                                     <Checkbox key={role.id} value={role.id}>
                                         <Space>
-                                            <SafetyCertificateOutlined style={{ color: '#1890ff' }} />
                                             <span style={{ fontWeight: 500 }}>{role.name}</span>
                                             <Tag color="blue">Level {role.level}</Tag>
                                             {role.description && (
@@ -421,7 +445,7 @@ const UserManagementPage: React.FC = () => {
                         </Checkbox.Group>
                     </Form.Item>
                 </Form>
-            </Modal>
+            </Modal >
         </>
     );
 };

@@ -130,4 +130,37 @@ public class AuthServiceImpl implements AuthService {
     public SessionData getSessionData(String sessionId) {
         return sessionService.getSession(sessionId);
     }
+
+    @Override
+    public void clearSession(String sessionId) {
+        log.info("Clearing session: {}", sessionId);
+        
+        try {
+            // Get session data before deleting
+            SessionData sessionData = sessionService.getSession(sessionId);
+            
+            // Delete session from Redis immediately
+            sessionService.deleteSession(sessionId);
+            log.info("Session deleted from Redis: {}", sessionId);
+            
+            // Publish logout message to RabbitMQ for async Keycloak logout
+            if (sessionData != null && sessionData.getUserId() != null) {
+                User user = userRepository.findById(sessionData.getUserId()).orElse(null);
+                
+                if (user != null && user.getKeycloakSub() != null) {
+                    rabbitMQProducer.publishLogoutUserMessage(user.getKeycloakSub(), user.getEmail());
+                    log.info("Published logout message to RabbitMQ for user: {}", user.getEmail());
+                }
+            }
+            
+        } catch (Exception e) {
+            log.error("Error during session cleanup for sessionId: {}", sessionId, e);
+            // Ensure session is deleted even if there's an error
+            try {
+                sessionService.deleteSession(sessionId);
+            } catch (Exception ex) {
+                log.error("Failed to delete session after error: {}", sessionId, ex);
+            }
+        }
+    }
 }

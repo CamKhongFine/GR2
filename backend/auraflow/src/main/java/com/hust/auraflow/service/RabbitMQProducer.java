@@ -3,6 +3,7 @@ package com.hust.auraflow.service;
 import com.hust.auraflow.config.RabbitMQConfig;
 import com.hust.auraflow.dto.DeleteUserCommand;
 import com.hust.auraflow.dto.InviteUserCommand;
+import com.hust.auraflow.dto.LogoutUserCommand;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -33,6 +34,17 @@ public class RabbitMQProducer {
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.DELETE_USER_EXCHANGE,
                 RabbitMQConfig.DELETE_USER_COMMAND_KEY,
+                command
+        );
+    }
+
+    public void publishLogoutUserMessage(String keycloakSub, String email) {
+        LogoutUserCommand command = new LogoutUserCommand(keycloakSub, email);
+        log.info("Publishing LogoutUserCommand for keycloakSub={}, email={}", keycloakSub, email);
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.LOGOUT_USER_EXCHANGE,
+                RabbitMQConfig.LOGOUT_USER_COMMAND_KEY,
                 command
         );
     }

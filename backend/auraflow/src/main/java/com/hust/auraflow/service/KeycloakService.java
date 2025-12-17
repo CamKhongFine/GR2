@@ -35,4 +35,11 @@ public interface KeycloakService {
      * @param keycloakSub Keycloak subject ID
      */
     void deleteUserFromKeycloak(String keycloakSub);
+    
+    /**
+     * Logs out a user from Keycloak by invalidating their session.
+     *
+     * @param keycloakSub Keycloak subject ID
+     */
+    void logoutUser(String keycloakSub);
 }

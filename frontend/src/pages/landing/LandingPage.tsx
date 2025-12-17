@@ -46,14 +46,27 @@ const LandingPage: React.FC = () => {
         ]
         : [];
 
-    const handleUserMenuClick: MenuProps['onClick'] = ({ key }) => {
+    const handleUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
         if (key === 'dashboard') {
             navigate('/superadmin/dashboard');
         } else if (key === 'profile') {
             navigate('/profile');
         } else if (key === 'logout') {
-            logout();
-            navigate('/login');
+            try {
+                // Call backend logout API to clear Redis session
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include',
+                });
+            } catch (error) {
+                console.error('Logout API error:', error);
+            } finally {
+                // Clear local storage regardless of API result
+                logout();
+                localStorage.clear();
+                sessionStorage.clear();
+                navigate('/login');
+            }
         }
     };
 

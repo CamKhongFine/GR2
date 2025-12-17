@@ -16,5 +16,6 @@ public interface AuthService {
     String handleKeycloakCallback(String code, String redirectUri);
     
     SessionData getSessionData(String sessionId);
+    
+    void clearSession(String sessionId);
 }
-

@@ -69,5 +69,38 @@ public class AuthController {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
-}
 
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @CookieValue(value = "AURAFLOW_SESSION", required = false) String sessionId,
+            HttpServletResponse response) {
+        
+        log.info("Logout request received for sessionId: {}", sessionId != null ? sessionId : "none");
+        
+        try {
+            // Clear session from Redis and publish logout message to RabbitMQ
+            if (sessionId != null && !sessionId.isEmpty()) {
+                authService.clearSession(sessionId);
+            }
+            
+            // Clear session cookie
+            ResponseCookie clearCookie = ResponseCookie.from("AURAFLOW_SESSION", "")
+                    .httpOnly(true)
+                    .secure(false) // Will be set based on request in production
+                    .path("/")
+                    .maxAge(0)
+                    .sameSite("Lax")
+                    .build();
+            
+            response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, clearCookie.toString());
+            
+            log.info("Logout successful");
+            return ResponseEntity.ok().build();
+            
+        } catch (Exception e) {
+            log.error("Error during logout", e);
+            // Still return success to client even if there was an error
+            return ResponseEntity.ok().build();
+        }
+    }
+}
