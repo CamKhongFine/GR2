@@ -66,3 +66,16 @@ export const fetchDepartments = async (): Promise<DepartmentResponse[]> => {
     return response.data;
 };
 
+export interface InviteRequest {
+    email: string;
+    tenantId: number;
+}
+
+export interface InviteResponse {
+    message: string;
+}
+
+export const inviteUser = async (data: InviteRequest): Promise<InviteResponse> => {
+    const response = await apiClient.post<InviteResponse>('/api/auth/invite', data);
+    return response.data;
+};

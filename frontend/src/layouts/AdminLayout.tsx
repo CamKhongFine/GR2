@@ -20,6 +20,8 @@ import {
     MenuUnfoldOutlined,
     MenuFoldOutlined,
     LogoutOutlined,
+    SafetyCertificateOutlined,
+    HomeOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { LAYOUT_CONFIG } from '../config/layout.config';
@@ -55,7 +57,7 @@ const AdminLayout: React.FC = () => {
         () => [
             {
                 key: '/',
-                icon: <DashboardOutlined />,
+                icon: <HomeOutlined />,
                 label: 'Home',
             },
             {
@@ -72,6 +74,11 @@ const AdminLayout: React.FC = () => {
                 key: '/admin/users',
                 icon: <TeamOutlined />,
                 label: 'User Management',
+            },
+            {
+                key: '/admin/roles',
+                icon: <SafetyCertificateOutlined />,
+                label: 'Role Management',
             },
             {
                 key: '/profile',

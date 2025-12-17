@@ -7,7 +7,10 @@ import com.hust.auraflow.repository.RoleRepository;
 import com.hust.auraflow.service.RoleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,11 +23,10 @@ public class RoleServiceImpl implements RoleService {
     private final RoleRepository roleRepository;
 
     @Override
-    public List<RoleResponse> getAllRoles() {
-        return roleRepository.findAll()
-                .stream()
-                .map(RoleResponse::fromEntity)
-                .toList();
+    @Transactional(readOnly = true)
+    public Page<RoleResponse> getAllRoles(Long id, String name, Integer level, Pageable pageable) {
+        Page<Role> roles = roleRepository.findByFilters(id, name, level, pageable);
+        return roles.map(RoleResponse::fromEntity);
     }
 
     @Override

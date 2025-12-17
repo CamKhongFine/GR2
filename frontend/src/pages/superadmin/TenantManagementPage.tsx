@@ -184,13 +184,6 @@ const TenantManagementPage: React.FC = () => {
 
     const columns: ColumnsType<TenantResponse> = [
         {
-            title: 'ID',
-            dataIndex: 'id',
-            key: 'id',
-            width: 80,
-            sorter: (a, b) => a.id - b.id,
-        },
-        {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',

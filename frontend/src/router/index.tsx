@@ -6,6 +6,7 @@ import AuthPage from '../pages/auth/AuthPage';
 import AppWorkspace from '../pages/AppWorkspace';
 import TenantManagementPage from '../pages/superadmin/TenantManagementPage';
 import UserManagementPage from '../pages/superadmin/UserManagementPage';
+import RoleManagementPage from '../pages/superadmin/RoleManagementPage';
 import UserProfilePage from '../pages/profile/UserProfilePage';
 
 export const router = createBrowserRouter([
@@ -38,6 +39,10 @@ export const router = createBrowserRouter([
             {
                 path: 'users',
                 element: <UserManagementPage />,
+            },
+            {
+                path: 'roles',
+                element: <RoleManagementPage />,
             },
         ],
     },

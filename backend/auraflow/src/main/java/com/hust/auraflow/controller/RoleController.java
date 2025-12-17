@@ -5,6 +5,8 @@ import com.hust.auraflow.dto.RoleResponse;
 import com.hust.auraflow.service.RoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +21,13 @@ public class RoleController {
     private final RoleService roleService;
 
     @GetMapping
-    public ResponseEntity<List<RoleResponse>> getAllRoles() {
-        return ResponseEntity.ok(roleService.getAllRoles());
+    public ResponseEntity<Page<RoleResponse>> getAllRoles(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Integer level,
+            Pageable pageable) {
+        Page<RoleResponse> response = roleService.getAllRoles(id, name, level, pageable);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")

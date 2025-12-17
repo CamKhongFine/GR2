@@ -14,6 +14,8 @@ import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -180,6 +182,145 @@ public class UserServiceImpl implements UserService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
+    }    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserResponse> getAllUsers(Long id, String email, String status, Long tenantId, Pageable pageable) {
+        Page<User> users = userRepository.findByFilters(id, email, status, tenantId, pageable);
+        return users.map(this::buildUserResponse);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", id);
+                    return new RuntimeException("User not found with ID: " + id);
+                });
+        return buildUserResponse(user);
+    }
+    
+    @Override
+    @Transactional
+    public UserResponse updateUser(Long id, UpdateUserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", id);
+                    return new RuntimeException("User not found with ID: " + id);
+                });
+        
+        // Update fields if provided
+        if (request.getFirstName() != null) {
+            user.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getTitle() != null) {
+            user.setTitle(request.getTitle());
+        }
+        if (request.getDivisionId() != null) {
+            Division division = divisionRepository.findById(request.getDivisionId())
+                    .orElseThrow(() -> new IllegalArgumentException("Division not found"));
+            user.setDivision(division);
+        }
+        if (request.getDepartmentId() != null) {
+            Department department = departmentRepository.findById(request.getDepartmentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Department not found"));
+            if (!department.getTenantId().equals(user.getTenantId())) {
+                throw new IllegalArgumentException("Department does not belong to user's tenant");
+            }
+            user.setDepartment(department);
+        }
+        
+        User updatedUser = userRepository.save(user);
+        log.info("Updated user with id {}", updatedUser.getId());
+        return buildUserResponse(updatedUser);
+    }
+    
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            log.error("User not found with ID: {}", id);
+            throw new RuntimeException("User not found with ID: " + id);
+        }
+        userRepository.deleteById(id);
+        log.info("Deleted user with id {}", id);
+    }
+    
+    @Override
+    @Transactional
+    public UserResponse activateUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", id);
+                    return new RuntimeException("User not found with ID: " + id);
+                });
+        
+        user.setStatus(UserStatus.ACTIVE);
+        User updatedUser = userRepository.save(user);
+        log.info("Activated user with id {}", updatedUser.getId());
+        return buildUserResponse(updatedUser);
+    }
+    
+    @Override
+    @Transactional
+    public UserResponse deactivateUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", id);
+                    return new RuntimeException("User not found with ID: " + id);
+                });
+        
+        user.setStatus(UserStatus.INACTIVE);
+        User updatedUser = userRepository.save(user);
+        log.info("Deactivated user with id {}", updatedUser.getId());
+        return buildUserResponse(updatedUser);
+    }
+    
+    private UserResponse buildUserResponse(User user) {
+        List<UserRole> userRoles = userRoleRepository.findByIdUserId(user.getId());
+        List<RoleResponse> roles = userRoles.stream()
+                .map(UserRole::getRole)
+                .filter(java.util.Objects::nonNull)
+                .map(RoleResponse::fromEntity)
+                .collect(Collectors.toList());
+        
+        DivisionResponse divisionResponse = null;
+        if (user.getDivision() != null) {
+            divisionResponse = DivisionResponse.builder()
+                    .id(user.getDivision().getId())
+                    .name(user.getDivision().getName())
+                    .description(user.getDivision().getDescription())
+                    .build();
+        }
+
+        DepartmentResponse departmentResponse = null;
+        if (user.getDepartment() != null) {
+            departmentResponse = DepartmentResponse.builder()
+                    .id(user.getDepartment().getId())
+                    .tenantId(user.getDepartment().getTenantId())
+                    .name(user.getDepartment().getName())
+                    .description(user.getDepartment().getDescription())
+                    .build();
+        }
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .tenantId(user.getTenantId())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .title(user.getTitle())
+                .avatarUrl(user.getAvatarUrl())
+                .division(divisionResponse)
+                .department(departmentResponse)
+                .roles(roles)
+                .status(user.getStatus())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
     }
 }
-
