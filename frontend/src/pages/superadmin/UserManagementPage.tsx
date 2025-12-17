@@ -13,6 +13,7 @@ import {
     Modal,
     Form,
     Dropdown,
+    Checkbox,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -24,6 +25,7 @@ import {
     DeleteOutlined,
     StopOutlined,
     CheckCircleOutlined,
+    SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -34,6 +36,8 @@ import {
     UserResponse
 } from '../../api/user.api';
 import { inviteUser } from '../../api/auth.api';
+import { assignRolesToUser } from '../../api/userRole.api';
+import { fetchRoles, RoleResponse } from '../../api/role.api';
 
 const { Title, Text } = Typography;
 
@@ -43,7 +47,10 @@ const UserManagementPage: React.FC = () => {
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [isAssignRolesModalOpen, setIsAssignRolesModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
     const [inviteForm] = Form.useForm();
+    const [assignRolesForm] = Form.useForm();
     const queryClient = useQueryClient();
 
     // Fetch users with pagination
@@ -52,8 +59,15 @@ const UserManagementPage: React.FC = () => {
         queryFn: () => fetchUsers(page, pageSize, undefined, searchText, statusFilter !== 'all' ? statusFilter : undefined),
     });
 
+    // Fetch all roles for assignment
+    const { data: rolesData } = useQuery({
+        queryKey: ['roles-all'],
+        queryFn: () => fetchRoles(0, 100), // Fetch first 100 roles
+    });
+
     const users = data?.content || [];
     const totalElements = data?.totalElements || 0;
+    const allRoles = rolesData?.content || [];
 
     // Invite user mutation
     const inviteMutation = useMutation({
@@ -105,6 +119,21 @@ const UserManagementPage: React.FC = () => {
         },
     });
 
+    // Assign roles mutation
+    const assignRolesMutation = useMutation({
+        mutationFn: assignRolesToUser,
+        onSuccess: () => {
+            message.success('Roles assigned successfully');
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            setIsAssignRolesModalOpen(false);
+            setSelectedUser(null);
+            assignRolesForm.resetFields();
+        },
+        onError: () => {
+            message.error('Failed to assign roles');
+        },
+    });
+
     const handleInvite = async () => {
         try {
             const values = await inviteForm.validateFields();
@@ -124,6 +153,26 @@ const UserManagementPage: React.FC = () => {
 
     const handleDeactivate = async (id: number) => {
         deactivateMutation.mutate(id);
+    };
+
+    const handleAssignRoles = (user: UserResponse) => {
+        setSelectedUser(user);
+        const currentRoleIds = user.roles?.map(r => r.id) || [];
+        assignRolesForm.setFieldsValue({ roleIds: currentRoleIds });
+        setIsAssignRolesModalOpen(true);
+    };
+
+    const handleAssignRolesSubmit = async () => {
+        if (!selectedUser) return;
+        try {
+            const values = await assignRolesForm.validateFields();
+            assignRolesMutation.mutate({
+                userId: selectedUser.id,
+                roleIds: values.roleIds,
+            });
+        } catch (error) {
+            console.error('Validation failed:', error);
+        }
     };
 
     const columns: ColumnsType<UserResponse> = [
@@ -152,10 +201,21 @@ const UserManagementPage: React.FC = () => {
             render: (title: string) => title || 'N/A',
         },
         {
-            title: 'Tenant ID',
-            dataIndex: 'tenantId',
-            key: 'tenantId',
-            sorter: (a, b) => a.tenantId - b.tenantId,
+            title: 'Roles',
+            key: 'roles',
+            render: (_, record) => (
+                <>
+                    {record.roles && record.roles.length > 0 ? (
+                        record.roles.map(role => (
+                            <Tag key={role.id} color="blue" style={{ marginBottom: 4 }}>
+                                {role.name}
+                            </Tag>
+                        ))
+                    ) : (
+                        <Text type="secondary">No roles</Text>
+                    )}
+                </>
+            ),
         },
         {
             title: 'Status',
@@ -187,6 +247,12 @@ const UserManagementPage: React.FC = () => {
                         label: 'Edit',
                         icon: <EditOutlined />,
                         onClick: () => console.log('Edit', record.id),
+                    },
+                    {
+                        key: 'assign-roles',
+                        label: 'Assign Roles',
+                        icon: <SafetyCertificateOutlined />,
+                        onClick: () => handleAssignRoles(record),
                     },
                 ];
 
@@ -313,6 +379,47 @@ const UserManagementPage: React.FC = () => {
                         rules={[{ required: true, message: 'Please enter tenant ID' }]}
                     >
                         <Input type="number" placeholder="1" />
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            {/* Assign Roles Modal */}
+            <Modal
+                title={`Assign Roles to ${selectedUser?.email}`}
+                open={isAssignRolesModalOpen}
+                onOk={handleAssignRolesSubmit}
+                onCancel={() => {
+                    setIsAssignRolesModalOpen(false);
+                    setSelectedUser(null);
+                    assignRolesForm.resetFields();
+                }}
+                confirmLoading={assignRolesMutation.isPending}
+                width={600}
+            >
+                <Form form={assignRolesForm} layout="vertical">
+                    <Form.Item
+                        label="Select Roles"
+                        name="roleIds"
+                        rules={[{ required: true, message: 'Please select at least one role' }]}
+                    >
+                        <Checkbox.Group style={{ width: '100%' }}>
+                            <Space direction="vertical" style={{ width: '100%' }}>
+                                {allRoles.map((role: RoleResponse) => (
+                                    <Checkbox key={role.id} value={role.id}>
+                                        <Space>
+                                            <SafetyCertificateOutlined style={{ color: '#1890ff' }} />
+                                            <span style={{ fontWeight: 500 }}>{role.name}</span>
+                                            <Tag color="blue">Level {role.level}</Tag>
+                                            {role.description && (
+                                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                                    - {role.description}
+                                                </Text>
+                                            )}
+                                        </Space>
+                                    </Checkbox>
+                                ))}
+                            </Space>
+                        </Checkbox.Group>
                     </Form.Item>
                 </Form>
             </Modal>
