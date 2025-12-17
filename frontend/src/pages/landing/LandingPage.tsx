@@ -21,6 +21,7 @@ import {
     MailOutlined,
     GithubOutlined,
     FileTextOutlined,
+    PhoneOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../../store/userStore';
@@ -88,7 +89,7 @@ const LandingPage: React.FC = () => {
                             <a href="#who-its-for" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Who It's For</a>
                             <a href="#features" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Features</a>
                             <a href="#use-cases" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Use Cases</a>
-                            <a href="#contact" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Contact</a>
+                            <a href="#contact-us" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Contact</a>
                         </div>
 
                         {/* Auth Buttons */}
@@ -119,7 +120,9 @@ const LandingPage: React.FC = () => {
                                     <Button
                                         type="primary"
                                         className="h-10 px-6 bg-blue-600 hover:bg-blue-500 border-0 font-medium rounded-lg"
-                                        onClick={() => navigate('/login')}
+                                        onClick={() => {
+                                            document.getElementById('contact-us')?.scrollIntoView({ behavior: 'smooth' });
+                                        }}
                                     >
                                         Request a Demo
                                     </Button>
@@ -152,7 +155,9 @@ const LandingPage: React.FC = () => {
                                         type="primary"
                                         size="large"
                                         className="h-14 px-8 text-base font-medium bg-blue-600 hover:bg-blue-500 border-0 rounded-lg shadow-lg"
-                                        onClick={() => navigate('/login')}
+                                        onClick={() => {
+                                            document.getElementById('contact-us')?.scrollIntoView({ behavior: 'smooth' });
+                                        }}
                                     >
                                         Request a Demo
                                     </Button>
@@ -564,48 +569,128 @@ const LandingPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* CTA Section */}
-            <div className="py-24 px-8 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700">
-                <div className="max-w-4xl mx-auto text-center">
-                    <Title level={2} className="text-white text-4xl md:text-5xl font-bold mb-6">
-                        Ready to Transform Your Workflows?
-                    </Title>
-                    <Paragraph className="text-white/90 text-xl mb-4 max-w-2xl mx-auto">
-                        Join forward-thinking organizations using AuraFlow to build scalable, secure, and efficient workflow systems.
-                    </Paragraph>
-                    <div className="flex flex-wrap gap-3 justify-center items-center mb-10 text-white/80">
-                        <div className="flex items-center gap-2">
-                            <CheckCircleOutlined className="text-green-300" />
-                            <span>Built for scalability</span>
-                        </div>
-                        <span className="text-white/40">•</span>
-                        <div className="flex items-center gap-2">
-                            <CheckCircleOutlined className="text-green-300" />
-                            <span>Designed for enterprise workflows</span>
-                        </div>
-                        <span className="text-white/40">•</span>
-                        <div className="flex items-center gap-2">
-                            <CheckCircleOutlined className="text-green-300" />
-                            <span>Secure & extensible by design</span>
-                        </div>
+            {/* Contact Us Section */}
+            <div id="contact-us" className="py-24 px-8 bg-gradient-to-br from-white via-blue-50 to-purple-50">
+                <div className="max-w-7xl mx-auto">
+                    <div className="text-center mb-16">
+                        <Title level={2} className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+                            Get in Touch
+                        </Title>
+                        <Paragraph className="text-xl text-gray-600 max-w-3xl mx-auto">
+                            Ready to transform your workflows? Our team is here to help you get started with AuraFlow.
+                        </Paragraph>
                     </div>
-                    <div className="flex flex-wrap gap-4 justify-center">
-                        <Button
-                            size="large"
-                            className="h-16 px-12 text-lg font-medium bg-white text-blue-600 hover:bg-gray-100 border-0 shadow-xl rounded-lg"
-                            onClick={() => navigate('/login')}
-                            icon={<ArrowRightOutlined />}
-                            iconPosition="end"
-                        >
-                            Request a Demo
-                        </Button>
-                        <Button
-                            size="large"
-                            className="h-16 px-12 text-lg font-medium bg-transparent text-white hover:bg-white/10 border-2 border-white rounded-lg"
-                            onClick={() => navigate('/login')}
-                        >
-                            Get Started
-                        </Button>
+
+                    <Row gutter={[48, 48]} justify="center">
+                        {/* Email Card */}
+                        <Col xs={24} md={12} lg={10}>
+                            <Card className="h-full border-0 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                                <div className="relative">
+                                    {/* Gradient Background */}
+                                    <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-blue-500 to-blue-600"></div>
+
+                                    {/* Icon */}
+                                    <div className="relative pt-8 pb-6 flex justify-center">
+                                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                            <MailOutlined className="text-5xl text-blue-600" />
+                                        </div>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="px-8 pb-8 text-center">
+                                        <Title level={3} className="text-2xl mb-3 text-gray-900">Email Us</Title>
+                                        <Paragraph className="text-gray-600 mb-6">
+                                            Send us an email and we'll respond within 24 hours
+                                        </Paragraph>
+                                        <a
+                                            href="mailto:contact@auraflow.com"
+                                            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-500 font-semibold text-lg transition-colors"
+                                        >
+                                            <MailOutlined />
+                                            contact@auraflow.com
+                                        </a>
+                                        <div className="mt-6">
+                                            <Button
+                                                type="primary"
+                                                size="large"
+                                                className="h-12 px-8 bg-blue-600 hover:bg-blue-500 border-0 rounded-lg"
+                                                icon={<MailOutlined />}
+                                                href="mailto:contact@auraflow.com"
+                                            >
+                                                Send Email
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </Col>
+
+                        {/* Phone Card */}
+                        <Col xs={24} md={12} lg={10}>
+                            <Card className="h-full border-0 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                                <div className="relative">
+                                    {/* Gradient Background */}
+                                    <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-green-500 to-green-600"></div>
+
+                                    {/* Icon */}
+                                    <div className="relative pt-8 pb-6 flex justify-center">
+                                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                            <PhoneOutlined className="text-5xl text-green-600" />
+                                        </div>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="px-8 pb-8 text-center">
+                                        <Title level={3} className="text-2xl mb-3 text-gray-900">Call Us</Title>
+                                        <Paragraph className="text-gray-600 mb-6">
+                                            Speak directly with our team Monday - Friday, 9AM - 6PM EST
+                                        </Paragraph>
+                                        <a
+                                            href="tel:+84972222222"
+                                            className="inline-flex items-center gap-2 text-green-600 hover:text-green-500 font-semibold text-lg transition-colors"
+                                        >
+                                            <PhoneOutlined />
+                                            +84 972 222 222
+                                        </a>
+                                        <div className="mt-6">
+                                            <Button
+                                                type="primary"
+                                                size="large"
+                                                className="h-12 px-8 bg-green-600 hover:bg-green-500 border-0 rounded-lg"
+                                                icon={<PhoneOutlined />}
+                                                href="tel:+15551234567"
+                                            >
+                                                Call Now
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    {/* Additional Info */}
+                    <div className="mt-16 text-center">
+                        <Card className="inline-block border-0 rounded-2xl shadow-lg bg-white/80 backdrop-blur">
+                            <div className="px-8 py-6">
+                                <div className="flex flex-wrap items-center justify-center gap-6 text-gray-700">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircleOutlined className="text-blue-600 text-xl" />
+                                        <span className="font-medium">Enterprise Support Available</span>
+                                    </div>
+                                    <span className="text-gray-300">•</span>
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircleOutlined className="text-blue-600 text-xl" />
+                                        <span className="font-medium">Free Consultation</span>
+                                    </div>
+                                    <span className="text-gray-300">•</span>
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircleOutlined className="text-blue-600 text-xl" />
+                                        <span className="font-medium">Custom Solutions</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
                     </div>
                 </div>
             </div>
