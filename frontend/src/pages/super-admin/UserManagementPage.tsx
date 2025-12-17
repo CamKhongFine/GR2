@@ -304,7 +304,7 @@ const UserManagementPage: React.FC = () => {
             render: (date: string) => dayjs(date).format(DATE_FORMAT),
         },
         {
-            title: 'Last Sync',
+            title: 'Last Update',
             dataIndex: 'updatedAt',
             key: 'updatedAt',
             width: 200,
