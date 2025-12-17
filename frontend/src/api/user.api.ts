@@ -1,7 +1,7 @@
 import apiClient from '../lib/apiClient';
 import { RoleResponse } from './role.api';
 
-export type UserStatus = 'ACTIVE' | 'INACTIVE';
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'INVITED';
 
 export interface UserResponse {
     id: number;
@@ -39,7 +39,8 @@ export const fetchUsers = async (
     id?: string,
     email?: string,
     status?: string,
-    tenantId?: number
+    tenantId?: number,
+    roleLevel?: number
 ): Promise<PagedResponse<UserResponse>> => {
     const params = new URLSearchParams({
         page: page.toString(),
@@ -50,6 +51,7 @@ export const fetchUsers = async (
     if (email) params.append('email', email);
     if (status && status !== 'all') params.append('status', status);
     if (tenantId !== undefined) params.append('tenantId', tenantId.toString());
+    if (roleLevel !== undefined) params.append('roleLevel', roleLevel.toString());
 
     const response = await apiClient.get<PagedResponse<UserResponse>>(`/api/users?${params.toString()}`);
     return response.data;

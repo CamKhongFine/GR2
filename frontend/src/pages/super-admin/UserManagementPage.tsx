@@ -49,6 +49,7 @@ const { Title, Text } = Typography;
 const UserManagementPage: React.FC = () => {
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [roleFilter, setRoleFilter] = useState<string>('1');
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -62,8 +63,16 @@ const UserManagementPage: React.FC = () => {
 
     // Fetch users with pagination
     const { data, isLoading } = useQuery({
-        queryKey: ['users', page, pageSize, searchText, statusFilter],
-        queryFn: () => fetchUsers(page, pageSize, undefined, searchText, statusFilter !== 'all' ? statusFilter : undefined),
+        queryKey: ['users', page, pageSize, searchText, statusFilter, roleFilter],
+        queryFn: () => fetchUsers(
+            page,
+            pageSize,
+            undefined,
+            searchText,
+            statusFilter !== 'all' ? statusFilter : undefined,
+            undefined,
+            roleFilter !== 'all' ? parseInt(roleFilter) : undefined
+        ),
     });
 
     // Fetch all roles for assignment
@@ -271,11 +280,18 @@ const UserManagementPage: React.FC = () => {
             dataIndex: 'status',
             key: 'status',
             sorter: (a, b) => a.status.localeCompare(b.status),
-            render: (status: string) => (
-                <Tag color={status === 'ACTIVE' ? 'green' : 'default'}>
-                    {status}
-                </Tag>
-            ),
+            render: (status: string) => {
+                let color = 'default';
+                if (status === 'ACTIVE') color = 'green';
+                else if (status === 'INACTIVE') color = 'red';
+                else if (status === 'INVITED') color = 'orange';
+
+                return (
+                    <Tag color={color}>
+                        {status}
+                    </Tag>
+                );
+            },
         },
         {
             title: 'Updated At',
@@ -368,6 +384,20 @@ const UserManagementPage: React.FC = () => {
                         <Select.Option value="all">All Status</Select.Option>
                         <Select.Option value="ACTIVE">Active</Select.Option>
                         <Select.Option value="INACTIVE">Inactive</Select.Option>
+                        <Select.Option value="INVITED">Invited</Select.Option>
+                    </Select>
+                    <Select
+                        value={roleFilter}
+                        onChange={setRoleFilter}
+                        style={{ width: 180 }}
+                        placeholder="Filter by Role"
+                    >
+                        <Select.Option value="all">All Roles</Select.Option>
+                        <Select.Option value="0">Super Admin</Select.Option>
+                        <Select.Option value="1">Admin</Select.Option>
+                        <Select.Option value="2">Department Leader</Select.Option>
+                        <Select.Option value="3">Division Leader</Select.Option>
+                        <Select.Option value="4">Staff</Select.Option>
                     </Select>
                 </Space>
                 <Button

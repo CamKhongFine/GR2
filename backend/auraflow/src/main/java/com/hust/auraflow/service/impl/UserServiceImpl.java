@@ -187,8 +187,8 @@ public class UserServiceImpl implements UserService {
     }    
     @Override
     @Transactional(readOnly = true)
-    public Page<UserResponse> getAllUsers(Long id, String email, String status, Long tenantId, Pageable pageable) {
-        Page<User> users = userRepository.findByFilters(id, email, status, tenantId, pageable);
+    public Page<UserResponse> getAllUsers(Long id, String email, String status, Long tenantId, Integer roleLevel, Pageable pageable) {
+        Page<User> users = userRepository.findByFilters(id, email, status, tenantId, roleLevel, pageable);
         return users.map(this::buildUserResponse);
     }
     
@@ -305,16 +305,14 @@ public class UserServiceImpl implements UserService {
                     return new RuntimeException("User not found with ID: " + userId);
                 });
         
-        // Get all roles for the user
         List<UserRole> userRoles = userRoleRepository.findByIdUserId(userId);
         
-        // Calculate effective role level (minimum level = highest privilege)
         int effectiveRoleLevel = userRoles.stream()
                 .map(UserRole::getRole)
                 .filter(java.util.Objects::nonNull)
                 .mapToInt(role -> role.getLevel())
                 .min()
-                .orElse(4); // Default to STAFF (level 4) if no roles
+                .orElse(4);
         
         return UserRoleResponse.builder()
                 .userId(userId.toString())

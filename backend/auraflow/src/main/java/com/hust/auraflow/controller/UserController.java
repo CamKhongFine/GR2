@@ -53,8 +53,9 @@ public class UserController {
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long tenantId,
+            @RequestParam(required = false) Integer roleLevel,
             Pageable pageable) {
-        Page<UserResponse> response = userService.getAllUsers(id, email, status, tenantId, pageable);
+        Page<UserResponse> response = userService.getAllUsers(id, email, status, tenantId, roleLevel, pageable);
         return ResponseEntity.ok(response);
     }
     

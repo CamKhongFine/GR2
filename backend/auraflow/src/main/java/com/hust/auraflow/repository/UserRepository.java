@@ -16,16 +16,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     Optional<User> findByKeycloakSub(String keycloakSub);
     
-    @Query(value = "SELECT * FROM users u WHERE " +
+    @Query(value = "SELECT DISTINCT u.* FROM users u " +
+           "LEFT JOIN user_roles ur ON u.id = ur.user_id " +
+           "LEFT JOIN roles r ON ur.role_id = r.id " +
+           "WHERE " +
            "(:id IS NULL OR u.id = :id) AND " +
            "(:email IS NULL OR LOWER(u.email::text) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
            "(:status IS NULL OR u.status = CAST(:status AS VARCHAR)) AND " +
-           "(:tenantId IS NULL OR u.tenant_id = :tenantId)",
+           "(:tenantId IS NULL OR u.tenant_id = :tenantId) AND " +
+           "(:roleLevel IS NULL OR (r.level IS NOT NULL AND r.level = :roleLevel))",
            nativeQuery = true)
     Page<User> findByFilters(@Param("id") Long id,
                              @Param("email") String email,
                              @Param("status") String status,
                              @Param("tenantId") Long tenantId,
+                             @Param("roleLevel") Integer roleLevel,
                              Pageable pageable);
     
     long countByStatus(UserStatus status);

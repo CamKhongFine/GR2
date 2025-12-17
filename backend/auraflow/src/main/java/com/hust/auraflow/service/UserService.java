@@ -35,7 +35,7 @@ public interface UserService {
     UserRoleResponse getUserRole(Long userId);
     
     // CRUD operations
-    Page<UserResponse> getAllUsers(Long id, String email, String status, Long tenantId, Pageable pageable);
+    Page<UserResponse> getAllUsers(Long id, String email, String status, Long tenantId, Integer roleLevel, Pageable pageable);
     UserResponse getUserById(Long id);
     UserResponse updateUser(Long id, UpdateUserRequest request);
     void deleteUser(Long id);
