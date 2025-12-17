@@ -136,14 +136,10 @@ public class AuthServiceImpl implements AuthService {
         log.info("Clearing session: {}", sessionId);
         
         try {
-            // Get session data before deleting
             SessionData sessionData = sessionService.getSession(sessionId);
             
-            // Delete session from Redis immediately
             sessionService.deleteSession(sessionId);
-            log.info("Session deleted from Redis: {}", sessionId);
-            
-            // Publish logout message to RabbitMQ for async Keycloak logout
+
             if (sessionData != null && sessionData.getUserId() != null) {
                 User user = userRepository.findById(sessionData.getUserId()).orElse(null);
                 
@@ -155,7 +151,6 @@ public class AuthServiceImpl implements AuthService {
             
         } catch (Exception e) {
             log.error("Error during session cleanup for sessionId: {}", sessionId, e);
-            // Ensure session is deleted even if there's an error
             try {
                 sessionService.deleteSession(sessionId);
             } catch (Exception ex) {

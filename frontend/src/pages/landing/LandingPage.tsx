@@ -53,15 +53,11 @@ const LandingPage: React.FC = () => {
             navigate('/profile');
         } else if (key === 'logout') {
             try {
-                // Call backend logout API to clear Redis session
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    credentials: 'include',
-                });
+                const apiClient = (await import('../../lib/apiClient')).default;
+                await apiClient.post('/api/auth/logout');
             } catch (error) {
                 console.error('Logout API error:', error);
             } finally {
-                // Clear local storage regardless of API result
                 logout();
                 localStorage.clear();
                 sessionStorage.clear();

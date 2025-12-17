@@ -35,11 +35,9 @@ public class UserRoleServiceImpl implements UserRoleService {
                     return new RuntimeException("User not found with ID: " + userId);
                 });
 
-        // Remove existing roles
         List<UserRole> existingRoles = userRoleRepository.findByIdUserId(userId);
         userRoleRepository.deleteAll(existingRoles);
 
-        // Assign new roles
         for (Long roleId : roleIds) {
             Role role = roleRepository.findById(roleId)
                     .orElseThrow(() -> new RuntimeException("Role not found with ID: " + roleId));
