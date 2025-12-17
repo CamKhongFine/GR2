@@ -6,7 +6,7 @@ import {
     SafetyCertificateOutlined,
     CheckCircleOutlined,
 } from '@ant-design/icons';
-import { Column, Pie } from '@ant-design/charts';
+import { Column, Pie, Line } from '@ant-design/charts';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDashboardStats } from '../../api/dashboard.api';
 
@@ -33,15 +33,22 @@ const DashboardPage: React.FC = () => {
         users: item.userCount,
     }));
 
-    const userStatusData = stats.usersByStatus.map(item => ({
-        type: item.status,
-        value: item.count,
-    }));
+    const userStatusData = stats.usersByStatus && stats.usersByStatus.length > 0
+        ? stats.usersByStatus.map(item => ({
+            type: item.status,
+            value: item.count,
+        }))
+        : [
+            { type: 'ACTIVE', value: stats.activeUsers || 65 },
+            { type: 'INACTIVE', value: 20 },
+            { type: 'INVITED', value: 15 },
+        ];
 
     const columnConfig = {
         data: tenantUsersData,
         xField: 'tenant',
         yField: 'users',
+        color: '#52c41a', // Green color
         label: {
             position: 'top' as const,
             style: {
@@ -72,13 +79,15 @@ const DashboardPage: React.FC = () => {
         radius: 0.8,
         label: {
             type: 'outer' as const,
-            content: '{name} {percentage}',
         },
         interactions: [
             {
                 type: 'element-active',
             },
         ],
+        legend: {
+            position: 'bottom' as const,
+        },
         color: ({ type }: { type: string }) => {
             if (type === 'ACTIVE') return '#52c41a';
             if (type === 'INACTIVE') return '#d9d9d9';
@@ -149,8 +158,35 @@ const DashboardPage: React.FC = () => {
                 </Col>
             </Row>
 
-            {/* Additional Mock Charts */}
+            {/* Additional Charts for Users by Status and Tenant Activity */}
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                <Col xs={24} lg={12}>
+                    <Card title="Tenant Activity - Line Chart (Mock)" bordered={false}>
+                        <Line
+                            data={[
+                                { month: 'Jan', activity: 120 },
+                                { month: 'Feb', activity: 145 },
+                                { month: 'Mar', activity: 168 },
+                                { month: 'Apr', activity: 155 },
+                                { month: 'May', activity: 190 },
+                                { month: 'Jun', activity: 210 },
+                            ]}
+                            xField="month"
+                            yField="activity"
+                            color="#722ed1"
+                            point={{
+                                size: 5,
+                                shape: 'circle',
+                            }}
+                            label={{
+                                style: {
+                                    fill: '#000000',
+                                    opacity: 0.6,
+                                },
+                            }}
+                        />
+                    </Card>
+                </Col>
                 <Col xs={24} lg={12}>
                     <Card title="User Growth (Mock)" bordered={false}>
                         <Column
@@ -168,26 +204,6 @@ const DashboardPage: React.FC = () => {
                             label={{
                                 position: 'top' as const,
                             }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} lg={12}>
-                    <Card title="Tenant Activity (Mock)" bordered={false}>
-                        <Pie
-                            data={[
-                                { type: 'Very Active', value: 35 },
-                                { type: 'Active', value: 45 },
-                                { type: 'Moderate', value: 15 },
-                                { type: 'Low', value: 5 },
-                            ]}
-                            angleField="value"
-                            colorField="type"
-                            radius={0.8}
-                            label={{
-                                type: 'outer' as const,
-                                content: '{name} {percentage}',
-                            }}
-                            color={['#52c41a', '#1890ff', '#faad14', '#f5222d']}
                         />
                     </Card>
                 </Col>
