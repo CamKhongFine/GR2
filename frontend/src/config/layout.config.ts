@@ -4,7 +4,7 @@ export const LAYOUT_CONFIG = {
     HEADER_HEIGHT: 64,
 
     // Sidebar configuration
-    SIDEBAR_WIDTH: 220,
+    SIDEBAR_WIDTH: 260,
     SIDEBAR_COLLAPSED_WIDTH: 80,
 
     // Spacing

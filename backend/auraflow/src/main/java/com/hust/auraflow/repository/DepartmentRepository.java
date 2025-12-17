@@ -16,10 +16,12 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
     
     @Query(value = "SELECT * FROM departments d WHERE " +
            "d.tenant_id = :tenantId AND " +
+           "(:divisionId IS NULL OR d.division_id = :divisionId) AND " +
            "(:name IS NULL OR LOWER(d.name) LIKE LOWER(CONCAT('%', :name, '%')))",
            nativeQuery = true)
     Page<Department> findByTenantIdAndFilters(
             @Param("tenantId") Long tenantId,
+            @Param("divisionId") Long divisionId,
             @Param("name") String name,
             Pageable pageable
     );

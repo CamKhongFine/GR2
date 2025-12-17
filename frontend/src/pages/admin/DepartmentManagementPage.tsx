@@ -10,6 +10,7 @@ import {
     Modal,
     Form,
     Dropdown,
+    Select,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -30,11 +31,13 @@ import {
     CreateDepartmentRequest,
     UpdateDepartmentRequest,
 } from '../../api/department.api';
+import { fetchTenantDivisions } from '../../api/division.api';
 
 const { Title, Text } = Typography;
 
 const DepartmentManagementPage: React.FC = () => {
     const [searchText, setSearchText] = useState('');
+    const [divisionFilter, setDivisionFilter] = useState<string>('all');
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -46,12 +49,25 @@ const DepartmentManagementPage: React.FC = () => {
 
     // Fetch departments in current tenant
     const { data, isLoading } = useQuery({
-        queryKey: ['admin-departments', page, pageSize, searchText],
-        queryFn: () => fetchTenantDepartments(page, pageSize, searchText),
+        queryKey: ['admin-departments', page, pageSize, searchText, divisionFilter],
+        queryFn: () => fetchTenantDepartments(
+            page,
+            pageSize,
+            searchText,
+            divisionFilter !== 'all' ? parseInt(divisionFilter) : undefined
+        ),
     });
 
     const departments = data?.content || [];
     const totalElements = data?.totalElements || 0;
+
+    // Fetch divisions for dropdown
+    const { data: divisionsData } = useQuery({
+        queryKey: ['admin-divisions-list'],
+        queryFn: () => fetchTenantDivisions(0, 100),
+        staleTime: 5 * 60 * 1000,
+    });
+    const divisionOptions = divisionsData?.content.map(d => ({ label: d.name, value: d.id })) || [];
 
     // Create department mutation
     const createMutation = useMutation({
@@ -109,6 +125,7 @@ const DepartmentManagementPage: React.FC = () => {
         editForm.setFieldsValue({
             name: department.name,
             description: department.description,
+            divisionId: department.divisionId,
         });
         setIsEditModalOpen(true);
     };
@@ -148,6 +165,12 @@ const DepartmentManagementPage: React.FC = () => {
                     <Text strong>{name}</Text>
                 </Space>
             ),
+        },
+        {
+            title: 'Division',
+            dataIndex: 'divisionName',
+            key: 'divisionName',
+            render: (name: string) => name ? <Text>{name}</Text> : <Text type="secondary">-</Text>,
         },
         {
             title: 'Description',
@@ -211,16 +234,30 @@ const DepartmentManagementPage: React.FC = () => {
                 <Title level={2}>Department Management</Title>
             </div>
 
-            {/* Search and Create Bar */}
+            {/* Search and Filter Bar */}
             <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Input
-                    placeholder="Search by name"
-                    prefix={<SearchOutlined />}
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    style={{ width: 300 }}
-                    allowClear
-                />
+                <Space size="middle">
+                    <Input
+                        placeholder="Search by name"
+                        prefix={<SearchOutlined />}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        style={{ width: 300 }}
+                        allowClear
+                    />
+                    <Select
+                        value={divisionFilter}
+                        onChange={setDivisionFilter}
+                        style={{ width: 200 }}
+                    >
+                        <Select.Option value="all">All Divisions</Select.Option>
+                        {divisionsData?.content.map((division) => (
+                            <Select.Option key={division.id} value={division.id.toString()}>
+                                {division.name}
+                            </Select.Option>
+                        ))}
+                    </Select>
+                </Space>
                 <Button
                     type="primary"
                     icon={<PlusOutlined />}
@@ -272,6 +309,20 @@ const DepartmentManagementPage: React.FC = () => {
                         <Input placeholder="Enter department name" />
                     </Form.Item>
                     <Form.Item
+                        label="Division"
+                        name="divisionId"
+                    >
+                        <Select
+                            options={divisionOptions}
+                            placeholder="Select a division"
+                            allowClear
+                            showSearch
+                            filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                        />
+                    </Form.Item>
+                    <Form.Item
                         label="Description"
                         name="description"
                     >
@@ -303,6 +354,20 @@ const DepartmentManagementPage: React.FC = () => {
                         rules={[{ required: true, message: 'Please enter department name' }]}
                     >
                         <Input placeholder="Enter department name" />
+                    </Form.Item>
+                    <Form.Item
+                        label="Division"
+                        name="divisionId"
+                    >
+                        <Select
+                            options={divisionOptions}
+                            placeholder="Select a division"
+                            allowClear
+                            showSearch
+                            filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                        />
                     </Form.Item>
                     <Form.Item
                         label="Description"

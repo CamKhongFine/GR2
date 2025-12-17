@@ -16,6 +16,8 @@ public class DepartmentResponse {
     private Long tenantId;
     private String name;
     private String description;
+    private Long divisionId;
+    private String divisionName;
     private Instant createdAt;
     private Instant updatedAt;
 }

@@ -67,22 +67,22 @@ const TenantAdminLayout: React.FC = () => {
             {
                 key: '/admin/users',
                 icon: <TeamOutlined />,
-                label: 'User Management',
+                label: 'User',
             },
             {
                 key: '/admin/divisions',
                 icon: <ApartmentOutlined />,
-                label: 'Division Management',
+                label: 'Division',
             },
             {
                 key: '/admin/departments',
                 icon: <BranchesOutlined />,
-                label: 'Department Management',
+                label: 'Department',
             },
             {
                 key: '/admin/workflows',
                 icon: <BranchesOutlined />,
-                label: 'Workflow Management',
+                label: 'Workflow',
             },
             {
                 key: '/admin/profile',

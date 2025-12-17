@@ -33,6 +33,7 @@ public class AdminDepartmentServiceImpl implements AdminDepartmentService {
     @Transactional(readOnly = true)
     public Page<DepartmentResponse> getTenantDepartments(
             UserPrincipal principal,
+            Long divisionId,
             String name,
             Pageable pageable) {
         
@@ -45,7 +46,7 @@ public class AdminDepartmentServiceImpl implements AdminDepartmentService {
         }
         
         Page<Department> departments = departmentRepository.findByTenantIdAndFilters(
-                tenantId, name, pageable);
+                tenantId, divisionId, name, pageable);
         
         return departments.map(this::buildDepartmentResponse);
     }
@@ -149,6 +150,8 @@ public class AdminDepartmentServiceImpl implements AdminDepartmentService {
                 .tenantId(department.getTenantId())
                 .name(department.getName())
                 .description(department.getDescription())
+                .divisionId(department.getDivision() != null ? department.getDivision().getId() : null)
+                .divisionName(department.getDivision() != null ? department.getDivision().getName() : null)
                 .createdAt(department.getCreatedAt())
                 .updatedAt(department.getUpdatedAt())
                 .build();

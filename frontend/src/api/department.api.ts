@@ -5,6 +5,8 @@ export interface DepartmentResponse {
     tenantId: number;
     name: string;
     description?: string;
+    divisionId?: number;
+    divisionName?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -12,11 +14,13 @@ export interface DepartmentResponse {
 export interface CreateDepartmentRequest {
     name: string;
     description?: string;
+    divisionId?: number;
 }
 
 export interface UpdateDepartmentRequest {
     name?: string;
     description?: string;
+    divisionId?: number;
 }
 
 export interface PagedResponse<T> {
@@ -33,7 +37,8 @@ export interface PagedResponse<T> {
 export const fetchTenantDepartments = async (
     page: number = 0,
     size: number = 10,
-    name?: string
+    name?: string,
+    divisionId?: number
 ): Promise<PagedResponse<DepartmentResponse>> => {
     const params = new URLSearchParams({
         page: page.toString(),
@@ -41,6 +46,7 @@ export const fetchTenantDepartments = async (
     });
 
     if (name) params.append('name', name);
+    if (divisionId) params.append('divisionId', divisionId.toString());
 
     const response = await apiClient.get<PagedResponse<DepartmentResponse>>(`/api/admin/departments?${params.toString()}`);
     return response.data;

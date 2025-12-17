@@ -23,6 +23,7 @@ public interface AdminDepartmentService {
      */
     Page<DepartmentResponse> getTenantDepartments(
             UserPrincipal principal,
+            Long divisionId,
             String name,
             Pageable pageable
     );

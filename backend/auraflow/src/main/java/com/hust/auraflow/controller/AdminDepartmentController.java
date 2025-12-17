@@ -35,11 +35,12 @@ public class AdminDepartmentController {
     @GetMapping
     public ResponseEntity<Page<DepartmentResponse>> getTenantDepartments(
             @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) Long divisionId,
             @RequestParam(required = false) String name,
             Pageable pageable) {
         try {
             Page<DepartmentResponse> departments = adminDepartmentService.getTenantDepartments(
-                    principal, name, pageable);
+                    principal, divisionId, name, pageable);
             return ResponseEntity.ok(departments);
         } catch (IllegalArgumentException | IllegalStateException e) {
             log.error("Error getting tenant departments", e);
