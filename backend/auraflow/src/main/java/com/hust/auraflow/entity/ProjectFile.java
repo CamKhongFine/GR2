@@ -13,6 +13,7 @@ import java.time.Instant;
 @Table(name = "project_files")
 public class ProjectFile {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 

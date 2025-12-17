@@ -1,5 +1,6 @@
 package com.hust.auraflow.repository;
 
+import com.hust.auraflow.common.enums.UserStatus;
 import com.hust.auraflow.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,4 +27,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
                              @Param("status") String status,
                              @Param("tenantId") Long tenantId,
                              Pageable pageable);
+    
+    long countByStatus(UserStatus status);
+    
+    @Query("SELECT COUNT(u) FROM User u WHERE u.tenantId = :tenantId")
+    long countByTenantId(@Param("tenantId") Long tenantId);
 }

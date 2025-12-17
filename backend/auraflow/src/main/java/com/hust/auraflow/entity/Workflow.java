@@ -13,6 +13,7 @@ import java.time.Instant;
 @Table(name = "workflows")
 public class Workflow {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 

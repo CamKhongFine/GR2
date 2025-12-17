@@ -61,22 +61,22 @@ const AdminLayout: React.FC = () => {
                 label: 'Home',
             },
             {
-                key: '/admin/dashboard',
+                key: '/superadmin/dashboard',
                 icon: <DashboardOutlined />,
                 label: 'Dashboard',
             },
             {
-                key: '/admin/tenants',
+                key: '/superadmin/tenants',
                 icon: <ApartmentOutlined />,
                 label: 'Tenant Management',
             },
             {
-                key: '/admin/users',
+                key: '/superadmin/users',
                 icon: <TeamOutlined />,
                 label: 'User Management',
             },
             {
-                key: '/admin/roles',
+                key: '/superadmin/roles',
                 icon: <SafetyCertificateOutlined />,
                 label: 'Role Management',
             },

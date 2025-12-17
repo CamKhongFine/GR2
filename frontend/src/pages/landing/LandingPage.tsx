@@ -48,7 +48,7 @@ const LandingPage: React.FC = () => {
 
     const handleUserMenuClick: MenuProps['onClick'] = ({ key }) => {
         if (key === 'dashboard') {
-            navigate('/admin/tenants');
+            navigate('/superadmin/dashboard');
         } else if (key === 'profile') {
             navigate('/profile');
         } else if (key === 'logout') {

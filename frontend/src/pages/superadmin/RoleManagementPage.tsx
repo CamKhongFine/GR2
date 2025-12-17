@@ -15,7 +15,6 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-    SafetyCertificateOutlined,
     SearchOutlined,
     PlusOutlined,
     MoreOutlined,
@@ -98,7 +97,6 @@ const RoleManagementPage: React.FC = () => {
             sorter: (a, b) => a.name.localeCompare(b.name),
             render: (name: string, record) => (
                 <Space>
-                    <SafetyCertificateOutlined style={{ fontSize: 20, color: '#1890ff' }} />
                     <div>
                         <div style={{ fontWeight: 500 }}>{name}</div>
                         <Text type="secondary" style={{ fontSize: 12 }}>

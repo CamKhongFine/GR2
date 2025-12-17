@@ -10,7 +10,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "workflow_step_transitions")
 public class WorkflowStepTransition {
-    @Id
+    @Id@GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 

@@ -13,6 +13,7 @@ import java.time.Instant;
 @Table(name = "chat_channels")
 public class ChatChannel {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 

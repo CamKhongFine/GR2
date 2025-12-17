@@ -31,12 +31,20 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Don't automatically redirect on 401
-        // Let individual components handle authentication errors
-        // This allows public pages (like landing page) to load without authentication
+        // Handle authentication errors (401 Unauthorized, 403 Forbidden)
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            console.error('Authentication error detected. Logging out...');
+
+            // Clear any stored authentication data
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // Redirect to login page
+            window.location.href = '/login';
+        }
+
         return Promise.reject(error);
     }
 );
 
 export default apiClient;
-

@@ -13,6 +13,7 @@ import java.time.Instant;
 @Table(name = "task_files")
 public class TaskFile {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
