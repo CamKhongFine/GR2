@@ -197,7 +197,7 @@ const UserProfilePage: React.FC = () => {
                             </Form.Item>
                         </Form>
                     </Col>
-                    <Col span={8}>
+                    <Col span={8} style={{ marginTop: 50 }}>
                         <div style={{ textAlign: 'center' }}>
                             <Typography.Text strong style={{ display: 'block', marginBottom: 16 }}>
                                 Avatar

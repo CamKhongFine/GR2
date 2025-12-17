@@ -48,7 +48,7 @@ const LandingPage: React.FC = () => {
 
     const handleUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
         if (key === 'dashboard') {
-            navigate('/superadmin/dashboard');
+            navigate('/super-admin/dashboard');
         } else if (key === 'profile') {
             navigate('/profile');
         } else if (key === 'logout') {
@@ -83,41 +83,44 @@ const LandingPage: React.FC = () => {
     return (
         <div className="flex flex-col bg-white">
             {/* Header Navigation */}
-            <div className="bg-white border-b border-gray-100 py-4 px-8 sticky top-0 z-50 shadow-sm">
+            <div style={{ backgroundColor: '#0f172a ' }} className="border-b border-gray-100 py-4 px-8 sticky top-0 z-50 shadow-sm">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex items-center justify-between">
                         {/* Logo */}
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-                            <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+                            <div className="text-2xl font-bold text-white">
                                 AuraFlow
                             </div>
                         </div>
 
                         {/* Navigation Menu */}
                         <div className="hidden md:flex items-center gap-8">
-                            <a href="#who-its-for" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Who It's For</a>
-                            <a href="#features" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Features</a>
-                            <a href="#use-cases" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Use Cases</a>
-                            <a href="#contact-us" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Contact</a>
+                            <a href="#who-its-for" className="text-white hover:text-blue-400 transition-colors font-medium">Who It's For</a>
+                            <a href="#features" className="text-white hover:text-blue-400 transition-colors font-medium">Features</a>
+                            <a href="#use-cases" className="text-white hover:text-blue-400 transition-colors font-medium">Use Cases</a>
+                            <a href="#contact-us" className="text-white hover:text-blue-400 transition-colors font-medium">Contact</a>
                         </div>
 
                         {/* Auth Buttons */}
                         <div className="flex items-center gap-4">
                             {user ? (
-                                <Dropdown
-                                    menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
-                                    placement="bottomRight"
-                                    trigger={['click']}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 8 }}>
-                                        <Avatar
-                                            size="small"
-                                            src={user?.avatarUrl}
-                                            icon={!user?.avatarUrl ? <UserOutlined /> : undefined}
-                                        />
-                                        <span className="text-gray-700">{displayName}</span>
-                                    </div>
-                                </Dropdown>
+                                <div className="bg-white rounded-lg px-4 py-2">
+                                    <Dropdown
+                                        menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
+                                        placement="bottomRight"
+                                        trigger={['click']}
+                                        align={{ offset: [0, 10] }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 8 }}>
+                                            <Avatar
+                                                size="small"
+                                                src={user?.avatarUrl}
+                                                icon={!user?.avatarUrl ? <UserOutlined /> : undefined}
+                                            />
+                                            <span className="text-gray-700">{displayName}</span>
+                                        </div>
+                                    </Dropdown>
+                                </div>
                             ) : (
                                 <>
                                     <Button

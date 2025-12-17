@@ -11,16 +11,15 @@ import {
 import type { MenuProps } from 'antd';
 import {
     DashboardOutlined,
-    ApartmentOutlined,
     TeamOutlined,
-    SettingOutlined,
-    BellOutlined,
-    SoundOutlined,
+    ApartmentOutlined,
+    BranchesOutlined,
     UserOutlined,
     MenuUnfoldOutlined,
     MenuFoldOutlined,
     LogoutOutlined,
-    SafetyCertificateOutlined,
+    BellOutlined,
+    SoundOutlined,
     HomeOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
@@ -30,7 +29,7 @@ import { useUserStore } from '../store/userStore';
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-const AdminLayout: React.FC = () => {
+const TenantAdminLayout: React.FC = () => {
     const [collapsed, setCollapsed] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
@@ -61,27 +60,27 @@ const AdminLayout: React.FC = () => {
                 label: 'Home',
             },
             {
-                key: '/super-admin/dashboard',
+                key: '/admin/dashboard',
                 icon: <DashboardOutlined />,
                 label: 'Dashboard',
             },
             {
-                key: '/super-admin/tenants',
-                icon: <ApartmentOutlined />,
-                label: 'Tenant Management',
-            },
-            {
-                key: '/super-admin/users',
+                key: '/admin/users',
                 icon: <TeamOutlined />,
                 label: 'User Management',
             },
             {
-                key: '/super-admin/roles',
-                icon: <SafetyCertificateOutlined />,
-                label: 'Role Management',
+                key: '/admin/divisions',
+                icon: <ApartmentOutlined />,
+                label: 'Division Management',
             },
             {
-                key: '/super-admin/profile',
+                key: '/admin/workflows',
+                icon: <BranchesOutlined />,
+                label: 'Workflow Management',
+            },
+            {
+                key: '/admin/profile',
                 icon: <UserOutlined />,
                 label: 'Profile',
             },
@@ -99,7 +98,7 @@ const AdminLayout: React.FC = () => {
 
     const handleUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
         if (key === 'profile') {
-            navigate('/super-admin/profile');
+            navigate('/admin/profile');
         }
         if (key === 'logout') {
             try {
@@ -153,7 +152,7 @@ const AdminLayout: React.FC = () => {
                             width: 32,
                             height: 32,
                             borderRadius: 8,
-                            background: '#1677ff',
+                            background: '#722ed1',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -170,7 +169,7 @@ const AdminLayout: React.FC = () => {
                             </Text>
                             <br />
                             <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>
-                                Super Admin
+                                Admin
                             </Text>
                         </div>
                     )}
@@ -213,7 +212,7 @@ const AdminLayout: React.FC = () => {
 
                     <Space size="large" align="center">
                         <div style={{ display: 'flex', alignItems: 'center', marginTop: 5 }}>
-                            <Badge count={5}>
+                            <Badge count={3}>
                                 <BellOutlined style={{ fontSize: 16, cursor: 'pointer' }} />
                             </Badge>
                         </div>
@@ -242,4 +241,4 @@ const AdminLayout: React.FC = () => {
     );
 };
 
-export default AdminLayout;
+export default TenantAdminLayout;

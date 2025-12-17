@@ -1,13 +1,18 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import LandingLayout from '../layouts/LandingLayout';
 import AdminLayout from '../layouts/AdminLayout';
+import TenantAdminLayout from '../layouts/TenantAdminLayout';
 import LandingPage from '../pages/landing/LandingPage';
 import AuthPage from '../pages/auth/AuthPage';
 import AppWorkspace from '../pages/AppWorkspace';
 import TenantManagementPage from '../pages/super-admin/TenantManagementPage';
-import UserManagementPage from '../pages/super-admin/UserManagementPage';
+import SuperAdminUserManagementPage from '../pages/super-admin/UserManagementPage';
 import RoleManagementPage from '../pages/super-admin/RoleManagementPage';
-import DashboardPage from '../pages/super-admin/DashboardPage';
+import SuperAdminDashboardPage from '../pages/super-admin/DashboardPage';
+import TenantAdminDashboardPage from '../pages/admin/DashboardPage';
+import TenantAdminUserManagementPage from '../pages/admin/UserManagementPage';
+import DivisionManagementPage from '../pages/admin/DivisionManagementPage';
+import WorkflowManagementPage from '../pages/admin/WorkflowManagementPage';
 import UserProfilePage from '../pages/profile/UserProfilePage';
 
 export const router = createBrowserRouter([
@@ -30,7 +35,7 @@ export const router = createBrowserRouter([
         element: <AppWorkspace />,
     },
     {
-        path: '/superadmin',
+        path: '/super-admin',
         element: <AdminLayout />,
         children: [
             {
@@ -39,7 +44,7 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'dashboard',
-                element: <DashboardPage />,
+                element: <SuperAdminDashboardPage />,
             },
             {
                 path: 'tenants',
@@ -47,22 +52,47 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'users',
-                element: <UserManagementPage />,
+                element: <SuperAdminUserManagementPage />,
             },
             {
                 path: 'roles',
                 element: <RoleManagementPage />,
             },
+            {
+                path: 'profile',
+                element: <UserProfilePage />,
+            },
         ],
     },
     {
-        path: '/profile',
-        element: <AdminLayout />,
+        path: '/admin',
+        element: <TenantAdminLayout />,
         children: [
             {
                 index: true,
+                element: <Navigate to="/admin/dashboard" replace />,
+            },
+            {
+                path: 'dashboard',
+                element: <TenantAdminDashboardPage />,
+            },
+            {
+                path: 'users',
+                element: <TenantAdminUserManagementPage />,
+            },
+            {
+                path: 'divisions',
+                element: <DivisionManagementPage />,
+            },
+            {
+                path: 'workflows',
+                element: <WorkflowManagementPage />,
+            },
+            {
+                path: 'profile',
                 element: <UserProfilePage />,
             },
         ],
     },
 ]);
+
