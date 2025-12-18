@@ -208,7 +208,7 @@ const TenantManagementPage: React.FC = () => {
             sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         },
         {
-            title: 'Last Sync',
+            title: 'Last Update',
             dataIndex: 'updatedAt',
             key: 'updatedAt',
             render: (date: string) => dayjs(date).format(DATE_FORMAT),
