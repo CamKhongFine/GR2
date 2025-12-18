@@ -49,7 +49,8 @@ export const fetchUsers = async (
     status?: string,
     tenantId?: number,
     divisionId?: number | null,
-    departmentId?: number | null
+    departmentId?: number | null,
+    roleLevel?: number
 ): Promise<PagedResponse<UserResponse>> => {
     const params = new URLSearchParams({
         page: page.toString(),
@@ -74,6 +75,7 @@ export const fetchUsers = async (
             params.append('departmentId', departmentId.toString());
         }
     }
+    if (roleLevel !== undefined) params.append('roleLevel', roleLevel.toString());
 
     const response = await apiClient.get<PagedResponse<UserResponse>>(`/api/users?${params.toString()}`);
     return response.data;

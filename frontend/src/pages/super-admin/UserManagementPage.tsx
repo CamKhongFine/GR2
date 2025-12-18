@@ -51,7 +51,7 @@ const { Title, Text } = Typography;
 const UserManagementPage: React.FC = () => {
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
-    const [roleFilter, setRoleFilter] = useState<string>('1');
+    const [roleFilter, setRoleFilter] = useState<string>('all');
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -72,6 +72,8 @@ const UserManagementPage: React.FC = () => {
             undefined,
             searchText,
             statusFilter !== 'all' ? statusFilter : undefined,
+            undefined,
+            undefined,
             undefined,
             roleFilter !== 'all' ? parseInt(roleFilter) : undefined
         ),

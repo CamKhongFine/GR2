@@ -193,9 +193,14 @@ public class AdminUserServiceImpl implements AdminUserService {
         userRoleRepository.deleteByIdUserId(userId);
         
         for (Long roleId : roleIds) {
+            Role role = roleRepository.findById(roleId)
+                    .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleId));
+            
             UserRoleId userRoleId = new UserRoleId(userId, roleId);
             UserRole userRole = new UserRole();
             userRole.setId(userRoleId);
+            userRole.setUser(user);
+            userRole.setRole(role);
             userRoleRepository.save(userRole);
         }
         

@@ -37,6 +37,7 @@ import {
 } from '../../api/division.api';
 import { fetchTenantDepartments, DepartmentResponse } from '../../api/department.api';
 import { fetchUsers, UserResponse } from '../../api/user.api';
+import { useUserStore } from '../../store/userStore';
 import dayjs from 'dayjs';
 import { DATE_FORMAT } from '../../config/date.config';
 
@@ -48,6 +49,7 @@ const DivisionDetailPage: React.FC = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const divisionId = parseInt(id || '0');
+    const { roleLevel: currentUserRoleLevel } = useUserStore();
 
     const [activeTab, setActiveTab] = useState('departments');
     const [isAddDepartmentModalOpen, setIsAddDepartmentModalOpen] = useState(false);
@@ -107,7 +109,15 @@ const DivisionDetailPage: React.FC = () => {
     const departments = departmentsData?.content || [];
     const availableDepartments = availableDepartmentsData?.content || [];
     const members = membersData?.content || [];
-    const availableUsers = availableUsersData?.content || [];
+
+    const availableUsers = (availableUsersData?.content || []).filter(user => {
+        if (!user.roles || user.roles.length === 0) return true;
+        if (currentUserRoleLevel === null) return true;
+
+        const userMinRoleLevel = Math.min(...user.roles.map(r => r.level));
+        return userMinRoleLevel > currentUserRoleLevel;
+    });
+
     const allDepartments = allDepartmentsData?.content || [];
 
     // Mutations
@@ -491,7 +501,7 @@ const DivisionDetailPage: React.FC = () => {
                     />
                     {availableUsers.length === 0 && (
                         <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-                            No available users. All users are already assigned to divisions.
+                            No available users
                         </Text>
                     )}
                 </div>

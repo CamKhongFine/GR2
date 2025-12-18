@@ -254,6 +254,7 @@ public class UserServiceImpl implements UserService {
         String email = user.getEmail();
         
         // Delete from database first
+        userRoleRepository.deleteByIdUserId(user.getId());
         userRepository.deleteById(id);
         log.info("Deleted user from database with id {}", id);
         
