@@ -116,3 +116,23 @@ export function getDefaultRouteForRole(roleLevel: number): string {
     }
 }
 
+/**
+ * Get profile route based on role level
+ */
+export function getProfileRouteForRole(roleLevel: number): string {
+    switch (roleLevel) {
+        case RoleLevel.SUPER_ADMIN:
+            return '/super-admin/profile';
+        case RoleLevel.ADMIN:
+            return '/admin/profile';
+        case RoleLevel.DEPARTMENT_LEADER:
+            return '/department/profile';
+        case RoleLevel.DIVISION_LEADER:
+            return '/division/profile';
+        case RoleLevel.STAFF:
+            return '/workspace/profile';
+        default:
+            return '/workspace/profile'; // Default fallback
+    }
+}
+

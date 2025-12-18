@@ -8,6 +8,7 @@ import RequireRoleLevel from '../components/guards/RequireRoleLevel';
 import LandingPage from '../pages/landing/LandingPage';
 import AuthPage from '../pages/auth/AuthPage';
 import AppEntry from '../pages/AppEntry';
+import ProfileEntry from '../pages/ProfileEntry';
 import AppWorkspace from '../pages/AppWorkspace';
 import ForbiddenPage from '../pages/ForbiddenPage';
 import TenantManagementPage from '../pages/super-admin/TenantManagementPage';
@@ -46,6 +47,11 @@ export const router = createBrowserRouter([
     {
         path: '/app',
         element: <AppEntry />,
+    },
+    // Profile entry point - redirects to role-specific profile
+    {
+        path: '/profile',
+        element: <ProfileEntry />,
     },
     // Super Admin routes (role level 0)
     {

@@ -89,7 +89,7 @@ const LandingPage: React.FC = () => {
         if (key === 'dashboard') {
             navigate('/app'); // Use /app entry point for role-based redirect
         } else if (key === 'profile') {
-            navigate('/app'); // Navigate to /app which will redirect to appropriate profile
+            navigate('/profile'); // Navigate to /profile which will redirect to appropriate profile
         } else if (key === 'logout') {
             try {
                 const apiClient = (await import('../../lib/apiClient')).default;
