@@ -1,8 +1,6 @@
 package com.hust.auraflow.service.impl;
 
-import com.hust.auraflow.dto.CreateDepartmentRequest;
-import com.hust.auraflow.dto.DepartmentResponse;
-import com.hust.auraflow.dto.UpdateDepartmentRequest;
+import com.hust.auraflow.dto.*;
 import com.hust.auraflow.entity.Department;
 import com.hust.auraflow.entity.Division;
 import com.hust.auraflow.entity.User;
@@ -142,6 +140,157 @@ public class AdminDepartmentServiceImpl implements AdminDepartmentService {
         
         departmentRepository.deleteById(departmentId);
         log.info("Admin {} deleted department {}", principal.getUserId(), departmentId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DepartmentResponse getDepartmentById(UserPrincipal principal, Long departmentId) {
+        User admin = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Admin user not found"));
+        
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Department not found"));
+        
+        if (!department.getTenantId().equals(admin.getTenantId())) {
+            throw new IllegalArgumentException("Department does not belong to your tenant");
+        }
+        
+        return buildDepartmentResponse(department);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserResponse> getDepartmentMembers(
+            UserPrincipal principal,
+            Long departmentId,
+            String search,
+            Pageable pageable) {
+        
+        User admin = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Admin user not found"));
+        
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Department not found"));
+        
+        if (!department.getTenantId().equals(admin.getTenantId())) {
+            throw new IllegalArgumentException("Department does not belong to your tenant");
+        }
+        
+        Page<User> users = userRepository.findByDepartmentIdAndFilters(
+                admin.getTenantId(), departmentId, search, pageable);
+        
+        return users.map(this::buildUserResponse);
+    }
+
+    @Override
+    @Transactional
+    public void assignMemberToDepartment(UserPrincipal principal, Long departmentId, Long userId) {
+        User admin = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Admin user not found"));
+        
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Department not found"));
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        if (!department.getTenantId().equals(admin.getTenantId())) {
+            throw new IllegalArgumentException("Department does not belong to your tenant");
+        }
+        if (!user.getTenantId().equals(admin.getTenantId())) {
+            throw new IllegalArgumentException("User does not belong to your tenant");
+        }
+        
+        if (user.getDepartment() != null && !user.getDepartment().getId().equals(departmentId)) {
+            throw new IllegalArgumentException("User is already assigned to another department");
+        }
+        
+        user.setDepartment(department);
+        userRepository.save(user);
+        log.info("Admin {} assigned user {} to department {}", principal.getUserId(), userId, departmentId);
+    }
+
+    @Override
+    @Transactional
+    public void removeMemberFromDepartment(UserPrincipal principal, Long departmentId, Long userId) {
+        User admin = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Admin user not found"));
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        if (!user.getTenantId().equals(admin.getTenantId())) {
+            throw new IllegalArgumentException("User does not belong to your tenant");
+        }
+        
+        user.setDepartment(null);
+        userRepository.save(user);
+        log.info("Admin {} removed user {} from department {}", principal.getUserId(), userId, departmentId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserResponse> getAvailableUsersForDepartment(
+            UserPrincipal principal,
+            Long departmentId,
+            String search,
+            Pageable pageable) {
+        
+        User admin = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Admin user not found"));
+        
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Department not found"));
+        
+        if (!department.getTenantId().equals(admin.getTenantId())) {
+            throw new IllegalArgumentException("Department does not belong to your tenant");
+        }
+        
+        if (department.getDivision() == null) {
+            throw new IllegalArgumentException("Department must belong to a division");
+        }
+        
+        Page<User> users = userRepository.findAvailableUsersForDepartment(
+                admin.getTenantId(), department.getDivision().getId(), search, pageable);
+        
+        return users.map(this::buildUserResponse);
+    }
+
+    private UserResponse buildUserResponse(User user) {
+        DivisionResponse divisionResponse = null;
+        if (user.getDivision() != null) {
+            divisionResponse = DivisionResponse.builder()
+                    .id(user.getDivision().getId())
+                    .name(user.getDivision().getName())
+                    .description(user.getDivision().getDescription())
+                    .build();
+        }
+
+        DepartmentResponse departmentResponse = null;
+        if (user.getDepartment() != null) {
+            departmentResponse = DepartmentResponse.builder()
+                    .id(user.getDepartment().getId())
+                    .tenantId(user.getDepartment().getTenantId())
+                    .name(user.getDepartment().getName())
+                    .description(user.getDepartment().getDescription())
+                    .build();
+        }
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .tenantId(user.getTenantId())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .title(user.getTitle())
+                .avatarUrl(user.getAvatarUrl())
+                .division(divisionResponse)
+                .department(departmentResponse)
+                .roles(null) // Not needed for department members list
+                .status(user.getStatus())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
     }
 
     private DepartmentResponse buildDepartmentResponse(Department department) {

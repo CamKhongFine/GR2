@@ -184,7 +184,11 @@ const TenantAdminLayout: React.FC = () => {
                 <Menu
                     theme="dark"
                     mode="inline"
-                    selectedKeys={[location.pathname]}
+                    selectedKeys={[
+                        location.pathname.startsWith('/admin/divisions/') ? '/admin/divisions' :
+                            location.pathname.startsWith('/admin/departments/') ? '/admin/departments' :
+                                location.pathname
+                    ]}
                     items={menuItems}
                     onClick={({ key }) => navigate(key)}
                 />

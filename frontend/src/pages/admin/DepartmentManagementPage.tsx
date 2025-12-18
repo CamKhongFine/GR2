@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Card,
     Table,
@@ -20,6 +21,7 @@ import {
     EditOutlined,
     DeleteOutlined,
     BranchesOutlined,
+    EyeOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -38,6 +40,7 @@ import { DATE_FORMAT } from '../../config/date.config';
 const { Title, Text } = Typography;
 
 const DepartmentManagementPage: React.FC = () => {
+    const navigate = useNavigate();
     const [searchText, setSearchText] = useState('');
     const [divisionFilter, setDivisionFilter] = useState<string>('all');
     const [page, setPage] = useState(0);
@@ -161,10 +164,16 @@ const DepartmentManagementPage: React.FC = () => {
             dataIndex: 'name',
             key: 'name',
             sorter: (a, b) => a.name.localeCompare(b.name),
-            render: (name: string) => (
+            render: (name: string, record) => (
                 <Space>
                     <BranchesOutlined style={{ color: '#1890ff' }} />
-                    <Text strong>{name}</Text>
+                    <Text
+                        strong
+                        style={{ color: '#0063bfff', cursor: 'pointer' }}
+                        onClick={() => navigate(`/admin/departments/${record.id}`)}
+                    >
+                        {name}
+                    </Text>
                 </Space>
             ),
         },
@@ -203,6 +212,12 @@ const DepartmentManagementPage: React.FC = () => {
             align: 'center',
             render: (_, record) => {
                 const menuItems = [
+                    {
+                        key: 'view',
+                        label: 'View Details',
+                        icon: <EyeOutlined />,
+                        onClick: () => navigate(`/admin/departments/${record.id}`),
+                    },
                     {
                         key: 'edit',
                         label: 'Edit',

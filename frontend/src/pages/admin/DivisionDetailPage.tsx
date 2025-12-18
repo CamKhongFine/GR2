@@ -197,6 +197,15 @@ const DivisionDetailPage: React.FC = () => {
             dataIndex: 'name',
             key: 'name',
             sorter: (a, b) => a.name.localeCompare(b.name),
+            render: (name: string, record) => (
+                <Text
+                    strong
+                    style={{ cursor: 'pointer', color: '#0063bfff' }}
+                    onClick={() => navigate(`/admin/departments/${record.id}`)}
+                >
+                    {name}
+                </Text>
+            ),
         },
         {
             title: 'Description',
@@ -327,19 +336,10 @@ const DivisionDetailPage: React.FC = () => {
 
     return (
         <>
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ marginBottom: 16 }}>
                 <Title level={4} style={{ margin: 0 }}>
-                    {division?.name || 'Division Details'}
+                    {division?.name || 'Loading...'}
                 </Title>
-                {activeTab === 'members' && (
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={() => setIsAddMemberModalOpen(true)}
-                    >
-                        Add Member
-                    </Button>
-                )}
             </div>
 
             <Card>
@@ -355,7 +355,6 @@ const DivisionDetailPage: React.FC = () => {
                                 pageSize: departmentsPageSize,
                                 total: departmentsData?.totalElements || 0,
                                 showSizeChanger: true,
-                                showTotal: (total) => `Total ${total} departments`,
                                 onChange: (page, pageSize) => {
                                     setDepartmentsPage(page - 1);
                                     setDepartmentsPageSize(pageSize);
@@ -363,9 +362,8 @@ const DivisionDetailPage: React.FC = () => {
                             }}
                         />
                     </TabPane>
-
                     <TabPane tab="Members" key="members">
-                        <div style={{ marginBottom: 16 }}>
+                        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Space>
                                 <Input
                                     placeholder="Search by email"
@@ -389,6 +387,13 @@ const DivisionDetailPage: React.FC = () => {
                                     ))}
                                 </Select>
                             </Space>
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={() => setIsAddMemberModalOpen(true)}
+                            >
+                                Add Member
+                            </Button>
                         </div>
                         <Table
                             columns={memberColumns}
@@ -400,7 +405,6 @@ const DivisionDetailPage: React.FC = () => {
                                 pageSize: membersPageSize,
                                 total: membersData?.totalElements || 0,
                                 showSizeChanger: true,
-                                showTotal: (total) => `Total ${total} members`,
                                 onChange: (page, pageSize) => {
                                     setMembersPage(page - 1);
                                     setMembersPageSize(pageSize);

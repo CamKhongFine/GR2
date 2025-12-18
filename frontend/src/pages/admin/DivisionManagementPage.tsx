@@ -151,7 +151,7 @@ const DivisionManagementPage: React.FC = () => {
                     <ApartmentOutlined style={{ color: '#1890ff' }} />
                     <Text
                         strong
-                        style={{ cursor: 'pointer', color: '#1890ff' }}
+                        style={{ cursor: 'pointer', color: '#0063bfff' }}
                         onClick={() => navigate(`/admin/divisions/${record.id}`)}
                     >
                         {name}

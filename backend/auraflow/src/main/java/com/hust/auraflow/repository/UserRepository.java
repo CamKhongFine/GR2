@@ -53,4 +53,33 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                            @Param("departmentId") Long departmentId,
                                            @Param("search") String search,
                                            Pageable pageable);
+    
+    @Query(value = "SELECT DISTINCT u.* FROM users u " +
+           "WHERE " +
+           "u.tenant_id = :tenantId AND " +
+           "u.department_id = :departmentId AND " +
+           "(:search IS NULL OR " +
+           "LOWER(u.email::text) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(u.first_name::text) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(u.last_name::text) LIKE LOWER(CONCAT('%', :search, '%')))",
+           nativeQuery = true)
+    Page<User> findByDepartmentIdAndFilters(@Param("tenantId") Long tenantId,
+                                             @Param("departmentId") Long departmentId,
+                                             @Param("search") String search,
+                                             Pageable pageable);
+    
+    @Query(value = "SELECT DISTINCT u.* FROM users u " +
+           "WHERE " +
+           "u.tenant_id = :tenantId AND " +
+           "u.division_id = :divisionId AND " +
+           "u.department_id IS NULL AND " +
+           "(:search IS NULL OR " +
+           "LOWER(u.email::text) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(u.first_name::text) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(u.last_name::text) LIKE LOWER(CONCAT('%', :search, '%')))",
+           nativeQuery = true)
+    Page<User> findAvailableUsersForDepartment(@Param("tenantId") Long tenantId,
+                                                 @Param("divisionId") Long divisionId,
+                                                 @Param("search") String search,
+                                                 Pageable pageable);
 }

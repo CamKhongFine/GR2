@@ -19,6 +19,7 @@ import TenantAdminUserManagementPage from '../pages/admin/UserManagementPage';
 import DivisionManagementPage from '../pages/admin/DivisionManagementPage';
 import DivisionDetailPage from '../pages/admin/DivisionDetailPage';
 import DepartmentManagementPage from '../pages/admin/DepartmentManagementPage';
+import DepartmentDetailPage from '../pages/admin/DepartmentDetailPage';
 import WorkflowManagementPage from '../pages/admin/WorkflowManagementPage';
 import DepartmentDashboardPage from '../pages/department/DashboardPage';
 import DivisionDashboardPage from '../pages/division/DashboardPage';
@@ -113,6 +114,10 @@ export const router = createBrowserRouter([
             {
                 path: 'departments',
                 element: <DepartmentManagementPage />,
+            },
+            {
+                path: 'departments/:id',
+                element: <DepartmentDetailPage />,
             },
             {
                 path: 'workflows',
