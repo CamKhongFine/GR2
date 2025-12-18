@@ -70,7 +70,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                     boolean hasEqualOrLowerRole = userRoles.stream()
                             .map(UserRole::getRole)
                             .filter(java.util.Objects::nonNull)
-                            .anyMatch(role -> role.getLevel() <= adminRoleLevel);
+                            .anyMatch(role -> role.getLevel() < adminRoleLevel);
                     
                     return !hasEqualOrLowerRole;
                 })
