@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Card,
     Table,
@@ -19,6 +20,7 @@ import {
     EditOutlined,
     DeleteOutlined,
     ApartmentOutlined,
+    EyeOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -27,7 +29,6 @@ import {
     updateDivision,
     deleteDivision,
     DivisionResponse,
-    CreateDivisionRequest,
     UpdateDivisionRequest,
 } from '../../api/division.api';
 import dayjs from 'dayjs';
@@ -36,6 +37,7 @@ import { DATE_FORMAT } from '../../config/date.config';
 const { Title, Text } = Typography;
 
 const DivisionManagementPage: React.FC = () => {
+    const navigate = useNavigate();
     const [searchText, setSearchText] = useState('');
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
@@ -144,10 +146,16 @@ const DivisionManagementPage: React.FC = () => {
             dataIndex: 'name',
             key: 'name',
             sorter: (a, b) => a.name.localeCompare(b.name),
-            render: (name: string) => (
+            render: (name: string, record) => (
                 <Space>
                     <ApartmentOutlined style={{ color: '#1890ff' }} />
-                    <Text strong>{name}</Text>
+                    <Text
+                        strong
+                        style={{ cursor: 'pointer', color: '#1890ff' }}
+                        onClick={() => navigate(`/admin/divisions/${record.id}`)}
+                    >
+                        {name}
+                    </Text>
                 </Space>
             ),
         },
@@ -180,6 +188,12 @@ const DivisionManagementPage: React.FC = () => {
             align: 'center',
             render: (_, record) => {
                 const menuItems = [
+                    {
+                        key: 'view',
+                        label: 'View Details',
+                        icon: <EyeOutlined />,
+                        onClick: () => navigate(`/admin/divisions/${record.id}`),
+                    },
                     {
                         key: 'edit',
                         label: 'Edit',

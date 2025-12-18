@@ -37,4 +37,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     @Query("SELECT COUNT(u) FROM User u WHERE u.tenantId = :tenantId")
     long countByTenantId(@Param("tenantId") Long tenantId);
+    
+    @Query(value = "SELECT DISTINCT u.* FROM users u " +
+           "WHERE " +
+           "u.tenant_id = :tenantId AND " +
+           "u.division_id = :divisionId AND " +
+           "(:departmentId IS NULL OR u.department_id = :departmentId) AND " +
+           "(:search IS NULL OR " +
+           "LOWER(u.email::text) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(u.first_name::text) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(u.last_name::text) LIKE LOWER(CONCAT('%', :search, '%')))",
+           nativeQuery = true)
+    Page<User> findByDivisionIdAndFilters(@Param("tenantId") Long tenantId,
+                                           @Param("divisionId") Long divisionId,
+                                           @Param("departmentId") Long departmentId,
+                                           @Param("search") String search,
+                                           Pageable pageable);
 }

@@ -17,6 +17,7 @@ import SuperAdminDashboardPage from '../pages/super-admin/DashboardPage';
 import TenantAdminDashboardPage from '../pages/admin/DashboardPage';
 import TenantAdminUserManagementPage from '../pages/admin/UserManagementPage';
 import DivisionManagementPage from '../pages/admin/DivisionManagementPage';
+import DivisionDetailPage from '../pages/admin/DivisionDetailPage';
 import DepartmentManagementPage from '../pages/admin/DepartmentManagementPage';
 import WorkflowManagementPage from '../pages/admin/WorkflowManagementPage';
 import DepartmentDashboardPage from '../pages/department/DashboardPage';
@@ -104,6 +105,10 @@ export const router = createBrowserRouter([
             {
                 path: 'divisions',
                 element: <DivisionManagementPage />,
+            },
+            {
+                path: 'divisions/:id',
+                element: <DivisionDetailPage />,
             },
             {
                 path: 'departments',

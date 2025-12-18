@@ -37,8 +37,8 @@ export interface PagedResponse<T> {
 export const fetchTenantDepartments = async (
     page: number = 0,
     size: number = 10,
-    name?: string,
-    divisionId?: number
+    divisionId?: number | null,
+    name?: string
 ): Promise<PagedResponse<DepartmentResponse>> => {
     const params = new URLSearchParams({
         page: page.toString(),
@@ -46,7 +46,13 @@ export const fetchTenantDepartments = async (
     });
 
     if (name) params.append('name', name);
-    if (divisionId) params.append('divisionId', divisionId.toString());
+    if (divisionId !== undefined) {
+        if (divisionId === null) {
+            params.append('divisionId', 'null');
+        } else {
+            params.append('divisionId', divisionId.toString());
+        }
+    }
 
     const response = await apiClient.get<PagedResponse<DepartmentResponse>>(`/api/admin/departments?${params.toString()}`);
     return response.data;

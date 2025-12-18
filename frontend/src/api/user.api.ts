@@ -12,6 +12,14 @@ export interface UserResponse {
     title?: string;
     avatarUrl?: string;
     roles?: RoleResponse[];
+    department?: {
+        id: number;
+        name: string;
+    };
+    division?: {
+        id: number;
+        name: string;
+    };
     status: UserStatus;
     createdAt: string;
     updatedAt: string;
@@ -40,7 +48,8 @@ export const fetchUsers = async (
     email?: string,
     status?: string,
     tenantId?: number,
-    roleLevel?: number
+    divisionId?: number | null,
+    departmentId?: number | null
 ): Promise<PagedResponse<UserResponse>> => {
     const params = new URLSearchParams({
         page: page.toString(),
@@ -51,7 +60,20 @@ export const fetchUsers = async (
     if (email) params.append('email', email);
     if (status && status !== 'all') params.append('status', status);
     if (tenantId !== undefined) params.append('tenantId', tenantId.toString());
-    if (roleLevel !== undefined) params.append('roleLevel', roleLevel.toString());
+    if (divisionId !== undefined) {
+        if (divisionId === null) {
+            params.append('divisionId', 'null');
+        } else {
+            params.append('divisionId', divisionId.toString());
+        }
+    }
+    if (departmentId !== undefined) {
+        if (departmentId === null) {
+            params.append('departmentId', 'null');
+        } else {
+            params.append('departmentId', departmentId.toString());
+        }
+    }
 
     const response = await apiClient.get<PagedResponse<UserResponse>>(`/api/users?${params.toString()}`);
     return response.data;
