@@ -34,12 +34,6 @@ public class WorkflowStep {
     @Column(name = "step_type", length = Integer.MAX_VALUE)
     private String stepType;
 
-    @Column(name = "assignee_role_id")
-    private Long assigneeRoleId;
-
-    @Column(name = "assignee_user_id")
-    private Long assigneeUserId;
-
     @Column(name = "created_at")
     private Instant createdAt;
 

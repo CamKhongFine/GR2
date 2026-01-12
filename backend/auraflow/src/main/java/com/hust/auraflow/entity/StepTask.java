@@ -30,6 +30,9 @@ public class StepTask {
     @JoinColumn(name = "workflow_step_id")
     private WorkflowStep workflowStep;
 
+    @Column(name = "step_sequence")
+    private Integer stepSequence;
+
     @Column(name = "status", length = Integer.MAX_VALUE)
     private String status;
 
