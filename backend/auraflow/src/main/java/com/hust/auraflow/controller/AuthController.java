@@ -44,7 +44,7 @@ public class AuthController {
             String host = request.getHeader("Host");
             String contextPath = request.getContextPath();
             String redirectUri = scheme + "://" + host + contextPath + "/api/auth/callback";
-            
+
             String sessionId = authService.handleKeycloakCallback(code, redirectUri);
 
             boolean isSecure = "https".equalsIgnoreCase(scheme);
@@ -63,10 +63,15 @@ public class AuthController {
             response.sendRedirect(frontendUrl + redirectPath);
         } catch (IllegalStateException e) {
             log.error("Callback failed with IllegalStateException: {}", e.getMessage(), e);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            // Redirect to login page with error - frontend will force re-auth with
+            // prompt=login
+            String frontendUrl = Config.FRONTEND_URL;
+            String errorMessage = java.net.URLEncoder.encode(e.getMessage(), java.nio.charset.StandardCharsets.UTF_8);
+            response.sendRedirect(frontendUrl + "/login?error=" + errorMessage);
         } catch (Exception e) {
             log.error("Callback failed with unexpected error", e);
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            String frontendUrl = Config.FRONTEND_URL;
+            response.sendRedirect(frontendUrl + "/login?error=An+unexpected+error+occurred");
         }
     }
 
@@ -79,7 +84,7 @@ public class AuthController {
             if (sessionId != null && !sessionId.isEmpty()) {
                 authService.clearSession(sessionId);
             }
-            
+
             ResponseCookie clearCookie = ResponseCookie.from("AURAFLOW_SESSION", "")
                     .httpOnly(true)
                     .secure(false)
@@ -87,11 +92,11 @@ public class AuthController {
                     .maxAge(0)
                     .sameSite("Lax")
                     .build();
-            
+
             response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, clearCookie.toString());
-            
+
             return ResponseEntity.ok().build();
-            
+
         } catch (Exception e) {
             log.error("Error during logout", e);
             return ResponseEntity.ok().build();

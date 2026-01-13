@@ -33,14 +33,20 @@ apiClient.interceptors.response.use(
     (error) => {
         // Handle authentication errors (401 Unauthorized, 403 Forbidden)
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            console.error('Authentication error detected. Logging out...');
+            const currentPath = window.location.pathname;
 
-            // Clear any stored authentication data
-            localStorage.clear();
-            sessionStorage.clear();
+            // Don't redirect if already on public pages (landing, login)
+            const publicPaths = ['/', '/login'];
+            if (!publicPaths.includes(currentPath)) {
+                console.error('Authentication error detected. Logging out...');
 
-            // Redirect to login page
-            window.location.href = '/login';
+                // Clear any stored authentication data
+                localStorage.clear();
+                sessionStorage.clear();
+
+                // Redirect to login page
+                window.location.href = '/login';
+            }
         }
 
         return Promise.reject(error);

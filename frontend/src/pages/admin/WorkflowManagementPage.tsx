@@ -146,7 +146,7 @@ const WorkflowManagementPage: React.FC = () => {
                 ];
 
                 return (
-                    <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+                    <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
                         <Button
                             type="text"
                             icon={<MoreOutlined style={{ fontSize: 20 }} />}

@@ -84,12 +84,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = userRepository.findByKeycloakSub(sub)
-                .orElseThrow(() -> new IllegalStateException("User not found for sub=" + sub));
+                .orElseThrow(() -> new IllegalStateException("User not found"));
 
         Tenant tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
-        
+
         if (tenant == null) {
-            log.warn("Login attempt blocked for user {} - tenant {} does not exist", user.getEmail(), user.getTenantId());
+            log.warn("Login attempt blocked for user {} - tenant {} does not exist", user.getEmail(),
+                    user.getTenantId());
             throw new IllegalStateException("Your tenant account does not exist. Please contact support.");
         }
         if (tenant.getStatus() == TenantStatus.INACTIVE) {
@@ -134,21 +135,21 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void clearSession(String sessionId) {
         log.info("Clearing session: {}", sessionId);
-        
+
         try {
             SessionData sessionData = sessionService.getSession(sessionId);
-            
+
             sessionService.deleteSession(sessionId);
 
             if (sessionData != null && sessionData.getUserId() != null) {
                 User user = userRepository.findById(sessionData.getUserId()).orElse(null);
-                
+
                 if (user != null && user.getKeycloakSub() != null) {
                     rabbitMQProducer.publishLogoutUserMessage(user.getKeycloakSub(), user.getEmail());
                     log.info("Published logout message to RabbitMQ for user: {}", user.getEmail());
                 }
             }
-            
+
         } catch (Exception e) {
             log.error("Error during session cleanup for sessionId: {}", sessionId, e);
             try {

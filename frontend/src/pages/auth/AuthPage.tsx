@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
     Form,
     Button,
@@ -6,7 +7,8 @@ import {
     message,
     theme,
     Divider,
-    Space
+    Space,
+    Alert
 } from 'antd';
 import {
     GoogleOutlined,
@@ -38,6 +40,18 @@ const AuthPage: React.FC<AuthPageProps> = ({
 }) => {
     const [form] = Form.useForm<LoginFormValues>();
     const { token } = theme.useToken();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const errorMessage = searchParams.get('error');
+
+    // Clear error from URL after displaying
+    useEffect(() => {
+        if (errorMessage) {
+            const timer = setTimeout(() => {
+                setSearchParams({});
+            }, 10000); // Clear after 10 seconds
+            return () => clearTimeout(timer);
+        }
+    }, [errorMessage, setSearchParams]);
 
 
     const redirectToKeycloak = () => {
@@ -45,7 +59,7 @@ const AuthPage: React.FC<AuthPageProps> = ({
         const keycloakRealm = import.meta.env.VITE_KEYCLOAK_REALM || 'auraflow';
         const keycloakClientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'auraflow-frontend';
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-        
+
         const redirectUri = `${apiBaseUrl}/api/auth/callback`;
         const encodedRedirectUri = encodeURIComponent(redirectUri);
 
@@ -57,13 +71,18 @@ const AuthPage: React.FC<AuthPageProps> = ({
             encodedRedirectUri
         });
 
+        // If there was an error, force re-authentication by adding prompt=login
+        const hasError = searchParams.has('error');
+        const promptParam = hasError ? '&prompt=login' : '';
+
         const authUrl =
             `${keycloakBaseUrl}/realms/${encodeURIComponent(keycloakRealm)}` +
             `/protocol/openid-connect/auth` +
             `?client_id=${encodeURIComponent(keycloakClientId)}` +
             `&response_type=code` +
             `&scope=openid%20profile%20email` +
-            `&redirect_uri=${encodedRedirectUri}`;
+            `&redirect_uri=${encodedRedirectUri}` +
+            promptParam;
 
         window.location.href = authUrl;
     };
@@ -83,6 +102,19 @@ const AuthPage: React.FC<AuthPageProps> = ({
             />
             <div className={styles.rightSide}>
                 <div className={styles.authCard}>
+                    {/* Error Message */}
+                    {errorMessage && (
+                        <Alert
+                            message="Login Failed"
+                            description={errorMessage}
+                            type="error"
+                            showIcon
+                            closable
+                            style={{ marginBottom: 16 }}
+                            onClose={() => setSearchParams({})}
+                        />
+                    )}
+
                     {/* Header */}
                     <div className={styles.header}>
                         <Title level={2} className={styles.title}>
