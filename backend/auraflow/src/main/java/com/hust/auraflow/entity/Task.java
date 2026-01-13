@@ -22,10 +22,13 @@ public class Task {
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "workflow_id", nullable = false)
     private Workflow workflow;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     @Column(name = "title", length = Integer.MAX_VALUE)
     private String title;

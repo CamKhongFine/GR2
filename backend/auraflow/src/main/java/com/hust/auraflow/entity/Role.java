@@ -25,6 +25,9 @@ public class Role {
     @Column(name = "name", length = Integer.MAX_VALUE)
     private String name;
 
+    @Column(name = "tenant_id")
+    private Long tenantId;
+
     @NotNull
     @Column(name = "level", nullable = false)
     private Integer level;

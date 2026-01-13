@@ -1,5 +1,6 @@
 package com.hust.auraflow.entity;
 
+import com.hust.auraflow.common.enums.ProjectStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -28,12 +29,17 @@ public class Project {
     @Column(name = "description", length = Integer.MAX_VALUE)
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = Integer.MAX_VALUE)
-    private String status;
+    private ProjectStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
 
     @Column(name = "updated_by")
     private Long updatedBy;

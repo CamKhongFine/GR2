@@ -1,7 +1,5 @@
 package com.hust.auraflow.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,16 +11,10 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateProjectRequest {
-    @NotNull
-    private Long departmentId;
-
-    @NotBlank
-    private String name;
-
+public class UpdateTaskRequest {
+    private String title;
     private String description;
-
+    private String priority;
     private Instant beginDate;
-
     private Instant endDate;
 }

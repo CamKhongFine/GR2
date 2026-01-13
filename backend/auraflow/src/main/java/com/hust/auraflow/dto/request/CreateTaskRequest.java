@@ -13,14 +13,19 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateProjectRequest {
+public class CreateTaskRequest {
     @NotNull
-    private Long departmentId;
+    private Long projectId;
+
+    @NotNull
+    private Long workflowId;
 
     @NotBlank
-    private String name;
+    private String title;
 
     private String description;
+
+    private String priority;
 
     private Instant beginDate;
 
