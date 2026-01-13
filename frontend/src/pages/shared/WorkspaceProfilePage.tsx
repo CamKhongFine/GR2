@@ -1,10 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
     Card,
     Form,
     Input,
     Button,
-    Select,
     Typography,
     message,
     Spin,
@@ -14,14 +13,16 @@ import {
     Avatar,
     Upload,
     Tag,
+    Select,
 } from 'antd';
 import {
     SaveOutlined,
     UserOutlined,
     UploadOutlined,
-    ApartmentOutlined,
     CheckSquareOutlined,
     TeamOutlined,
+    FolderOutlined,
+    ProjectOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -35,7 +36,83 @@ import WorkspaceLayout, { SidebarItemConfig } from '../../layouts/WorkspaceLayou
 
 const { Title } = Typography;
 
-const DivisionProfilePage: React.FC = () => {
+interface WorkspaceProfilePageProps {
+    workspaceType: 'division' | 'department' | 'staff';
+}
+
+const WORKSPACE_CONFIG = {
+    division: {
+        themeColor: 'blue' as const,
+        gradient: 'from-blue-600 to-blue-700',
+        sidebarItems: (_divisionName: string): SidebarItemConfig[] => [
+            {
+                key: 'division',
+                icon: <ProjectOutlined />,
+                label: 'Project',
+                path: '/division/dashboard',
+            },
+            {
+                key: 'my-tasks',
+                icon: <CheckSquareOutlined />,
+                label: 'My Task',
+                path: '/division/my-tasks',
+            },
+        ],
+        getHeaderName: (user: UserResponse | null) => user?.division?.name || 'Project',
+    },
+    department: {
+        themeColor: 'green' as const,
+        gradient: 'from-green-600 to-green-700',
+        sidebarItems: (_departmentName: string): SidebarItemConfig[] => [
+            {
+                key: 'department',
+                icon: <TeamOutlined />,
+                label: 'Department',
+                path: '/department/dashboard',
+            },
+            {
+                key: 'my-tasks',
+                icon: <CheckSquareOutlined />,
+                label: 'My Task',
+                path: '/department/my-tasks',
+            },
+            {
+                key: 'division',
+                icon: <ProjectOutlined />,
+                label: 'Project',
+                path: '/division/dashboard',
+            },
+        ],
+        getHeaderName: (user: UserResponse | null) => user?.department?.name || 'Department',
+    },
+    staff: {
+        themeColor: 'purple' as const,
+        gradient: 'from-purple-600 to-purple-700',
+        sidebarItems: (departmentName: string): SidebarItemConfig[] => [
+            {
+                key: 'workspace',
+                icon: <FolderOutlined />,
+                label: 'Workspace',
+                path: '/staff/workspace',
+            },
+            {
+                key: 'my-tasks',
+                icon: <CheckSquareOutlined />,
+                label: 'My Tasks',
+                path: '/staff/my-tasks',
+            },
+            {
+                key: 'department',
+                icon: <TeamOutlined />,
+                label: departmentName,
+                path: '/department/dashboard',
+            },
+        ],
+        getHeaderName: (user: UserResponse | null) => user?.department?.name || 'Workspace',
+    },
+};
+
+const WorkspaceProfilePage: React.FC<WorkspaceProfilePageProps> = ({ workspaceType }) => {
     const [form] = Form.useForm();
     const [passwordForm] = Form.useForm();
     const queryClient = useQueryClient();
@@ -43,8 +120,10 @@ const DivisionProfilePage: React.FC = () => {
     // Use global user store
     const { user: storeUser, setUser } = useUserStore();
 
-    // Get division info
-    const divisionName = storeUser?.division?.name || 'Division';
+    // Get workspace config
+    const config = WORKSPACE_CONFIG[workspaceType];
+    const headerName = config.getHeaderName(storeUser);
+    const departmentName = storeUser?.department?.name || 'Department';
 
     // Fetch user data
     const { data: user, isLoading: userLoading } = useQuery<UserResponse>({
@@ -95,7 +174,6 @@ const DivisionProfilePage: React.FC = () => {
     const handlePasswordChange = async () => {
         try {
             await passwordForm.validateFields();
-            // TODO: Implement password change API
             message.info('Password change functionality will be implemented');
             passwordForm.resetFields();
         } catch (error) {
@@ -103,28 +181,16 @@ const DivisionProfilePage: React.FC = () => {
         }
     };
 
-    // Sidebar items configuration
-    const sidebarItems: SidebarItemConfig[] = [
-        {
-            key: 'division',
-            icon: <ApartmentOutlined />,
-            label: 'Division',
-            path: '/division/dashboard',
-        },
-        {
-            key: 'my-tasks',
-            icon: <CheckSquareOutlined />,
-            label: 'My Task',
-            path: '/division/my-tasks',
-        },
-    ];
+    // Sidebar items
+    const sidebarItems = useMemo(() =>
+        config.sidebarItems(departmentName),
+        [config, departmentName]
+    );
 
     // Left header content
     const leftHeaderContent = (
-        <div className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-2.5 rounded-xl shadow-lg">
-            <div>
-                <span className="font-bold text-white text-base">{divisionName}</span>
-            </div>
+        <div className={`flex items-center gap-3 bg-gradient-to-r ${config.gradient} px-5 py-2.5 rounded-xl shadow-lg`}>
+            <span className="font-bold text-white text-base">{headerName}</span>
         </div>
     );
 
@@ -133,7 +199,7 @@ const DivisionProfilePage: React.FC = () => {
             <WorkspaceLayout
                 sidebarItems={sidebarItems}
                 activeItem=""
-                themeColor="blue"
+                themeColor={config.themeColor}
                 leftHeaderContent={leftHeaderContent}
             >
                 <div className="flex justify-center items-center min-h-[400px]">
@@ -148,14 +214,13 @@ const DivisionProfilePage: React.FC = () => {
             <WorkspaceLayout
                 sidebarItems={sidebarItems}
                 activeItem=""
-                themeColor="blue"
+                themeColor={config.themeColor}
                 leftHeaderContent={leftHeaderContent}
             >
                 <div>User not found</div>
             </WorkspaceLayout>
         );
     }
-
 
     const tabItems = [
         {
@@ -176,18 +241,12 @@ const DivisionProfilePage: React.FC = () => {
 
                             <Row gutter={16}>
                                 <Col span={12}>
-                                    <Form.Item
-                                        label="First Name"
-                                        name="firstName"
-                                    >
+                                    <Form.Item label="First Name" name="firstName">
                                         <Input placeholder="Enter first name" />
                                     </Form.Item>
                                 </Col>
                                 <Col span={12}>
-                                    <Form.Item
-                                        label="Last Name"
-                                        name="lastName"
-                                    >
+                                    <Form.Item label="Last Name" name="lastName">
                                         <Input placeholder="Enter last name" />
                                     </Form.Item>
                                 </Col>
@@ -195,18 +254,12 @@ const DivisionProfilePage: React.FC = () => {
 
                             <Row gutter={16}>
                                 <Col span={12}>
-                                    <Form.Item
-                                        label="Email"
-                                        name="email"
-                                    >
+                                    <Form.Item label="Email" name="email">
                                         <Input disabled />
                                     </Form.Item>
                                 </Col>
                                 <Col span={12}>
-                                    <Form.Item
-                                        label="Title"
-                                        name="title"
-                                    >
+                                    <Form.Item label="Title" name="title">
                                         <Input placeholder="Enter title" />
                                     </Form.Item>
                                 </Col>
@@ -231,11 +284,11 @@ const DivisionProfilePage: React.FC = () => {
 
                             <Row gutter={16}>
                                 <Col span={12}>
-                                    <Form.Item label="Division">
+                                    <Form.Item label="Project">
                                         <Input
                                             value={user.division?.name || 'Not assigned'}
                                             disabled
-                                            prefix={<ApartmentOutlined />}
+                                            prefix={<ProjectOutlined />}
                                         />
                                     </Form.Item>
                                 </Col>
@@ -363,10 +416,7 @@ const DivisionProfilePage: React.FC = () => {
                                 >
                                     Cancel
                                 </Button>
-                                <Button
-                                    type="primary"
-                                    htmlType="submit"
-                                >
+                                <Button type="primary" htmlType="submit">
                                     Change Password
                                 </Button>
                             </Form.Item>
@@ -381,14 +431,14 @@ const DivisionProfilePage: React.FC = () => {
         <WorkspaceLayout
             sidebarItems={sidebarItems}
             activeItem=""
-            themeColor="blue"
+            themeColor={config.themeColor}
             leftHeaderContent={leftHeaderContent}
         >
             <div className="max-w-5xl mx-auto">
                 <div className="mb-6">
                     <Title level={2} className="mb-2">User Profile</Title>
                     <div className="flex items-center gap-2">
-                        {user.division && <Tag color="blue" icon={<ApartmentOutlined />}>{user.division.name}</Tag>}
+                        {user.division && <Tag color="blue" icon={<ProjectOutlined />}>{user.division.name}</Tag>}
                         {user.department && <Tag color="green" icon={<TeamOutlined />}>{user.department.name}</Tag>}
                     </div>
                 </div>
@@ -401,4 +451,4 @@ const DivisionProfilePage: React.FC = () => {
     );
 };
 
-export default DivisionProfilePage;
+export default WorkspaceProfilePage;

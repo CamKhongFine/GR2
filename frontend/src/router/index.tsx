@@ -2,8 +2,6 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import LandingLayout from '../layouts/LandingLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import TenantAdminLayout from '../layouts/TenantAdminLayout';
-import DepartmentLayout from '../layouts/DepartmentLayout';
-import StaffLayout from '../layouts/StaffLayout';
 import RequireRoleLevel from '../components/guards/RequireRoleLevel';
 import LandingPage from '../pages/landing/LandingPage';
 import AuthPage from '../pages/auth/AuthPage';
@@ -25,7 +23,7 @@ import WorkflowManagementPage from '../pages/admin/WorkflowManagementPage';
 import WorkflowEditorPage from '../pages/admin/WorkflowEditorPage';
 import DepartmentDashboardPage from '../pages/department/DashboardPage';
 import DivisionDashboardPage from '../pages/division/DashboardPage';
-import DivisionProfilePage from '../pages/division/ProfilePage';
+import WorkspaceProfilePage from '../pages/shared/WorkspaceProfilePage';
 import StaffWorkspacePage from '../pages/staff/StaffWorkspacePage';
 import UserProfilePage from '../pages/profile/UserProfilePage';
 
@@ -175,7 +173,7 @@ export const router = createBrowserRouter([
         path: '/division/profile',
         element: (
             <RequireRoleLevel maxLevel={2}>
-                <DivisionProfilePage />
+                <WorkspaceProfilePage workspaceType="division" />
             </RequireRoleLevel>
         ),
     },
@@ -216,15 +214,9 @@ export const router = createBrowserRouter([
         path: '/department/profile',
         element: (
             <RequireRoleLevel maxLevel={3}>
-                <DepartmentLayout />
+                <WorkspaceProfilePage workspaceType="department" />
             </RequireRoleLevel>
         ),
-        children: [
-            {
-                index: true,
-                element: <UserProfilePage />,
-            },
-        ],
     },
     // Staff workspace routes (role level ≤ 4)
     {
@@ -255,15 +247,9 @@ export const router = createBrowserRouter([
         path: '/staff/profile',
         element: (
             <RequireRoleLevel maxLevel={4}>
-                <StaffLayout />
+                <WorkspaceProfilePage workspaceType="staff" />
             </RequireRoleLevel>
         ),
-        children: [
-            {
-                index: true,
-                element: <UserProfilePage />,
-            },
-        ],
     },
     // Workspace routes (all authenticated users)
     {

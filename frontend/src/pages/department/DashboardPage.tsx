@@ -22,7 +22,7 @@ import {
     TeamOutlined,
     CheckCircleOutlined,
     PlusOutlined,
-    ApartmentOutlined,
+    ProjectOutlined,
     ExclamationCircleOutlined,
     ClockCircleOutlined,
     EyeOutlined,
@@ -141,8 +141,8 @@ const DepartmentDashboardPage: React.FC = () => {
         },
         {
             key: 'division',
-            icon: <ApartmentOutlined />,
-            label: 'Division',
+            icon: <ProjectOutlined />,
+            label: 'Project',
             path: '/division/dashboard',
         },
     ];

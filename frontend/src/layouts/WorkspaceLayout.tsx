@@ -117,11 +117,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         return `${firstName} ${lastName}`.trim() || user.email;
     }, [user]);
 
-    // Get user title/role
-    const userTitle = useMemo(() => {
-        if (!user?.roles || user.roles.length === 0) return 'Staff';
-        return user.roles[0]?.name || 'Staff';
-    }, [user]);
+
 
     const handleSidebarItemClick = (item: SidebarItemConfig) => {
         if (item.onClick) {
@@ -235,7 +231,6 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                             >
                                 <div className="text-right hidden md:block">
                                     <div className="text-sm font-bold text-gray-800">{displayName}</div>
-                                    <div className="text-xs text-gray-500">{userTitle}</div>
                                 </div>
                                 <Avatar
                                     size={44}
