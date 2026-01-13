@@ -3,7 +3,6 @@ import LandingLayout from '../layouts/LandingLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import TenantAdminLayout from '../layouts/TenantAdminLayout';
 import DepartmentLayout from '../layouts/DepartmentLayout';
-import DivisionLayout from '../layouts/DivisionLayout';
 import StaffLayout from '../layouts/StaffLayout';
 import RequireRoleLevel from '../components/guards/RequireRoleLevel';
 import LandingPage from '../pages/landing/LandingPage';
@@ -26,6 +25,7 @@ import WorkflowManagementPage from '../pages/admin/WorkflowManagementPage';
 import WorkflowEditorPage from '../pages/admin/WorkflowEditorPage';
 import DepartmentDashboardPage from '../pages/department/DashboardPage';
 import DivisionDashboardPage from '../pages/division/DashboardPage';
+import DivisionProfilePage from '../pages/division/ProfilePage';
 import StaffWorkspacePage from '../pages/staff/StaffWorkspacePage';
 import UserProfilePage from '../pages/profile/UserProfilePage';
 
@@ -164,15 +164,7 @@ export const router = createBrowserRouter([
         ),
     },
     {
-        path: '/division/tasks',
-        element: (
-            <RequireRoleLevel maxLevel={2}>
-                <DivisionDashboardPage />
-            </RequireRoleLevel>
-        ),
-    },
-    {
-        path: '/division/team',
+        path: '/division/my-tasks',
         element: (
             <RequireRoleLevel maxLevel={2}>
                 <DivisionDashboardPage />
@@ -183,15 +175,9 @@ export const router = createBrowserRouter([
         path: '/division/profile',
         element: (
             <RequireRoleLevel maxLevel={2}>
-                <DivisionLayout />
+                <DivisionProfilePage />
             </RequireRoleLevel>
         ),
-        children: [
-            {
-                index: true,
-                element: <UserProfilePage />,
-            },
-        ],
     },
     // Department workspace routes (role level ≤ 3)
     {

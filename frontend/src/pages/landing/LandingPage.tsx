@@ -72,8 +72,8 @@ const LandingPage: React.FC = () => {
         switch (roleLevel) {
             case 0: return 'System Management';
             case 1: return 'Company Management';
-            case 2: return 'Division Management';
-            case 3: return 'Department Management';
+            case 2: return 'Division Workspace';
+            case 3: return 'Department Workspace';
             default: return 'Workspace';
         }
     };
