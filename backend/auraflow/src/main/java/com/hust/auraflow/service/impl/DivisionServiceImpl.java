@@ -1,6 +1,6 @@
 package com.hust.auraflow.service.impl;
 
-import com.hust.auraflow.dto.DivisionResponse;
+import com.hust.auraflow.dto.response.DivisionResponse;
 import com.hust.auraflow.repository.DivisionRepository;
 import com.hust.auraflow.service.DivisionService;
 import lombok.RequiredArgsConstructor;

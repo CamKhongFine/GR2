@@ -1,7 +1,7 @@
 package com.hust.auraflow.controller;
 
-import com.hust.auraflow.dto.RoleRequest;
-import com.hust.auraflow.dto.RoleResponse;
+import com.hust.auraflow.dto.request.RoleRequest;
+import com.hust.auraflow.dto.response.RoleResponse;
 import com.hust.auraflow.service.RoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/roles")

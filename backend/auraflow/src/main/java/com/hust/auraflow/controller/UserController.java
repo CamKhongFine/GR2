@@ -1,8 +1,8 @@
 package com.hust.auraflow.controller;
 
-import com.hust.auraflow.dto.UpdateUserRequest;
-import com.hust.auraflow.dto.UserResponse;
-import com.hust.auraflow.dto.UserRoleResponse;
+import com.hust.auraflow.dto.request.UpdateUserRequest;
+import com.hust.auraflow.dto.response.UserResponse;
+import com.hust.auraflow.dto.response.UserRoleResponse;
 import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.UserService;
 import jakarta.validation.Valid;

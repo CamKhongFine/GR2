@@ -1,9 +1,9 @@
 package com.hust.auraflow.service;
 
-import com.hust.auraflow.dto.CreateDepartmentRequest;
-import com.hust.auraflow.dto.DepartmentResponse;
-import com.hust.auraflow.dto.UpdateDepartmentRequest;
-import com.hust.auraflow.dto.UserResponse;
+import com.hust.auraflow.dto.request.CreateDepartmentRequest;
+import com.hust.auraflow.dto.response.DepartmentResponse;
+import com.hust.auraflow.dto.request.UpdateDepartmentRequest;
+import com.hust.auraflow.dto.response.UserResponse;
 import com.hust.auraflow.security.UserPrincipal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

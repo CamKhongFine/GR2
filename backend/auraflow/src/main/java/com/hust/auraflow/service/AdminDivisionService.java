@@ -1,10 +1,10 @@
 package com.hust.auraflow.service;
 
-import com.hust.auraflow.dto.CreateDivisionRequest;
-import com.hust.auraflow.dto.DepartmentResponse;
-import com.hust.auraflow.dto.DivisionResponse;
-import com.hust.auraflow.dto.UpdateDivisionRequest;
-import com.hust.auraflow.dto.UserResponse;
+import com.hust.auraflow.dto.request.CreateDivisionRequest;
+import com.hust.auraflow.dto.response.DepartmentResponse;
+import com.hust.auraflow.dto.response.DivisionResponse;
+import com.hust.auraflow.dto.request.UpdateDivisionRequest;
+import com.hust.auraflow.dto.response.UserResponse;
 import com.hust.auraflow.security.UserPrincipal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

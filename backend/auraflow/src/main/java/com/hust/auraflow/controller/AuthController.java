@@ -1,8 +1,8 @@
 package com.hust.auraflow.controller;
 
 import com.hust.auraflow.common.Config;
-import com.hust.auraflow.dto.InviteRequestDTO;
-import com.hust.auraflow.dto.InviteResponse;
+import com.hust.auraflow.dto.request.InviteRequestDTO;
+import com.hust.auraflow.dto.response.InviteResponse;
 import com.hust.auraflow.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

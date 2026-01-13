@@ -1,4 +1,4 @@
-package com.hust.auraflow.dto;
+package com.hust.auraflow.dto.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -11,24 +11,18 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * DTO for updating a workflow with its steps and transitions atomically.
- * Replaces all existing steps and transitions.
+ * DTO for creating a workflow with its steps and transitions atomically.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdateWorkflowRequest {
+public class CreateWorkflowRequest {
 
     @NotBlank(message = "Workflow name is required")
     private String name;
 
     private String description;
-
-    /**
-     * Whether the workflow is active.
-     */
-    private Boolean isActive;
 
     /**
      * List of workflow steps. Must contain exactly one START step and at least one

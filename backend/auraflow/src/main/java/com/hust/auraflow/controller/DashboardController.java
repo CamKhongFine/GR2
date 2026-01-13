@@ -1,7 +1,7 @@
 package com.hust.auraflow.controller;
 
 import com.hust.auraflow.common.enums.UserStatus;
-import com.hust.auraflow.dto.DashboardStatsResponse;
+import com.hust.auraflow.dto.response.DashboardStatsResponse;
 import com.hust.auraflow.entity.Tenant;
 import com.hust.auraflow.repository.RoleRepository;
 import com.hust.auraflow.repository.TenantRepository;

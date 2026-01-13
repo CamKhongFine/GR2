@@ -1,7 +1,8 @@
 package com.hust.auraflow.service.impl;
 
 import com.hust.auraflow.common.enums.UserStatus;
-import com.hust.auraflow.dto.*;
+import com.hust.auraflow.dto.request.UpdateUserRequest;
+import com.hust.auraflow.dto.response.*;
 import com.hust.auraflow.entity.Department;
 import com.hust.auraflow.entity.Division;
 import com.hust.auraflow.entity.User;

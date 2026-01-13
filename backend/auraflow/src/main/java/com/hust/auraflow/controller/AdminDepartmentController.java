@@ -1,6 +1,9 @@
 package com.hust.auraflow.controller;
 
-import com.hust.auraflow.dto.*;
+import com.hust.auraflow.dto.request.CreateDepartmentRequest;
+import com.hust.auraflow.dto.request.UpdateDepartmentRequest;
+import com.hust.auraflow.dto.response.DepartmentResponse;
+import com.hust.auraflow.dto.response.UserResponse;
 import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.AdminDepartmentService;
 import jakarta.validation.Valid;

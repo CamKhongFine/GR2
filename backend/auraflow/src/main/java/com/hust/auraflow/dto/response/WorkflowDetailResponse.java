@@ -1,4 +1,4 @@
-package com.hust.auraflow.dto;
+package com.hust.auraflow.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,15 +6,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
- * DTO for workflow list response (minimal info).
+ * DTO for detailed workflow response including steps and transitions.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkflowResponse {
+public class WorkflowDetailResponse {
 
     private Long id;
 
@@ -24,5 +25,11 @@ public class WorkflowResponse {
 
     private Boolean isActive;
 
+    private List<WorkflowStepResponse> steps;
+
+    private List<WorkflowTransitionResponse> transitions;
+
     private Instant createdAt;
+
+    private Instant updatedAt;
 }

@@ -1,4 +1,4 @@
-package com.hust.auraflow.dto;
+package com.hust.auraflow.dto.request;
 
 import com.hust.auraflow.common.enums.AssigneeType;
 import com.hust.auraflow.common.enums.WorkflowStepType;

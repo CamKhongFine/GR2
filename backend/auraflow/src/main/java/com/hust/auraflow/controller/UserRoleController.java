@@ -1,7 +1,7 @@
 package com.hust.auraflow.controller;
 
-import com.hust.auraflow.dto.AssignRolesRequest;
-import com.hust.auraflow.dto.UserResponse;
+import com.hust.auraflow.dto.request.AssignRolesRequest;
+import com.hust.auraflow.dto.response.UserResponse;
 import com.hust.auraflow.service.UserRoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,11 +1,9 @@
 package com.hust.auraflow.service;
 
-import com.hust.auraflow.dto.TenantRequest;
-import com.hust.auraflow.dto.TenantResponse;
+import com.hust.auraflow.dto.request.TenantRequest;
+import com.hust.auraflow.dto.response.TenantResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import java.util.List;
 
 public interface TenantService {
     /**

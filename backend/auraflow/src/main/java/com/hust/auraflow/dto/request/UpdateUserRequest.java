@@ -1,4 +1,4 @@
-package com.hust.auraflow.dto;
+package com.hust.auraflow.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

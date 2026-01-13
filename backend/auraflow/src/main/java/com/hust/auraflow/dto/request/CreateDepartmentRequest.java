@@ -1,17 +1,20 @@
-package com.hust.auraflow.dto;
+package com.hust.auraflow.dto.request;
 
-import com.hust.auraflow.common.enums.TenantStatus;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TenantRequest {
+public class CreateDepartmentRequest {
     @NotBlank(message = "Name is required")
     private String name;
-    private TenantStatus status;
+    
+    private String description;
+    
+    private Long divisionId;
 }
-

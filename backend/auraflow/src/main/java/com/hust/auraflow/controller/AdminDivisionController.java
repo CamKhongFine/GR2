@@ -1,6 +1,10 @@
 package com.hust.auraflow.controller;
 
-import com.hust.auraflow.dto.*;
+import com.hust.auraflow.dto.request.CreateDivisionRequest;
+import com.hust.auraflow.dto.request.UpdateDivisionRequest;
+import com.hust.auraflow.dto.response.DepartmentResponse;
+import com.hust.auraflow.dto.response.DivisionResponse;
+import com.hust.auraflow.dto.response.UserResponse;
 import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.AdminDivisionService;
 import jakarta.validation.Valid;

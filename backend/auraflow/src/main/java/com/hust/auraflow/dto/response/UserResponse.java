@@ -1,4 +1,4 @@
-package com.hust.auraflow.dto;
+package com.hust.auraflow.dto.response;
 
 import com.hust.auraflow.common.enums.UserStatus;
 import lombok.AllArgsConstructor;

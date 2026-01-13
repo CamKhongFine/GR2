@@ -1,5 +1,6 @@
-package com.hust.auraflow.dto;
+package com.hust.auraflow.dto.request;
 
+import com.hust.auraflow.common.enums.ProjectStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,14 +12,14 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DepartmentResponse {
-    private Long id;
-    private Long tenantId;
+public class UpdateProjectRequest {
     private String name;
-    private String description;
-    private Long divisionId;
-    private String divisionName;
-    private Instant createdAt;
-    private Instant updatedAt;
-}
 
+    private String description;
+
+    private ProjectStatus status;
+
+    private Instant beginDate;
+
+    private Instant endDate;
+}

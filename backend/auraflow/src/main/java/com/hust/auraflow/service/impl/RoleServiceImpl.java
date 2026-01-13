@@ -1,7 +1,7 @@
 package com.hust.auraflow.service.impl;
 
-import com.hust.auraflow.dto.RoleRequest;
-import com.hust.auraflow.dto.RoleResponse;
+import com.hust.auraflow.dto.request.RoleRequest;
+import com.hust.auraflow.dto.response.RoleResponse;
 import com.hust.auraflow.entity.Role;
 import com.hust.auraflow.repository.RoleRepository;
 import com.hust.auraflow.service.RoleService;
@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 
 @Slf4j
 @Service

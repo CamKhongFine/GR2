@@ -1,11 +1,9 @@
 package com.hust.auraflow.service;
 
-import com.hust.auraflow.dto.RoleRequest;
-import com.hust.auraflow.dto.RoleResponse;
+import com.hust.auraflow.dto.request.RoleRequest;
+import com.hust.auraflow.dto.response.RoleResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import java.util.List;
 
 public interface RoleService {
 

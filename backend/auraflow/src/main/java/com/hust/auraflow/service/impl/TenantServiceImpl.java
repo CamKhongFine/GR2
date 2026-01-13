@@ -1,8 +1,8 @@
 package com.hust.auraflow.service.impl;
 
 import com.hust.auraflow.common.enums.TenantStatus;
-import com.hust.auraflow.dto.TenantRequest;
-import com.hust.auraflow.dto.TenantResponse;
+import com.hust.auraflow.dto.request.TenantRequest;
+import com.hust.auraflow.dto.response.TenantResponse;
 import com.hust.auraflow.entity.Tenant;
 import com.hust.auraflow.repository.TenantRepository;
 import com.hust.auraflow.service.TenantService;
@@ -12,9 +12,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service

@@ -1,7 +1,7 @@
 package com.hust.auraflow.controller;
 
-import com.hust.auraflow.dto.TenantRequest;
-import com.hust.auraflow.dto.TenantResponse;
+import com.hust.auraflow.dto.request.TenantRequest;
+import com.hust.auraflow.dto.response.TenantResponse;
 import com.hust.auraflow.service.TenantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

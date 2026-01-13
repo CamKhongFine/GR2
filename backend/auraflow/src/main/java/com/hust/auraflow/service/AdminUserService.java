@@ -1,8 +1,8 @@
 package com.hust.auraflow.service;
 
-import com.hust.auraflow.dto.InviteResponse;
-import com.hust.auraflow.dto.UpdateUserRequest;
-import com.hust.auraflow.dto.UserResponse;
+import com.hust.auraflow.dto.response.InviteResponse;
+import com.hust.auraflow.dto.request.UpdateUserRequest;
+import com.hust.auraflow.dto.response.UserResponse;
 import com.hust.auraflow.entity.Role;
 import com.hust.auraflow.security.UserPrincipal;
 import org.springframework.data.domain.Page;

@@ -1,6 +1,6 @@
 package com.hust.auraflow.service.impl;
 
-import com.hust.auraflow.dto.DepartmentResponse;
+import com.hust.auraflow.dto.response.DepartmentResponse;
 import com.hust.auraflow.repository.DepartmentRepository;
 import com.hust.auraflow.service.DepartmentService;
 import lombok.RequiredArgsConstructor;

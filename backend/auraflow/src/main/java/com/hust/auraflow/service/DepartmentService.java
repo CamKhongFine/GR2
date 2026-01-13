@@ -1,6 +1,6 @@
 package com.hust.auraflow.service;
 
-import com.hust.auraflow.dto.DepartmentResponse;
+import com.hust.auraflow.dto.response.DepartmentResponse;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
 package com.hust.auraflow.service;
 
-import com.hust.auraflow.dto.InviteRequestDTO;
-import com.hust.auraflow.dto.InviteResponse;
+import com.hust.auraflow.dto.request.InviteRequestDTO;
+import com.hust.auraflow.dto.response.InviteResponse;
 import com.hust.auraflow.dto.SessionData;
 
 public interface AuthService {
