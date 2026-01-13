@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { fetchCurrentUser, type UserResponse } from '../api/auth.api';
 import { fetchUserRole, type UserRoleResponse } from '../api/role.api';
+import { logout as logoutApi } from '../api/logout.api';
 
 interface UserStore {
     user: UserResponse | null;
@@ -15,7 +16,7 @@ interface UserStore {
     setRoleLevel: (roleLevel: number, tenantId?: string) => void;
     loadUser: () => Promise<void>;
     loadUserRole: () => Promise<void>;
-    logout: () => void;
+    logout: () => Promise<void>;
 }
 
 export const useUserStore = create<UserStore>((set, get) => ({
@@ -62,7 +63,12 @@ export const useUserStore = create<UserStore>((set, get) => ({
         }
     },
 
-    logout: () => {
+    logout: async () => {
+        try {
+            await logoutApi();
+        } catch (error) {
+            console.error('Logout API error:', error);
+        }
         localStorage.clear();
         sessionStorage.clear();
         set({ user: null, roleLevel: null, tenantId: null, error: null });

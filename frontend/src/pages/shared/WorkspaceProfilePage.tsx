@@ -23,6 +23,7 @@ import {
     TeamOutlined,
     FolderOutlined,
     ProjectOutlined,
+    ApartmentOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -44,70 +45,84 @@ const WORKSPACE_CONFIG = {
     division: {
         themeColor: 'blue' as const,
         gradient: 'from-blue-600 to-blue-700',
-        sidebarItems: (_divisionName: string): SidebarItemConfig[] => [
-            {
-                key: 'division',
-                icon: <ProjectOutlined />,
-                label: 'Project',
-                path: '/division/dashboard',
-            },
-            {
-                key: 'my-tasks',
-                icon: <CheckSquareOutlined />,
-                label: 'My Task',
-                path: '/division/my-tasks',
-            },
-        ],
-        getHeaderName: (user: UserResponse | null) => user?.division?.name || 'Project',
+        sidebarItems: (user: UserResponse | null): SidebarItemConfig[] => {
+            const isDivisionLeader = user?.roles?.some(r => r.name === 'DIVISION_LEADER');
+            const label = isDivisionLeader ? 'Division' : 'Project';
+            const icon = isDivisionLeader ? <ApartmentOutlined /> : <ProjectOutlined />;
+
+            return [
+                {
+                    key: 'division',
+                    icon: icon,
+                    label: label,
+                    path: '/division/dashboard',
+                },
+                {
+                    key: 'my-tasks',
+                    icon: <CheckSquareOutlined />,
+                    label: 'My Task',
+                    path: '/division/my-tasks',
+                },
+            ];
+        },
+        getHeaderName: (user: UserResponse | null) => {
+            const isDivisionLeader = user?.roles?.some(r => r.name === 'DIVISION_LEADER');
+            return user?.division?.name || (isDivisionLeader ? 'Division' : 'Project');
+        },
     },
     department: {
         themeColor: 'green' as const,
         gradient: 'from-green-600 to-green-700',
-        sidebarItems: (_departmentName: string): SidebarItemConfig[] => [
-            {
-                key: 'department',
-                icon: <TeamOutlined />,
-                label: 'Department',
-                path: '/department/dashboard',
-            },
-            {
-                key: 'my-tasks',
-                icon: <CheckSquareOutlined />,
-                label: 'My Task',
-                path: '/department/my-tasks',
-            },
-            {
-                key: 'division',
-                icon: <ProjectOutlined />,
-                label: 'Project',
-                path: '/division/dashboard',
-            },
-        ],
+        sidebarItems: (): SidebarItemConfig[] => {
+            return [
+                {
+                    key: 'department',
+                    icon: <TeamOutlined />,
+                    label: 'Department',
+                    path: '/department/dashboard',
+                },
+                {
+                    key: 'my-tasks',
+                    icon: <CheckSquareOutlined />,
+                    label: 'My Task',
+                    path: '/department/my-tasks',
+                },
+                {
+                    key: 'division',
+                    icon: <ApartmentOutlined />,
+                    label: 'Division',
+                    path: '/division/dashboard',
+                },
+            ];
+        },
         getHeaderName: (user: UserResponse | null) => user?.department?.name || 'Department',
     },
     staff: {
         themeColor: 'purple' as const,
         gradient: 'from-purple-600 to-purple-700',
-        sidebarItems: (departmentName: string): SidebarItemConfig[] => [
-            {
-                key: 'workspace',
-                icon: <FolderOutlined />,
-                label: 'Workspace',
-                path: '/staff/workspace',
-            },
-            {
-                key: 'my-tasks',
-                icon: <CheckSquareOutlined />,
-                label: 'My Tasks',
-                path: '/staff/my-tasks',
-            },
-            {
-                key: 'department',
-                icon: <TeamOutlined />,
-                label: departmentName,
-                path: '/department/dashboard',
-            },
-        ],
+        sidebarItems: (user: UserResponse | null): SidebarItemConfig[] => {
+            const departmentName = user?.department?.name || 'Department';
+            return [
+                {
+                    key: 'workspace',
+                    icon: <FolderOutlined />,
+                    label: 'Workspace',
+                    path: '/staff/workspace',
+                },
+                {
+                    key: 'my-tasks',
+                    icon: <CheckSquareOutlined />,
+                    label: 'My Tasks',
+                    path: '/staff/my-tasks',
+                },
+                {
+                    key: 'department',
+                    icon: <TeamOutlined />,
+                    label: departmentName,
+                    path: '/department/dashboard',
+                },
+            ];
+        },
         getHeaderName: (user: UserResponse | null) => user?.department?.name || 'Workspace',
     },
 };
@@ -119,6 +134,12 @@ const WorkspaceProfilePage: React.FC<WorkspaceProfilePageProps> = ({ workspaceTy
 
     // Use global user store
     const { user: storeUser, setUser } = useUserStore();
+    const isDivisionLeader = useMemo(() =>
+        storeUser?.roles?.some(r => r.name === 'DIVISION_LEADER')
+        , [storeUser]);
+
+    const projectLabel = isDivisionLeader ? 'Division' : 'Project';
+    const projectIcon = isDivisionLeader ? <ApartmentOutlined /> : <ProjectOutlined />;
 
     // Get workspace config
     const config = WORKSPACE_CONFIG[workspaceType];
@@ -183,8 +204,8 @@ const WorkspaceProfilePage: React.FC<WorkspaceProfilePageProps> = ({ workspaceTy
 
     // Sidebar items
     const sidebarItems = useMemo(() =>
-        config.sidebarItems(departmentName),
-        [config, departmentName]
+        config.sidebarItems(storeUser),
+        [config, storeUser]
     );
 
     // Left header content
@@ -284,11 +305,11 @@ const WorkspaceProfilePage: React.FC<WorkspaceProfilePageProps> = ({ workspaceTy
 
                             <Row gutter={16}>
                                 <Col span={12}>
-                                    <Form.Item label="Project">
+                                    <Form.Item label={projectLabel}>
                                         <Input
                                             value={user.division?.name || 'Not assigned'}
                                             disabled
-                                            prefix={<ProjectOutlined />}
+                                            prefix={projectIcon}
                                         />
                                     </Form.Item>
                                 </Col>
@@ -438,7 +459,7 @@ const WorkspaceProfilePage: React.FC<WorkspaceProfilePageProps> = ({ workspaceTy
                 <div className="mb-6">
                     <Title level={2} className="mb-2">User Profile</Title>
                     <div className="flex items-center gap-2">
-                        {user.division && <Tag color="blue" icon={<ProjectOutlined />}>{user.division.name}</Tag>}
+                        {user.division && <Tag color="blue" icon={projectIcon}>{user.division.name}</Tag>}
                         {user.department && <Tag color="green" icon={<TeamOutlined />}>{user.department.name}</Tag>}
                     </div>
                 </div>

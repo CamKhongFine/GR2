@@ -22,7 +22,7 @@ import {
     TeamOutlined,
     CheckCircleOutlined,
     PlusOutlined,
-    ProjectOutlined,
+    ApartmentOutlined,
     ExclamationCircleOutlined,
     ClockCircleOutlined,
     EyeOutlined,
@@ -115,7 +115,7 @@ const MOCK_STAFF = [
     { id: 5, name: 'Sarah Chen', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah', taskCount: 3, overdue: 0 },
 ];
 
-const DepartmentDashboardPage: React.FC = () => {
+const DepartmentWorkspacePage: React.FC = () => {
     const navigate = useNavigate();
     const [isCreateTaskDrawerOpen, setIsCreateTaskDrawerOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<typeof MOCK_STAFF[0] | null>(null);
@@ -141,8 +141,8 @@ const DepartmentDashboardPage: React.FC = () => {
         },
         {
             key: 'division',
-            icon: <ProjectOutlined />,
-            label: 'Project',
+            icon: <ApartmentOutlined />,
+            label: 'Division',
             path: '/division/dashboard',
         },
     ];
@@ -456,4 +456,4 @@ const DepartmentDashboardPage: React.FC = () => {
     );
 };
 
-export default DepartmentDashboardPage;
+export default DepartmentWorkspacePage;

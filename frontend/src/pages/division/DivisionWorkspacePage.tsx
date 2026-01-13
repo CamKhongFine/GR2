@@ -28,7 +28,7 @@ import type { UserResponse } from '../../api/user.api';
 
 const { Title, Text, Paragraph } = Typography;
 
-const DivisionDashboardPage: React.FC = () => {
+const DivisionWorkspacePage: React.FC = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('departments');
     const { user } = useUserStore();
@@ -191,4 +191,4 @@ const DivisionDashboardPage: React.FC = () => {
     );
 };
 
-export default DivisionDashboardPage;
+export default DivisionWorkspacePage;

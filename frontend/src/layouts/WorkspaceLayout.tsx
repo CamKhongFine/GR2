@@ -9,7 +9,6 @@ import {
     MessageOutlined,
     SearchOutlined,
     LogoutOutlined,
-    SettingOutlined,
 } from '@ant-design/icons';
 import clsx from 'clsx';
 import { useUserStore } from '../store/userStore';
@@ -215,8 +214,8 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                                         key: 'logout',
                                         icon: <LogoutOutlined />,
                                         label: 'Logout',
-                                        onClick: () => {
-                                            logout();
+                                        onClick: async () => {
+                                            await logout();
                                             navigate('/login');
                                         },
                                     },

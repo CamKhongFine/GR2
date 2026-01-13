@@ -21,8 +21,8 @@ import DepartmentManagementPage from '../pages/admin/DepartmentManagementPage';
 import DepartmentDetailPage from '../pages/admin/DepartmentDetailPage';
 import WorkflowManagementPage from '../pages/admin/WorkflowManagementPage';
 import WorkflowEditorPage from '../pages/admin/WorkflowEditorPage';
-import DepartmentDashboardPage from '../pages/department/DashboardPage';
-import DivisionDashboardPage from '../pages/division/DashboardPage';
+import DepartmentWorkspacePage from '../pages/department/DepartmentWorkspacePage';
+import DivisionWorkspacePage from '../pages/division/DivisionWorkspacePage';
 import WorkspaceProfilePage from '../pages/shared/WorkspaceProfilePage';
 import StaffWorkspacePage from '../pages/staff/StaffWorkspacePage';
 import UserProfilePage from '../pages/profile/UserProfilePage';
@@ -157,7 +157,7 @@ export const router = createBrowserRouter([
         path: '/division/dashboard',
         element: (
             <RequireRoleLevel maxLevel={2}>
-                <DivisionDashboardPage />
+                <DivisionWorkspacePage />
             </RequireRoleLevel>
         ),
     },
@@ -165,7 +165,7 @@ export const router = createBrowserRouter([
         path: '/division/my-tasks',
         element: (
             <RequireRoleLevel maxLevel={2}>
-                <DivisionDashboardPage />
+                <DivisionWorkspacePage />
             </RequireRoleLevel>
         ),
     },
@@ -190,7 +190,7 @@ export const router = createBrowserRouter([
         path: '/department/dashboard',
         element: (
             <RequireRoleLevel maxLevel={3}>
-                <DepartmentDashboardPage />
+                <DepartmentWorkspacePage />
             </RequireRoleLevel>
         ),
     },
@@ -198,7 +198,7 @@ export const router = createBrowserRouter([
         path: '/department/team',
         element: (
             <RequireRoleLevel maxLevel={3}>
-                <DepartmentDashboardPage />
+                <DepartmentWorkspacePage />
             </RequireRoleLevel>
         ),
     },
@@ -206,7 +206,7 @@ export const router = createBrowserRouter([
         path: '/department/reports',
         element: (
             <RequireRoleLevel maxLevel={3}>
-                <DepartmentDashboardPage />
+                <DepartmentWorkspacePage />
             </RequireRoleLevel>
         ),
     },
