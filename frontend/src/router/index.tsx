@@ -22,6 +22,7 @@ import DivisionDetailPage from '../pages/admin/DivisionDetailPage';
 import DepartmentManagementPage from '../pages/admin/DepartmentManagementPage';
 import DepartmentDetailPage from '../pages/admin/DepartmentDetailPage';
 import WorkflowManagementPage from '../pages/admin/WorkflowManagementPage';
+import WorkflowEditorPage from '../pages/admin/WorkflowEditorPage';
 import DepartmentDashboardPage from '../pages/department/DashboardPage';
 import DivisionDashboardPage from '../pages/division/DashboardPage';
 import UserProfilePage from '../pages/profile/UserProfilePage';
@@ -128,6 +129,14 @@ export const router = createBrowserRouter([
             {
                 path: 'workflows',
                 element: <WorkflowManagementPage />,
+            },
+            {
+                path: 'workflows/new',
+                element: <WorkflowEditorPage />,
+            },
+            {
+                path: 'workflows/:id',
+                element: <WorkflowEditorPage />,
             },
             {
                 path: 'profile',
