@@ -4,14 +4,13 @@ import {
     PlayCircleOutlined,
     UserOutlined,
     CheckCircleOutlined,
-    FileDoneOutlined,
-    CloseCircleFilled,
+    AuditOutlined,
+    StopOutlined,
     CheckOutlined,
     CloseOutlined,
     ArrowRightOutlined,
-    DeleteOutlined,
 } from '@ant-design/icons';
-import { Typography, Divider, Select, Space } from 'antd';
+import { Typography, Tooltip } from 'antd';
 import { WorkflowStepType, AssigneeType } from '../../api/workflow.api';
 
 const { Text } = Typography;
@@ -30,187 +29,219 @@ export interface AvailableNode {
 export interface WorkflowNodeData {
     name: string;
     type: WorkflowStepType;
+    description?: string;
     assigneeType?: AssigneeType;
     assigneeValue?: string | null;
-    assigneeName?: string; // Display name for the assigned user
+    assigneeName?: string;
+    reviewerName?: string;
+    guidanceText?: string;
     onDelete?: (nodeId: string) => void;
+    onClick?: (nodeId: string) => void;
     transitions?: NodeTransition[];
     availableNodes?: AvailableNode[];
     onSetRejectTarget?: (sourceNodeId: string, targetNodeId: string) => void;
     onRemoveRejectTarget?: (sourceNodeId: string) => void;
 }
 
-const nodeColors: Record<WorkflowStepType, { bg: string; border: string; icon: string }> = {
-    START: { bg: '#e6f7ff', border: '#1890ff', icon: '#1890ff' },
-    USER_TASK: { bg: '#fff7e6', border: '#fa8c16', icon: '#fa8c16' },
-    REVIEW: { bg: '#f6ffed', border: '#52c41a', icon: '#52c41a' },
-    END: { bg: '#fff1f0', border: '#ff4d4f', icon: '#ff4d4f' },
+// Enterprise color scheme
+const nodeColors: Record<WorkflowStepType, { bg: string; border: string; icon: string; headerBg: string }> = {
+    START: {
+        bg: '#ffffff',
+        border: '#597ef7',
+        icon: '#597ef7',
+        headerBg: '#f0f5ff'
+    },
+    USER_TASK: {
+        bg: '#ffffff',
+        border: '#ffa940',
+        icon: '#fa8c16',
+        headerBg: '#fff7e6'
+    },
+    REVIEW: {
+        bg: '#ffffff',
+        border: '#73d13d',
+        icon: '#52c41a',
+        headerBg: '#f6ffed'
+    },
+    END: {
+        bg: '#ffffff',
+        border: '#8c8c8c',
+        icon: '#595959',
+        headerBg: '#fafafa'
+    },
 };
 
 const nodeIcons: Record<WorkflowStepType, React.ReactNode> = {
     START: <PlayCircleOutlined />,
     USER_TASK: <UserOutlined />,
-    REVIEW: <FileDoneOutlined />,
-    END: <CheckCircleOutlined />,
+    REVIEW: <AuditOutlined />,
+    END: <StopOutlined />,
+};
+
+const typeLabels: Record<WorkflowStepType, string> = {
+    START: 'Start',
+    USER_TASK: 'User Task',
+    REVIEW: 'Review',
+    END: 'End',
 };
 
 const WorkflowNode: React.FC<NodeProps<WorkflowNodeData>> = ({ id, data, selected }) => {
     const colors = nodeColors[data.type] || nodeColors.USER_TASK;
     const icon = nodeIcons[data.type] || nodeIcons.USER_TASK;
+    const typeLabel = typeLabels[data.type] || data.type;
 
-    const handleDelete = (evt: React.MouseEvent) => {
+    const handleClick = (evt: React.MouseEvent) => {
         evt.stopPropagation();
-        if (data.onDelete) {
-            data.onDelete(id);
+        if (data.onClick) {
+            data.onClick(id);
         }
     };
 
-    // Get approve and reject transitions for REVIEW nodes
-    const approveTransition = data.transitions?.find((t) => t.action === 'approve');
-    const rejectTransition = data.transitions?.find((t) => t.action === 'reject');
+    // Get transitions for display
+    const approveTransition = data.transitions?.find((t) => t.action.toLowerCase() === 'approve');
+    const rejectTransition = data.transitions?.find((t) => t.action.toLowerCase() === 'reject');
 
-    // Handle reject target selection
-    const handleRejectTargetChange = (targetNodeId: string) => {
-        if (data.onSetRejectTarget) {
-            data.onSetRejectTarget(id, targetNodeId);
+    // Get assignee display text
+    const getAssigneeText = () => {
+        if (data.assigneeType === 'FIXED') {
+            return data.assigneeName || 'Unknown User';
         }
+        return 'Dynamic';
     };
 
-    const handleRemoveReject = (evt: React.MouseEvent) => {
-        evt.stopPropagation();
-        if (data.onRemoveRejectTarget) {
-            data.onRemoveRejectTarget(id);
+    // Get reviewer display text
+    const getReviewerText = () => {
+        if (data.reviewerName) {
+            return data.reviewerName;
         }
+        if (data.assigneeType === 'FIXED') {
+            return data.assigneeName || 'Unknown User';
+        }
+        return 'Dynamic';
     };
-
-    // Filter available nodes for reject target (exclude self, END nodes)
-    const rejectTargetOptions = (data.availableNodes || [])
-        .filter((n) => n.id !== id)
-        .map((n) => ({ value: n.id, label: n.name }));
 
     return (
-        <div
-            style={{
-                padding: '12px 16px',
-                borderRadius: 8,
-                background: colors.bg,
-                border: `2px solid ${selected ? '#1890ff' : colors.border}`,
-                boxShadow: selected ? '0 0 0 2px rgba(24, 144, 255, 0.2)' : 'none',
-                minWidth: data.type === 'REVIEW' ? 200 : 150,
-                textAlign: 'center',
-                position: 'relative',
-            }}
-        >
-            {/* Delete button - top right corner */}
-            {data.onDelete && (
-                <CloseCircleFilled
-                    onClick={handleDelete}
-                    className="nodrag"
+        <Tooltip title="Click to configure" placement="top">
+            <div
+                onClick={handleClick}
+                style={{
+                    minWidth: 220,
+                    borderRadius: 8,
+                    background: colors.bg,
+                    border: `2px solid ${selected ? '#1890ff' : colors.border}`,
+                    boxShadow: selected
+                        ? '0 4px 12px rgba(24, 144, 255, 0.3)'
+                        : '0 2px 8px rgba(0, 0, 0, 0.08)',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                }}
+                className="workflow-node-enterprise"
+            >
+                {/* Input handle - not for START */}
+                {data.type !== 'START' && (
+                    <Handle
+                        type="target"
+                        position={Position.Left}
+                        style={{
+                            width: 12,
+                            height: 12,
+                            background: colors.border,
+                            border: '2px solid #fff',
+                        }}
+                    />
+                )}
+
+                {/* Node Header */}
+                <div
                     style={{
-                        position: 'absolute',
-                        top: -8,
-                        right: -8,
-                        color: '#ff4d4f',
-                        fontSize: 18,
-                        cursor: 'pointer',
-                        background: '#fff',
-                        borderRadius: '50%',
-                        opacity: 0.8,
-                        transition: 'opacity 0.2s',
+                        padding: '10px 14px',
+                        background: colors.headerBg,
+                        borderBottom: `1px solid ${colors.border}20`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
-                />
-            )}
-
-            {/* Input handle - not for START */}
-            {data.type !== 'START' && (
-                <Handle
-                    type="target"
-                    position={Position.Left}
-                    style={{
-                        width: 10,
-                        height: 10,
-                        background: colors.border,
-                    }}
-                />
-            )}
-
-            {/* Node header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
-                <span style={{ fontSize: 18, color: colors.icon }}>{icon}</span>
-                <Text strong>{data.name}</Text>
-            </div>
-            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
-                {data.type.replace('_', ' ')}
-            </Text>
-
-            {/* Action Panel for REVIEW nodes */}
-            {data.type === 'REVIEW' && (
-                <div style={{ marginTop: 8 }}>
-                    <Divider style={{ margin: '8px 0', borderColor: '#d9d9d9' }} />
-                    <Text type="secondary" style={{ fontSize: 10, display: 'block', marginBottom: 6 }}>
-                        Actions
-                    </Text>
-                    <div style={{ textAlign: 'left', fontSize: 11 }}>
-                        {/* Approve action (read-only display) */}
-                        {approveTransition && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                                <CheckOutlined style={{ color: '#52c41a', fontSize: 10 }} />
-                                <span style={{ color: '#52c41a' }}>Approve</span>
-                                <ArrowRightOutlined style={{ color: '#999', fontSize: 8 }} />
-                                <span style={{ color: '#666' }}>{approveTransition.targetNodeName}</span>
-                            </div>
-                        )}
-
-                        {/* Reject action with dropdown */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CloseOutlined style={{ color: '#ff4d4f', fontSize: 10 }} />
-                            <span style={{ color: '#ff4d4f', minWidth: 40 }}>Reject</span>
-                            <ArrowRightOutlined style={{ color: '#999', fontSize: 8 }} />
-                            {rejectTransition ? (
-                                <Space size={2}>
-                                    <span style={{ color: '#666' }}>{rejectTransition.targetNodeName}</span>
-                                    <DeleteOutlined
-                                        onClick={handleRemoveReject}
-                                        className="nodrag"
-                                        style={{ color: '#999', fontSize: 10, cursor: 'pointer' }}
-                                    />
-                                </Space>
-                            ) : (
-                                <Select
-                                    size="small"
-                                    placeholder="Select..."
-                                    style={{ width: 90, fontSize: 10 }}
-                                    options={rejectTargetOptions}
-                                    onChange={handleRejectTargetChange}
-                                    className="nodrag"
-                                    popupClassName="nodrag"
-                                />
-                            )}
-                        </div>
+                >
+                    <span style={{ fontSize: 20, color: colors.icon }}>{icon}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <Text strong style={{ fontSize: 14, display: 'block', lineHeight: 1.3 }} ellipsis>
+                            {data.name}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                            {typeLabel}
+                        </Text>
                     </div>
                 </div>
-            )}
 
-            {/* Single output handle - not for END */}
-            {data.type !== 'END' && (
-                <Handle
-                    type="source"
-                    position={Position.Right}
-                    style={{
-                        width: 10,
-                        height: 10,
-                        background: colors.border,
-                    }}
-                />
-            )}
-        </div>
+                {/* Node Body - Role Hints */}
+                {(data.type === 'USER_TASK' || data.type === 'REVIEW') && (
+                    <div style={{ padding: '10px 14px' }}>
+                        {/* Assignee/Reviewer Info */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: data.type === 'REVIEW' ? 10 : 0 }}>
+                            <UserOutlined style={{ color: colors.icon, fontSize: 12 }} />
+                            <Text style={{ fontSize: 12, color: '#666' }}>
+                                {data.type === 'USER_TASK' ? 'Assigned to: ' : 'Reviewer: '}
+                                <Text strong style={{ fontSize: 12 }}>
+                                    {data.type === 'USER_TASK' ? getAssigneeText() : getReviewerText()}
+                                </Text>
+                            </Text>
+                        </div>
+
+                        {/* Actions Summary for REVIEW */}
+                        {data.type === 'REVIEW' && (
+                            <div>
+                                <Text type="secondary" style={{ fontSize: 10, display: 'block', marginBottom: 6, textTransform: 'uppercase' }}>
+                                    Actions
+                                </Text>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 2 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                                        <CheckOutlined style={{ color: '#52c41a', fontSize: 10 }} />
+                                        <span style={{ color: '#52c41a', fontWeight: 500 }}>Approve</span>
+                                        <ArrowRightOutlined style={{ color: '#bbb', fontSize: 8 }} />
+                                        <span style={{ color: '#666' }}>
+                                            {approveTransition?.targetNodeName || 'Next step'}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                                        <CloseOutlined style={{ color: '#ff4d4f', fontSize: 10 }} />
+                                        <span style={{ color: '#ff4d4f', fontWeight: 500 }}>Reject</span>
+                                        <ArrowRightOutlined style={{ color: '#bbb', fontSize: 8 }} />
+                                        <span style={{ color: '#666' }}>
+                                            {rejectTransition?.targetNodeName || 'Previous step'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Minimal body for START/END */}
+                {(data.type === 'START' || data.type === 'END') && (
+                    <div style={{ padding: '8px 14px' }}>
+                        <Text type="secondary" style={{ fontSize: 11 }}>
+                            {data.type === 'START' ? 'Workflow begins here' : 'Workflow ends here'}
+                        </Text>
+                    </div>
+                )}
+
+                {/* Output handle - not for END */}
+                {data.type !== 'END' && (
+                    <Handle
+                        type="source"
+                        position={Position.Right}
+                        style={{
+                            width: 12,
+                            height: 12,
+                            background: colors.border,
+                            border: '2px solid #fff',
+                        }}
+                    />
+                )}
+            </div>
+        </Tooltip>
     );
 };
 
 export default memo(WorkflowNode);
-
-
-
-

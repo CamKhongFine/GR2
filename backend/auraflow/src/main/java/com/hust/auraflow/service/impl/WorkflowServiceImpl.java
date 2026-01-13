@@ -85,6 +85,8 @@ public class WorkflowServiceImpl implements WorkflowService {
             step.setDescription(stepRequest.getDescription());
             step.setStepType(stepRequest.getType().name());
             step.setStepOrder(stepRequest.getStepOrder() != null ? stepRequest.getStepOrder() : order++);
+            step.setAssigneeType(stepRequest.getAssigneeType());
+            step.setAssigneeValue(stepRequest.getAssigneeValue());
             step.setCreatedAt(Instant.now());
             step.setUpdatedAt(Instant.now());
 
@@ -207,6 +209,8 @@ public class WorkflowServiceImpl implements WorkflowService {
             step.setDescription(stepRequest.getDescription());
             step.setStepType(stepRequest.getType().name());
             step.setStepOrder(stepRequest.getStepOrder() != null ? stepRequest.getStepOrder() : order++);
+            step.setAssigneeType(stepRequest.getAssigneeType());
+            step.setAssigneeValue(stepRequest.getAssigneeValue());
             step.setCreatedAt(Instant.now());
             step.setUpdatedAt(Instant.now());
 
@@ -362,6 +366,8 @@ public class WorkflowServiceImpl implements WorkflowService {
                 .description(step.getDescription())
                 .type(type)
                 .stepOrder(step.getStepOrder())
+                .assigneeType(step.getAssigneeType())
+                .assigneeValue(step.getAssigneeValue())
                 .build();
     }
 

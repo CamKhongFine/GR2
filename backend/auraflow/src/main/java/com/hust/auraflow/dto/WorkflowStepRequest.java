@@ -1,5 +1,6 @@
 package com.hust.auraflow.dto;
 
+import com.hust.auraflow.common.enums.AssigneeType;
 import com.hust.auraflow.common.enums.WorkflowStepType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -36,4 +37,14 @@ public class WorkflowStepRequest {
      * Optional order of the step in the workflow.
      */
     private Integer stepOrder;
+
+    /**
+     * Assignee type: FIXED (predefined) or DYNAMIC (selected at runtime).
+     */
+    private AssigneeType assigneeType;
+
+    /**
+     * Assignee value - user ID for FIXED type, null for DYNAMIC.
+     */
+    private String assigneeValue;
 }

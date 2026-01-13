@@ -25,6 +25,8 @@ const WorkflowEdge: React.FC<EdgeProps<CustomEdgeData>> = ({
     labelStyle,
     data,
 }) => {
+    const [isHovered, setIsHovered] = React.useState(false);
+
     const [edgePath, labelX, labelY] = getBezierPath({
         sourceX,
         sourceY,
@@ -48,33 +50,28 @@ const WorkflowEdge: React.FC<EdgeProps<CustomEdgeData>> = ({
                 <div
                     style={{
                         position: 'absolute',
-                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                        transform: `translate(-50%, -100%) translate(${labelX}px,${labelY - 8}px)`,
                         fontSize: 12,
                         pointerEvents: 'all',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
-                        background: '#fff',
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                        border: '1px solid #e8e8e8',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                     }}
                     className="nodrag nopan"
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
                 >
                     <span style={{ ...labelStyle }}>{label}</span>
-                    <DeleteOutlined
-                        onClick={onEdgeClick}
-                        style={{
-                            color: '#ff4d4f',
-                            fontSize: 14,
-                            cursor: 'pointer',
-                            opacity: 0.7,
-                            transition: 'opacity 0.2s',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
-                    />
+                    {isHovered && (
+                        <DeleteOutlined
+                            onClick={onEdgeClick}
+                            style={{
+                                color: '#ff4d4f',
+                                fontSize: 14,
+                                cursor: 'pointer',
+                            }}
+                        />
+                    )}
                 </div>
             </EdgeLabelRenderer>
         </>

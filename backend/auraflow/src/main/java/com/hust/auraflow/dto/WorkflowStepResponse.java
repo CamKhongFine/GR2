@@ -1,5 +1,6 @@
 package com.hust.auraflow.dto;
 
+import com.hust.auraflow.common.enums.AssigneeType;
 import com.hust.auraflow.common.enums.WorkflowStepType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,4 +25,14 @@ public class WorkflowStepResponse {
     private WorkflowStepType type;
 
     private Integer stepOrder;
+
+    /**
+     * Assignee type: FIXED (predefined) or DYNAMIC (selected at runtime).
+     */
+    private AssigneeType assigneeType;
+
+    /**
+     * Assignee value - user ID for FIXED type, null for DYNAMIC.
+     */
+    private String assigneeValue;
 }

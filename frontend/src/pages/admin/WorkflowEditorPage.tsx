@@ -10,6 +10,7 @@ import ReactFlow, { Controls, Background, MiniMap, BackgroundVariant } from 'rea
 import WorkflowNode, { WorkflowNodeData } from '../../components/workflow/WorkflowNode';
 import WorkflowNodePalette from '../../components/workflow/WorkflowNodePalette';
 import WorkflowEdge from '../../components/workflow/WorkflowEdge';
+import NodeConfigDrawer from '../../components/workflow/NodeConfigDrawer';
 import {
     getWorkflowById,
     createWorkflow,
@@ -41,21 +42,32 @@ let nodeIdCounter = 0;
 const generateNodeId = () => `node_${Date.now()}_${nodeIdCounter++}`;
 
 // Convert API steps to ReactFlow nodes
-const stepsToNodes = (steps: WorkflowStepResponse[]): Node<WorkflowNodeData>[] => {
-    return steps.map((step, index) => ({
-        id: step.id.toString(),
-        type: 'workflowNode',
-        data: {
-            name: step.name,
-            type: step.type,
-            assigneeType: step.assigneeType,
-            assigneeValue: step.assigneeValue,
-        },
-        position: {
-            x: (step.stepOrder ?? index) * 250 + 100,
-            y: 150,
-        },
-    }));
+const stepsToNodes = (steps: WorkflowStepResponse[], users?: any[]): Node<WorkflowNodeData>[] => {
+    return steps.map((step, index) => {
+        let assigneeName = undefined;
+        if (step.assigneeType === 'FIXED' && step.assigneeValue && users) {
+            const user = users.find(u => u.id.toString() === step.assigneeValue);
+            if (user) {
+                assigneeName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+            }
+        }
+
+        return {
+            id: step.id.toString(),
+            type: 'workflowNode',
+            data: {
+                name: step.name,
+                type: step.type,
+                assigneeType: step.assigneeType,
+                assigneeValue: step.assigneeValue,
+                assigneeName: assigneeName,
+            },
+            position: {
+                x: (step.stepOrder ?? index) * 250 + 100,
+                y: 150,
+            },
+        };
+    });
 };
 
 // Convert API transitions to ReactFlow edges
@@ -102,6 +114,10 @@ const WorkflowEditorPage: React.FC = () => {
     const [pendingConnection, setPendingConnection] = React.useState<Connection | null>(null);
     const [edgeLabelForm] = Form.useForm();
 
+    // Node config drawer state
+    const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null);
+    const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
+
     // Fetch users with role level > 1 (Leaders, Managers, Admins) for assignee selection
     const { data: usersData } = useQuery({
         queryKey: ['users-for-assignee'],
@@ -115,15 +131,15 @@ const WorkflowEditorPage: React.FC = () => {
         enabled: !isNewWorkflow && workflowId !== null && workflowId > 0,
     });
 
-    // Update state when workflow data is loaded
+    // Update state when workflow data and users data are loaded
     useEffect(() => {
         if (workflowData) {
             setWorkflowName(workflowData.name);
             setWorkflowDescription(workflowData.description || '');
-            setNodes(stepsToNodes(workflowData.steps));
+            setNodes(stepsToNodes(workflowData.steps, usersData?.content));
             setEdges(transitionsToEdges(workflowData.transitions));
         }
-    }, [workflowData, setNodes, setEdges]);
+    }, [workflowData, usersData, setNodes, setEdges]);
 
     // Create mutation
     const createMutation = useMutation({
@@ -272,6 +288,26 @@ const WorkflowEditorPage: React.FC = () => {
             setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
         },
         [setNodes, setEdges]
+    );
+
+    // Handle node click for config drawer
+    const handleNodeClick = useCallback((nodeId: string) => {
+        setSelectedNodeId(nodeId);
+    }, []);
+
+    // Handle node update from config drawer
+    const handleNodeUpdate = useCallback(
+        (nodeId: string, updates: Partial<WorkflowNodeData>) => {
+            setNodes((nds) =>
+                nds.map((n) =>
+                    n.id === nodeId
+                        ? { ...n, data: { ...n.data, ...updates } }
+                        : n
+                )
+            );
+            setSelectedNodeId(null);
+        },
+        [setNodes]
     );
 
     // Handle set reject target for REVIEW nodes
@@ -441,6 +477,7 @@ const WorkflowEditorPage: React.FC = () => {
                                 data: {
                                     ...n.data,
                                     onDelete: handleDeleteNode,
+                                    onClick: handleNodeClick,
                                     transitions: nodeTransitions,
                                     availableNodes: n.data.type === 'REVIEW' ? availableNodes : undefined,
                                     onSetRejectTarget: n.data.type === 'REVIEW' ? handleSetRejectTarget : undefined,
@@ -596,6 +633,23 @@ const WorkflowEditorPage: React.FC = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+
+            {/* Node Config Drawer */}
+            <NodeConfigDrawer
+                open={!!selectedNodeId}
+                nodeId={selectedNodeId}
+                nodeData={selectedNode?.data || null}
+                users={
+                    usersData?.content.map((user) => ({
+                        id: user.id.toString(),
+                        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+                        email: user.email,
+                    })) || []
+                }
+                onSave={handleNodeUpdate}
+                onClose={() => setSelectedNodeId(null)}
+                onDelete={handleDeleteNode}
+            />
         </div>
     );
 };
