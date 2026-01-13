@@ -12,7 +12,7 @@ import {
     DeleteOutlined,
 } from '@ant-design/icons';
 import { Typography, Divider, Select, Space } from 'antd';
-import { WorkflowStepType } from '../../api/workflow.api';
+import { WorkflowStepType, AssigneeType } from '../../api/workflow.api';
 
 const { Text } = Typography;
 
@@ -30,6 +30,9 @@ export interface AvailableNode {
 export interface WorkflowNodeData {
     name: string;
     type: WorkflowStepType;
+    assigneeType?: AssigneeType;
+    assigneeValue?: string | null;
+    assigneeName?: string; // Display name for the assigned user
     onDelete?: (nodeId: string) => void;
     transitions?: NodeTransition[];
     availableNodes?: AvailableNode[];

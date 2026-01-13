@@ -4,12 +4,21 @@ import apiClient from '../lib/apiClient';
 
 export type WorkflowStepType = 'START' | 'USER_TASK' | 'REVIEW' | 'END';
 
+/**
+ * Assignee type for workflow steps
+ * FIXED - Assignee is predefined in the template
+ * DYNAMIC - Assignee is selected at runtime by the user
+ */
+export type AssigneeType = 'FIXED' | 'DYNAMIC';
+
 export interface WorkflowStepRequest {
     clientId: string;
     name: string;
     description?: string;
     type: WorkflowStepType;
     stepOrder?: number;
+    assigneeType?: AssigneeType;
+    assigneeValue?: string | null;
 }
 
 export interface WorkflowTransitionRequest {
@@ -39,6 +48,8 @@ export interface WorkflowStepResponse {
     description?: string;
     type: WorkflowStepType;
     stepOrder?: number;
+    assigneeType?: AssigneeType;
+    assigneeValue?: string | null;
 }
 
 export interface WorkflowTransitionResponse {

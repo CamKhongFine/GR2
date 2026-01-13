@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Input, message, Spin } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import { Button, Input, message, Spin, Select, Radio, Space, Divider, Typography } from 'antd';
+import { ArrowLeftOutlined, SaveOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Node, Edge, useNodesState, useEdgesState, addEdge, Connection, MarkerType } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -19,8 +19,12 @@ import {
     WorkflowTransitionResponse,
     CreateWorkflowRequest,
     UpdateWorkflowRequest,
+    AssigneeType,
 } from '../../api/workflow.api';
+import { fetchUsers } from '../../api/user.api';
 import { Modal, Form } from 'antd';
+
+const { Text } = Typography;
 
 // Node types
 const nodeTypes = {
@@ -44,6 +48,8 @@ const stepsToNodes = (steps: WorkflowStepResponse[]): Node<WorkflowNodeData>[] =
         data: {
             name: step.name,
             type: step.type,
+            assigneeType: step.assigneeType,
+            assigneeValue: step.assigneeValue,
         },
         position: {
             x: (step.stepOrder ?? index) * 250 + 100,
@@ -90,10 +96,17 @@ const WorkflowEditorPage: React.FC = () => {
     const [isAddNodeModalOpen, setIsAddNodeModalOpen] = React.useState(false);
     const [pendingNodeType, setPendingNodeType] = React.useState<WorkflowStepType | null>(null);
     const [nodeNameForm] = Form.useForm();
+    const [selectedAssigneeType, setSelectedAssigneeType] = React.useState<AssigneeType>('DYNAMIC');
 
     const [isEdgeLabelModalOpen, setIsEdgeLabelModalOpen] = React.useState(false);
     const [pendingConnection, setPendingConnection] = React.useState<Connection | null>(null);
     const [edgeLabelForm] = Form.useForm();
+
+    // Fetch users with role level > 1 (Leaders, Managers, Admins) for assignee selection
+    const { data: usersData } = useQuery({
+        queryKey: ['users-for-assignee'],
+        queryFn: () => fetchUsers(0, 100, undefined, undefined, 'ACTIVE', undefined, undefined, undefined, undefined),
+    });
 
     // Fetch workflow data if editing
     const { data: workflowData, isLoading } = useQuery({
@@ -178,6 +191,8 @@ const WorkflowEditorPage: React.FC = () => {
             name: node.data.name,
             type: node.data.type,
             stepOrder: index,
+            assigneeType: node.data.assigneeType,
+            assigneeValue: node.data.assigneeValue,
         }));
 
         const transitions = edges.map((edge) => ({
@@ -307,15 +322,38 @@ const WorkflowEditorPage: React.FC = () => {
         if (!pendingNodeType) return;
         try {
             const values = await nodeNameForm.validateFields();
+
+            // Build node data with assignee configuration
+            const nodeData: WorkflowNodeData = {
+                name: values.name,
+                type: pendingNodeType,
+            };
+
+            // Add assignee config for USER_TASK and REVIEW types
+            if (pendingNodeType === 'USER_TASK' || pendingNodeType === 'REVIEW') {
+                const assigneeType = values.assigneeType || 'DYNAMIC';
+                nodeData.assigneeType = assigneeType;
+                nodeData.assigneeValue = assigneeType === 'FIXED' ? values.assigneeValue : null;
+
+                // Store assignee name for display
+                if (assigneeType === 'FIXED' && values.assigneeValue && usersData) {
+                    const selectedUser = usersData.content.find(u => u.id.toString() === values.assigneeValue);
+                    if (selectedUser) {
+                        nodeData.assigneeName = `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim() || selectedUser.email;
+                    }
+                }
+            }
+
             const newNode: Node<WorkflowNodeData> = {
                 id: generateNodeId(),
                 type: 'workflowNode',
-                data: { name: values.name, type: pendingNodeType },
+                data: nodeData,
                 position: { x: Math.random() * 400 + 200, y: Math.random() * 200 + 100 },
             };
             setNodes((nds) => [...nds, newNode]);
             setIsAddNodeModalOpen(false);
             setPendingNodeType(null);
+            setSelectedAssigneeType('DYNAMIC');
         } catch (error) {
             console.error('Validation failed:', error);
         }
@@ -452,8 +490,10 @@ const WorkflowEditorPage: React.FC = () => {
                 onCancel={() => {
                     setIsAddNodeModalOpen(false);
                     setPendingNodeType(null);
+                    setSelectedAssigneeType('DYNAMIC');
                 }}
                 okText="Add"
+                width={500}
             >
                 <Form form={nodeNameForm} layout="vertical" style={{ marginTop: 16 }}>
                     <Form.Item
@@ -463,6 +503,75 @@ const WorkflowEditorPage: React.FC = () => {
                     >
                         <Input placeholder="Enter step name" />
                     </Form.Item>
+
+                    {/* Assignee Configuration - only for USER_TASK and REVIEW */}
+                    {(pendingNodeType === 'USER_TASK' || pendingNodeType === 'REVIEW') && (
+                        <>
+                            <Divider orientation="left" style={{ margin: '16px 0 12px' }}>
+                                <Space>
+                                    <TeamOutlined />
+                                    <Text strong>Assignee Configuration</Text>
+                                </Space>
+                            </Divider>
+
+                            <Form.Item
+                                name="assigneeType"
+                                label="Assignee Type"
+                                initialValue="DYNAMIC"
+                            >
+                                <Radio.Group
+                                    onChange={(e) => {
+                                        setSelectedAssigneeType(e.target.value);
+                                        if (e.target.value === 'DYNAMIC') {
+                                            nodeNameForm.setFieldValue('assigneeValue', null);
+                                        }
+                                    }}
+                                >
+                                    <Space direction="vertical">
+                                        <Radio value="DYNAMIC">
+                                            <Space>
+                                                <UserOutlined />
+                                                <span>Dynamic</span>
+                                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                                    - Assignee selected at runtime
+                                                </Text>
+                                            </Space>
+                                        </Radio>
+                                        <Radio value="FIXED">
+                                            <Space>
+                                                <UserOutlined style={{ color: '#1890ff' }} />
+                                                <span>Fixed</span>
+                                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                                    - Predefined assignee
+                                                </Text>
+                                            </Space>
+                                        </Radio>
+                                    </Space>
+                                </Radio.Group>
+                            </Form.Item>
+
+                            {selectedAssigneeType === 'FIXED' && (
+                                <Form.Item
+                                    name="assigneeValue"
+                                    label="Select Assignee"
+                                    rules={[{ required: true, message: 'Please select an assignee' }]}
+                                >
+                                    <Select
+                                        showSearch
+                                        placeholder="Search and select user"
+                                        optionFilterProp="label"
+                                        loading={!usersData}
+                                        options={
+                                            usersData?.content.map((user) => ({
+                                                value: user.id.toString(),
+                                                label: `${user.firstName || ''} ${user.lastName || ''} (${user.email})`.trim(),
+                                            })) || []
+                                        }
+                                    />
+                                </Form.Item>
+                            )}
+                        </>
+                    )}
                 </Form>
             </Modal>
 

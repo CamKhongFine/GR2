@@ -31,6 +31,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Skip auth handling if VITE_SKIP_AUTH is enabled
+        const skipAuth = import.meta.env.VITE_SKIP_AUTH === 'true';
+        if (skipAuth) {
+            return Promise.reject(error);
+        }
+
         // Handle authentication errors (401 Unauthorized, 403 Forbidden)
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
             const currentPath = window.location.pathname;

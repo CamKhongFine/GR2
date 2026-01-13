@@ -18,6 +18,12 @@ interface RequireRoleLevelProps {
 const RequireRoleLevel: React.FC<RequireRoleLevelProps> = ({ maxLevel, children }) => {
     const { user, roleLevel, isLoadingRole, loadUserRole } = useUserStore();
 
+    // Skip auth check if VITE_SKIP_AUTH is enabled
+    const skipAuth = import.meta.env.VITE_SKIP_AUTH === 'true';
+    if (skipAuth) {
+        return <>{children}</>;
+    }
+
     // Load role if not already loaded
     useEffect(() => {
         if (user && roleLevel === null && !isLoadingRole) {
@@ -49,3 +55,4 @@ const RequireRoleLevel: React.FC<RequireRoleLevelProps> = ({ maxLevel, children 
 };
 
 export default RequireRoleLevel;
+
