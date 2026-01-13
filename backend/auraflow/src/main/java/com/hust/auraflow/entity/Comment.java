@@ -17,6 +17,13 @@ public class Comment {
     @Column(name = "id", nullable = false)
     private Long id;
 
+    /**
+     * Reference to the parent task (workflow instance)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_id")
+    private Task task;
+
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "step_task_id", nullable = false)

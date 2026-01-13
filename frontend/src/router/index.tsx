@@ -144,42 +144,11 @@ export const router = createBrowserRouter([
             },
         ],
     },
-    // Department routes (role level ≤ 2)
-    {
-        path: '/department',
-        element: (
-            <RequireRoleLevel maxLevel={2}>
-                <DepartmentLayout />
-            </RequireRoleLevel>
-        ),
-        children: [
-            {
-                index: true,
-                element: <Navigate to="/department/dashboard" replace />,
-            },
-            {
-                path: 'dashboard',
-                element: <DepartmentDashboardPage />,
-            },
-            {
-                path: 'team',
-                element: <div>Team Management Page (To be implemented)</div>,
-            },
-            {
-                path: 'reports',
-                element: <div>Reports Page (To be implemented)</div>,
-            },
-            {
-                path: 'profile',
-                element: <UserProfilePage />,
-            },
-        ],
-    },
-    // Division routes (role level ≤ 3)
+    // Division routes (role level ≤ 2)
     {
         path: '/division',
         element: (
-            <RequireRoleLevel maxLevel={3}>
+            <RequireRoleLevel maxLevel={2}>
                 <DivisionLayout />
             </RequireRoleLevel>
         ),
@@ -199,6 +168,37 @@ export const router = createBrowserRouter([
             {
                 path: 'team',
                 element: <div>Team Page (To be implemented)</div>,
+            },
+            {
+                path: 'profile',
+                element: <UserProfilePage />,
+            },
+        ],
+    },
+    // Department routes (role level ≤ 3)
+    {
+        path: '/department',
+        element: (
+            <RequireRoleLevel maxLevel={3}>
+                <DepartmentLayout />
+            </RequireRoleLevel>
+        ),
+        children: [
+            {
+                index: true,
+                element: <Navigate to="/department/dashboard" replace />,
+            },
+            {
+                path: 'dashboard',
+                element: <DepartmentDashboardPage />,
+            },
+            {
+                path: 'team',
+                element: <div>Team Management Page (To be implemented)</div>,
+            },
+            {
+                path: 'reports',
+                element: <div>Reports Page (To be implemented)</div>,
             },
             {
                 path: 'profile',

@@ -87,12 +87,13 @@ export async function fetchUserRole(userId: string): Promise<UserRoleResponse> {
 
 /**
  * Role level constants for type safety and routing
+ * Hierarchy: SUPER_ADMIN (0) > ADMIN (1) > DIVISION_LEADER (2) > DEPARTMENT_LEADER (3) > STAFF (4)
  */
 export const RoleLevel = {
     SUPER_ADMIN: 0,
     ADMIN: 1,
-    DEPARTMENT_LEADER: 2,
-    DIVISION_LEADER: 3,
+    DIVISION_LEADER: 2,
+    DEPARTMENT_LEADER: 3,
     STAFF: 4,
 } as const;
 
@@ -105,10 +106,10 @@ export function getDefaultRouteForRole(roleLevel: number): string {
             return '/super-admin/dashboard';
         case RoleLevel.ADMIN:
             return '/admin/dashboard';
-        case RoleLevel.DEPARTMENT_LEADER:
-            return '/department/dashboard';
         case RoleLevel.DIVISION_LEADER:
             return '/division/dashboard';
+        case RoleLevel.DEPARTMENT_LEADER:
+            return '/department/dashboard';
         case RoleLevel.STAFF:
             return '/workspace';
         default:
@@ -125,10 +126,10 @@ export function getProfileRouteForRole(roleLevel: number): string {
             return '/super-admin/profile';
         case RoleLevel.ADMIN:
             return '/admin/profile';
-        case RoleLevel.DEPARTMENT_LEADER:
-            return '/department/profile';
         case RoleLevel.DIVISION_LEADER:
             return '/division/profile';
+        case RoleLevel.DEPARTMENT_LEADER:
+            return '/department/profile';
         case RoleLevel.STAFF:
             return '/workspace/profile';
         default:

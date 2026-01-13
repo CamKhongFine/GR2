@@ -43,18 +43,18 @@ public class UserServiceImpl implements UserService {
 
         User user = userRepository.findById(principal.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("User is not active");
         }
-        
+
         List<UserRole> userRoles = userRoleRepository.findByIdUserId(user.getId());
         List<RoleResponse> roles = userRoles.stream()
                 .map(UserRole::getRole)
                 .filter(java.util.Objects::nonNull)
                 .map(RoleResponse::fromEntity)
                 .collect(Collectors.toList());
-        
+
         DivisionResponse divisionResponse = null;
         if (user.getDivision() != null) {
             divisionResponse = DivisionResponse.builder()
@@ -184,14 +184,16 @@ public class UserServiceImpl implements UserService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
-    }    
+    }
+
     @Override
     @Transactional(readOnly = true)
-    public Page<UserResponse> getAllUsers(Long id, String email, String status, Long tenantId, Integer roleLevel, Pageable pageable) {
+    public Page<UserResponse> getAllUsers(Long id, String email, String status, Long tenantId, Integer roleLevel,
+            Pageable pageable) {
         Page<User> users = userRepository.findByFilters(id, email, status, tenantId, roleLevel, pageable);
         return users.map(this::buildUserResponse);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
@@ -202,7 +204,7 @@ public class UserServiceImpl implements UserService {
                 });
         return buildUserResponse(user);
     }
-    
+
     @Override
     @Transactional
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
@@ -211,7 +213,7 @@ public class UserServiceImpl implements UserService {
                     log.error("User not found with ID: {}", id);
                     return new RuntimeException("User not found with ID: " + id);
                 });
-        
+
         // Update fields if provided
         if (request.getFirstName() != null) {
             user.setFirstName(request.getFirstName());
@@ -235,12 +237,12 @@ public class UserServiceImpl implements UserService {
             }
             user.setDepartment(department);
         }
-        
+
         User updatedUser = userRepository.save(user);
         log.info("Updated user with id {}", updatedUser.getId());
         return buildUserResponse(updatedUser);
     }
-    
+
     @Override
     @Transactional
     public void deleteUser(Long id) {
@@ -249,15 +251,15 @@ public class UserServiceImpl implements UserService {
                     log.error("User not found with ID: {}", id);
                     return new RuntimeException("User not found with ID: " + id);
                 });
-        
+
         String keycloakSub = user.getKeycloakSub();
         String email = user.getEmail();
-        
+
         // Delete from database first
         userRoleRepository.deleteByIdUserId(user.getId());
         userRepository.deleteById(id);
         log.info("Deleted user from database with id {}", id);
-        
+
         // Send message to RabbitMQ to delete from Keycloak asynchronously
         if (keycloakSub != null && !keycloakSub.isEmpty()) {
             rabbitMQProducer.publishDeleteUserMessage(keycloakSub, email);
@@ -266,7 +268,7 @@ public class UserServiceImpl implements UserService {
             log.warn("User {} has no Keycloak sub, skipping Keycloak deletion", email);
         }
     }
-    
+
     @Override
     @Transactional
     public UserResponse activateUser(Long id) {
@@ -275,13 +277,13 @@ public class UserServiceImpl implements UserService {
                     log.error("User not found with ID: {}", id);
                     return new RuntimeException("User not found with ID: " + id);
                 });
-        
+
         user.setStatus(UserStatus.ACTIVE);
         User updatedUser = userRepository.save(user);
         log.info("Activated user with id {}", updatedUser.getId());
         return buildUserResponse(updatedUser);
     }
-    
+
     @Override
     @Transactional
     public UserResponse deactivateUser(Long id) {
@@ -290,13 +292,13 @@ public class UserServiceImpl implements UserService {
                     log.error("User not found with ID: {}", id);
                     return new RuntimeException("User not found with ID: " + id);
                 });
-        
+
         user.setStatus(UserStatus.INACTIVE);
         User updatedUser = userRepository.save(user);
         log.info("Deactivated user with id {}", updatedUser.getId());
         return buildUserResponse(updatedUser);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public UserRoleResponse getUserRole(Long userId) {
@@ -305,23 +307,23 @@ public class UserServiceImpl implements UserService {
                     log.error("User not found with ID: {}", userId);
                     return new RuntimeException("User not found with ID: " + userId);
                 });
-        
+
         List<UserRole> userRoles = userRoleRepository.findByIdUserId(userId);
-        
+
         int effectiveRoleLevel = userRoles.stream()
                 .map(UserRole::getRole)
                 .filter(java.util.Objects::nonNull)
                 .mapToInt(role -> role.getLevel())
                 .min()
                 .orElse(4);
-        
+
         return UserRoleResponse.builder()
                 .userId(userId.toString())
                 .tenantId(user.getTenantId() != null ? user.getTenantId().toString() : null)
                 .effectiveRoleLevel(effectiveRoleLevel)
                 .build();
     }
-    
+
     private UserResponse buildUserResponse(User user) {
         List<UserRole> userRoles = userRoleRepository.findByIdUserId(user.getId());
         List<RoleResponse> roles = userRoles.stream()
@@ -329,7 +331,7 @@ public class UserServiceImpl implements UserService {
                 .filter(java.util.Objects::nonNull)
                 .map(RoleResponse::fromEntity)
                 .collect(Collectors.toList());
-        
+
         DivisionResponse divisionResponse = null;
         if (user.getDivision() != null) {
             divisionResponse = DivisionResponse.builder()

@@ -66,13 +66,14 @@ const LandingPage: React.FC = () => {
     }, [user, roleLevel, loadUserRole]);
 
     // Get management label based on role level
+    // Hierarchy: SUPER_ADMIN (0) > ADMIN (1) > DIVISION_LEADER (2) > DEPARTMENT_LEADER (3) > STAFF (4)
     const getManagementLabel = () => {
         if (roleLevel === null) return 'Manage';
         switch (roleLevel) {
             case 0: return 'System Management';
             case 1: return 'Company Management';
-            case 2: return 'Department Management';
-            case 3: return 'Division Management';
+            case 2: return 'Division Management';
+            case 3: return 'Department Management';
             default: return 'Workspace';
         }
     };
