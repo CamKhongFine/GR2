@@ -37,9 +37,14 @@ public interface StepTaskService {
     /**
      * Get all StepTasks assigned to current user with IN_PROGRESS status.
      * Sorted by priority (desc) and beginDate (asc).
-     * Max 5 items.
      */
     List<StepTaskResponse> getMyAssignedStepTasks(UserPrincipal principal);
+
+    /**
+     * Get StepTasks assigned to current user with IN_PROGRESS status for Workspace.
+     * Sorted by priority (desc) only. Limited to 5 items.
+     */
+    List<StepTaskResponse> getMyAssignedStepTasksForWorkspace(UserPrincipal principal);
 
     /**
      * Get recent activity (StepTaskActions) for tasks where user is involved.

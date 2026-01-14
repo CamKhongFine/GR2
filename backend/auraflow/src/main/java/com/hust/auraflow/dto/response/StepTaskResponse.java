@@ -17,6 +17,7 @@ public class StepTaskResponse {
     private Long id;
     private Long taskId;
     private String taskTitle;
+    private String projectName;
     private Long workflowStepId;
     private String workflowStepName;
     private Integer stepSequence;

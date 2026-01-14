@@ -289,10 +289,15 @@ public class StepTaskServiceImpl implements StepTaskService {
     }
 
     private StepTaskResponse toStepTaskResponse(StepTask stepTask) {
+        String projectName = null;
+        if (stepTask.getTask() != null && stepTask.getTask().getProject() != null) {
+            projectName = stepTask.getTask().getProject().getName();
+        }
         return StepTaskResponse.builder()
                 .id(stepTask.getId())
                 .taskId(stepTask.getTask() != null ? stepTask.getTask().getId() : null)
                 .taskTitle(stepTask.getTask() != null ? stepTask.getTask().getTitle() : null)
+                .projectName(projectName)
                 .workflowStepId(stepTask.getWorkflowStep() != null ? stepTask.getWorkflowStep().getId() : null)
                 .workflowStepName(stepTask.getWorkflowStep() != null ? stepTask.getWorkflowStep().getName() : null)
                 .stepSequence(stepTask.getStepSequence())
@@ -335,7 +340,20 @@ public class StepTaskServiceImpl implements StepTaskService {
         List<StepTask> stepTasks = stepTaskRepository.findByAssignedUserIdAndStatus(
                 userId, com.hust.auraflow.common.enums.StepTaskStatus.IN_PROGRESS);
         
-        // Limit to 5 items (already sorted by priority desc and beginDate asc in query)
+        // Already sorted by priority desc and beginDate asc in query
+        return stepTasks.stream()
+                .map(this::toStepTaskResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StepTaskResponse> getMyAssignedStepTasksForWorkspace(UserPrincipal principal) {
+        Long userId = principal.getUserId();
+        List<StepTask> stepTasks = stepTaskRepository.findByAssignedUserIdAndStatusOrderByPriorityDesc(
+                userId, com.hust.auraflow.common.enums.StepTaskStatus.IN_PROGRESS);
+        
+        // Limit to 5 items, sorted by priority desc only
         return stepTasks.stream()
                 .limit(5)
                 .map(this::toStepTaskResponse)

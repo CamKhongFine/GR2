@@ -53,6 +53,13 @@ public interface StepTaskRepository extends JpaRepository<StepTask, Long> {
     List<StepTask> findByAssignedUserIdAndStatus(@Param("userId") Long userId, @Param("status") StepTaskStatus status);
 
     /**
+     * Find all step tasks assigned to a user with IN_PROGRESS status.
+     * Sorted by priority (desc) only. For Workspace use (limit 5).
+     */
+    @Query("SELECT st FROM StepTask st WHERE st.assignedUser.id = :userId AND st.status = :status ORDER BY st.priority DESC")
+    List<StepTask> findByAssignedUserIdAndStatusOrderByPriorityDesc(@Param("userId") Long userId, @Param("status") StepTaskStatus status);
+
+    /**
      * Delete all step tasks for a given task.
      */
     @Modifying

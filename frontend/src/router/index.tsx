@@ -26,8 +26,11 @@ import DepartmentProjectTaskPage from '../pages/department/DepartmentProjectTask
 import DivisionWorkspacePage from '../pages/division/DivisionWorkspacePage';
 import WorkspaceProfilePage from '../pages/shared/WorkspaceProfilePage';
 import StaffWorkspacePage from '../pages/staff/StaffWorkspacePage';
+import StaffMyTasksPage from '../pages/staff/StaffMyTasksPage';
 import StaffMyRequestsPage from '../pages/staff/StaffMyRequestsPage';
+import DepartmentMyTasksPage from '../pages/department/DepartmentMyTasksPage';
 import DepartmentMyRequestsPage from '../pages/department/DepartmentMyRequestsPage';
+import DivisionMyTasksPage from '../pages/division/DivisionMyTasksPage';
 import DivisionMyRequestsPage from '../pages/division/DivisionMyRequestsPage';
 import UserProfilePage from '../pages/profile/UserProfilePage';
 
@@ -169,7 +172,7 @@ export const router = createBrowserRouter([
         path: '/division/my-tasks',
         element: (
             <RequireRoleLevel maxLevel={2}>
-                <DivisionWorkspacePage />
+                <DivisionMyTasksPage />
             </RequireRoleLevel>
         ),
     },
@@ -239,6 +242,14 @@ export const router = createBrowserRouter([
         ),
     },
     {
+        path: '/department/my-tasks',
+        element: (
+            <RequireRoleLevel maxLevel={3}>
+                <DepartmentMyTasksPage />
+            </RequireRoleLevel>
+        ),
+    },
+    {
         path: '/department/my-requests',
         element: (
             <RequireRoleLevel maxLevel={3}>
@@ -275,7 +286,7 @@ export const router = createBrowserRouter([
         path: '/staff/tasks',
         element: (
             <RequireRoleLevel maxLevel={4}>
-                <StaffWorkspacePage />
+                <StaffMyTasksPage />
             </RequireRoleLevel>
         ),
     },

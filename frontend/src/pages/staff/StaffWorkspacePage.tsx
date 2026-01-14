@@ -23,7 +23,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import WorkspaceLayout, { SidebarItemConfig } from '../../layouts/WorkspaceLayout';
 import { 
-    getMyAssignedStepTasks, 
+    getMyAssignedStepTasksForWorkspace, 
     getMyRecentActivity, 
     StepTaskResponse, 
     StepTaskActionResponse,
@@ -62,10 +62,10 @@ const StaffWorkspacePage: React.FC = () => {
         },
     ];
 
-    // Fetch assigned StepTasks
+    // Fetch assigned StepTasks for Workspace (limit 5, sorted by priority desc)
     const { data: assignedStepTasks = [], isLoading: isLoadingStepTasks } = useQuery({
-        queryKey: ['my-assigned-step-tasks'],
-        queryFn: getMyAssignedStepTasks,
+        queryKey: ['my-assigned-step-tasks-workspace'],
+        queryFn: getMyAssignedStepTasksForWorkspace,
     });
 
     // Fetch recent activity

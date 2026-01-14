@@ -74,12 +74,22 @@ public class StepTaskController {
 
     /**
      * Get all StepTasks assigned to current user with IN_PROGRESS status.
-     * Sorted by priority (desc) and beginDate (asc). Max 5 items.
+     * Sorted by priority (desc) and beginDate (asc).
      */
     @GetMapping("/my-assigned")
     public ResponseEntity<List<StepTaskResponse>> getMyAssignedStepTasks(
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(stepTaskService.getMyAssignedStepTasks(principal));
+    }
+
+    /**
+     * Get StepTasks assigned to current user with IN_PROGRESS status for Workspace.
+     * Sorted by priority (desc) only. Limited to 5 items.
+     */
+    @GetMapping("/my-assigned-workspace")
+    public ResponseEntity<List<StepTaskResponse>> getMyAssignedStepTasksForWorkspace(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(stepTaskService.getMyAssignedStepTasksForWorkspace(principal));
     }
 
     /**

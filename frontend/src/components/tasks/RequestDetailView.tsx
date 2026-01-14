@@ -97,6 +97,8 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
             queryClient.invalidateQueries({ queryKey: ['is-user-assignee'] });
             queryClient.invalidateQueries({ queryKey: ['current-step-task'] });
             queryClient.invalidateQueries({ queryKey: ['workflow-detail-for-task'] });
+            queryClient.invalidateQueries({ queryKey: ['my-assigned-step-tasks'] });
+            queryClient.invalidateQueries({ queryKey: ['my-assigned-step-tasks-workspace'] });
             // Refresh task data by invalidating the task query
             if (task) {
                 queryClient.invalidateQueries({ queryKey: ['task', task.id] });

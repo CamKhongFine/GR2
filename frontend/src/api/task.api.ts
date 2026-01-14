@@ -121,6 +121,7 @@ export interface StepTaskResponse {
     id: number;
     taskId: number;
     taskTitle: string | null;
+    projectName?: string | null;
     workflowStepId: number;
     workflowStepName: string;
     stepSequence: number;
@@ -195,10 +196,19 @@ export const executeAction = async (taskId: number, request: ExecuteActionReques
 
 /**
  * Get all StepTasks assigned to current user with IN_PROGRESS status.
- * Sorted by priority (desc) and beginDate (asc). Max 5 items.
+ * Sorted by priority (desc) and beginDate (asc).
  */
 export const getMyAssignedStepTasks = async (): Promise<StepTaskResponse[]> => {
     const response = await apiClient.get<StepTaskResponse[]>(`/api/step-tasks/my-assigned`);
+    return response.data;
+};
+
+/**
+ * Get StepTasks assigned to current user with IN_PROGRESS status for Workspace.
+ * Sorted by priority (desc) only. Limited to 5 items.
+ */
+export const getMyAssignedStepTasksForWorkspace = async (): Promise<StepTaskResponse[]> => {
+    const response = await apiClient.get<StepTaskResponse[]>(`/api/step-tasks/my-assigned-workspace`);
     return response.data;
 };
 
