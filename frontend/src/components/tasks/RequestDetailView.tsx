@@ -170,11 +170,6 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                         <Title level={3} style={{ margin: 0 }}>
                             {task.title}
                         </Title>
-                        {task.projectName && (
-                            <Text type="secondary" style={{ fontSize: 14 }}>
-                                Project: {task.projectName}
-                            </Text>
-                        )}
                     </Space>
                 </div>
 

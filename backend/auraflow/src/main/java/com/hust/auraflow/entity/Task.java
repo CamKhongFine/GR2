@@ -43,7 +43,7 @@ public class Task {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "priority")
-    private TaskPriority priority;
+    private com.hust.auraflow.common.enums.Priority priority;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")

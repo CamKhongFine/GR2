@@ -1,5 +1,7 @@
 package com.hust.auraflow.service.impl;
 
+import com.hust.auraflow.common.enums.Priority;
+import com.hust.auraflow.common.enums.StepTaskStatus;
 import com.hust.auraflow.common.enums.TaskStatus;
 import com.hust.auraflow.dto.request.ExecuteActionRequest;
 import com.hust.auraflow.dto.response.StepTaskActionResponse;
@@ -28,6 +30,7 @@ public class StepTaskServiceImpl implements StepTaskService {
     private final StepTaskActionRepository stepTaskActionRepository;
     private final WorkflowStepTransitionRepository workflowStepTransitionRepository;
     private final UserRepository userRepository;
+    private final TaskStepAssignmentConfigRepository taskStepAssignmentConfigRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -49,10 +52,8 @@ public class StepTaskServiceImpl implements StepTaskService {
                 .orElseThrow(() -> new IllegalArgumentException("Task not found"));
         validateTenantAccess(principal, task);
 
-        StepTask currentStepTask = stepTaskRepository.findCurrentActiveByTaskId(taskId)
-                .orElse(stepTaskRepository.findPendingByTaskId(taskId).stream()
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException("No active step task found")));
+        StepTask currentStepTask = stepTaskRepository.findCurrentActiveByTaskId(taskId, StepTaskStatus.IN_PROGRESS)
+                .orElseThrow(() -> new IllegalArgumentException("No active step task found"));
 
         return toStepTaskResponse(currentStepTask);
     }
@@ -139,12 +140,25 @@ public class StepTaskServiceImpl implements StepTaskService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         // Update current StepTask to COMPLETED
-        currentStepTask.setStatus("COMPLETED");
+        currentStepTask.setStatus(StepTaskStatus.COMPLETED);
         currentStepTask.setEndDate(Instant.now());
         if (request.getComment() != null && !request.getComment().trim().isEmpty()) {
             currentStepTask.setNote(request.getComment());
         }
         stepTaskRepository.save(currentStepTask);
+
+        // Delete assignment config for the completed step (only for DYNAMIC and FIXED steps with config)
+        if (currentStepTask.getWorkflowStep() != null) {
+            WorkflowStep completedStep = currentStepTask.getWorkflowStep();
+            if (completedStep.getAssigneeType() != null && 
+                (completedStep.getAssigneeType().name().equals("DYNAMIC") || 
+                 completedStep.getAssigneeType().name().equals("FIXED"))) {
+                taskStepAssignmentConfigRepository.deleteByTaskIdAndWorkflowStepId(
+                        taskId, completedStep.getId());
+                log.info("Deleted assignment config for completed step {} in task {}", 
+                        completedStep.getId(), taskId);
+            }
+        }
 
         // Create StepTaskAction log
         StepTaskAction actionLog = StepTaskAction.builder()
@@ -174,7 +188,8 @@ public class StepTaskServiceImpl implements StepTaskService {
             endStepTask.setTask(task);
             endStepTask.setWorkflowStep(nextStep);
             endStepTask.setStepSequence(currentStepTask.getStepSequence() + 1);
-            endStepTask.setStatus("COMPLETED");
+            endStepTask.setStatus(StepTaskStatus.COMPLETED);
+            endStepTask.setPriority(Priority.NORMAL);
             endStepTask.setBeginDate(Instant.now());
             endStepTask.setEndDate(Instant.now());
             stepTaskRepository.save(endStepTask);
@@ -185,20 +200,51 @@ public class StepTaskServiceImpl implements StepTaskService {
             nextStepTask.setTask(task);
             nextStepTask.setWorkflowStep(nextStep);
             nextStepTask.setStepSequence(currentStepTask.getStepSequence() + 1);
-            nextStepTask.setStatus("PENDING");
+            nextStepTask.setStatus(StepTaskStatus.IN_PROGRESS);
             nextStepTask.setBeginDate(Instant.now());
+            
+            // Default priority is NORMAL if not provided
+            nextStepTask.setPriority(Priority.NORMAL);
 
-            // Set assignee if step has FIXED assignee
-            if (nextStep.getAssigneeType() != null && nextStep.getAssigneeType().equals("FIXED")
-                    && nextStep.getAssigneeValue() != null) {
-                try {
-                    Long assigneeId = Long.parseLong(nextStep.getAssigneeValue());
-                    User assignee = userRepository.findById(assigneeId).orElse(null);
-                    if (assignee != null) {
-                        nextStepTask.setAssignedUser(assignee);
+            // Set assignee and priority based on step type
+            if (nextStep.getAssigneeType() != null) {
+                if (nextStep.getAssigneeType().name().equals("DYNAMIC")) {
+                    // Query assignee and priority from assignment config
+                    TaskStepAssignmentConfig config = taskStepAssignmentConfigRepository
+                            .findByTaskIdAndWorkflowStepId(task.getId(), nextStep.getId())
+                            .orElse(null);
+                    if (config != null && config.getAssignee() != null) {
+                        nextStepTask.setAssignedUser(config.getAssignee());
+                        if (config.getPriority() != null) {
+                            nextStepTask.setPriority(config.getPriority());
+                        }
+                        log.info("Snapshotted assignee {} with priority {} for step {} in task {} from config", 
+                                config.getAssignee().getId(), config.getPriority(), nextStep.getId(), task.getId());
+                        // Config will be deleted when this StepTask is COMPLETED
+                    } else {
+                        log.warn("No assignment config found for DYNAMIC step {} in task {}", nextStep.getId(), task.getId());
                     }
-                } catch (NumberFormatException e) {
-                    log.warn("Invalid assignee value for step {}: {}", nextStep.getId(), nextStep.getAssigneeValue());
+                } else if (nextStep.getAssigneeType().name().equals("FIXED")) {
+                    // For FIXED steps, get assignee from step's assigneeValue
+                    if (nextStep.getAssigneeValue() != null) {
+                        try {
+                            Long assigneeId = Long.parseLong(nextStep.getAssigneeValue());
+                            User assignee = userRepository.findById(assigneeId).orElse(null);
+                            if (assignee != null) {
+                                nextStepTask.setAssignedUser(assignee);
+                            }
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid assignee value for step {}: {}", nextStep.getId(), nextStep.getAssigneeValue());
+                        }
+                    }
+                    // For FIXED steps, check if priority is in config (if provided during task creation)
+                    TaskStepAssignmentConfig config = taskStepAssignmentConfigRepository
+                            .findByTaskIdAndWorkflowStepId(task.getId(), nextStep.getId())
+                            .orElse(null);
+                    if (config != null && config.getPriority() != null) {
+                        nextStepTask.setPriority(config.getPriority());
+                        // Config will be deleted when this StepTask is COMPLETED
+                    }
                 }
             }
 
@@ -255,6 +301,7 @@ public class StepTaskServiceImpl implements StepTaskService {
                         ? (stepTask.getAssignedUser().getFirstName() + " " + stepTask.getAssignedUser().getLastName())
                                 .trim()
                         : null)
+                .priority(stepTask.getPriority())
                 .beginDate(stepTask.getBeginDate())
                 .endDate(stepTask.getEndDate())
                 .note(stepTask.getNote())

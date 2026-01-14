@@ -1,5 +1,7 @@
 package com.hust.auraflow.dto.response;
 
+import com.hust.auraflow.common.enums.Priority;
+import com.hust.auraflow.common.enums.StepTaskStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,9 +19,10 @@ public class StepTaskResponse {
     private Long workflowStepId;
     private String workflowStepName;
     private Integer stepSequence;
-    private String status;
+    private StepTaskStatus status;
     private Long assignedUserId;
     private String assignedUserName;
+    private Priority priority;
     private Instant beginDate;
     private Instant endDate;
     private String note;

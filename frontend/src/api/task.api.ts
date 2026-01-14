@@ -24,6 +24,12 @@ export interface TaskResponse {
     updatedAt: string;
 }
 
+export interface StepAssignment {
+    workflowStepId: number;
+    assigneeId: number;
+    priority?: TaskPriority;
+}
+
 export interface CreateTaskRequest {
     projectId: number;
     workflowId: number;
@@ -32,6 +38,7 @@ export interface CreateTaskRequest {
     priority?: TaskPriority;
     beginDate?: string;
     endDate?: string;
+    stepAssignments?: StepAssignment[];
 }
 
 export interface UpdateTaskRequest {

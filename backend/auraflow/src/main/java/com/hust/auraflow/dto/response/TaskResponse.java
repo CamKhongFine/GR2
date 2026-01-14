@@ -1,7 +1,7 @@
 package com.hust.auraflow.dto.response;
 
 import com.hust.auraflow.common.enums.TaskStatus;
-import com.hust.auraflow.entity.TaskPriority;
+import com.hust.auraflow.common.enums.Priority;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,7 +22,7 @@ public class TaskResponse {
     private String title;
     private String description;
     private TaskStatus status;
-    private TaskPriority priority;
+    private Priority priority;
     private Long currentStepId;
     private String currentStepName;
     private Long creatorId;

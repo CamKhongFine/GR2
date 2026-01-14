@@ -1,6 +1,8 @@
 package com.hust.auraflow.service.impl;
 
+import com.hust.auraflow.common.enums.Priority;
 import com.hust.auraflow.common.enums.ProjectStatus;
+import com.hust.auraflow.common.enums.StepTaskStatus;
 import com.hust.auraflow.common.enums.TaskStatus;
 import com.hust.auraflow.dto.request.CreateTaskRequest;
 import com.hust.auraflow.dto.request.UpdateTaskRequest;
@@ -30,6 +32,7 @@ public class TaskServiceImpl implements TaskService {
     private final UserRepository userRepository;
     private final WorkflowStepRepository workflowStepRepository;
     private final StepTaskRepository stepTaskRepository;
+    private final TaskStepAssignmentConfigRepository taskStepAssignmentConfigRepository;
 
     @Override
     public Page<TaskResponse> getTasks(UserPrincipal principal, Long projectId, String title, String status,
@@ -115,12 +118,73 @@ public class TaskServiceImpl implements TaskService {
         startStepTask.setTask(task);
         startStepTask.setWorkflowStep(startStep);
         startStepTask.setStepSequence(1);
-        startStepTask.setStatus("COMPLETED");
+        startStepTask.setStatus(StepTaskStatus.COMPLETED);
+        startStepTask.setPriority(Priority.NORMAL);
         startStepTask.setBeginDate(Instant.now());
         startStepTask.setEndDate(Instant.now());
         startStepTask.setNote("Auto-completed on task creation");
         stepTaskRepository.save(startStepTask);
         log.info("Created START StepTask for task {}", task.getId());
+
+        // Save step assignments for DYNAMIC and FIXED steps (for priority)
+        if (request.getStepAssignments() != null && !request.getStepAssignments().isEmpty()) {
+            for (CreateTaskRequest.StepAssignment assignment : request.getStepAssignments()) {
+                // Find the workflow step
+                WorkflowStep step = workflowStepRepository.findById(assignment.getWorkflowStepId())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Workflow step not found: " + assignment.getWorkflowStepId()));
+
+                if (step.getAssigneeType() != null && step.getAssigneeType().name().equals("DYNAMIC")) {
+                    // For DYNAMIC steps: save assignee and priority
+                    // Verify assignee exists
+                    User assignee = userRepository.findById(assignment.getAssigneeId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Assignee not found: " + assignment.getAssigneeId()));
+
+                    // Verify assignee belongs to same tenant
+                    if (!assignee.getTenantId().equals(tenantId)) {
+                        throw new IllegalArgumentException("Assignee not accessible");
+                    }
+
+                    // Create and save assignment config
+                    TaskStepAssignmentConfig config = new TaskStepAssignmentConfig();
+                    config.setTask(task);
+                    config.setWorkflowStep(step);
+                    config.setAssignee(assignee);
+                    config.setPriority(assignment.getPriority());
+                    config.setCreatedAt(Instant.now());
+                    taskStepAssignmentConfigRepository.save(config);
+                    log.info("Saved assignment config for step {} -> assignee {} with priority {} in task {}", 
+                            step.getId(), assignee.getId(), assignment.getPriority(), task.getId());
+                } else if (step.getAssigneeType() != null && step.getAssigneeType().name().equals("FIXED")) {
+                    // For FIXED steps: only save priority (assignee is already in workflow step)
+                    if (assignment.getPriority() != null) {
+                        // Get assignee from step's assigneeValue
+                        User assignee = null;
+                        if (step.getAssigneeValue() != null) {
+                            try {
+                                Long assigneeId = Long.parseLong(step.getAssigneeValue());
+                                assignee = userRepository.findById(assigneeId).orElse(null);
+                            } catch (NumberFormatException e) {
+                                log.warn("Invalid assignee value for step {}: {}", step.getId(), step.getAssigneeValue());
+                            }
+                        }
+                        
+                        if (assignee != null) {
+                            TaskStepAssignmentConfig config = new TaskStepAssignmentConfig();
+                            config.setTask(task);
+                            config.setWorkflowStep(step);
+                            config.setAssignee(assignee);
+                            config.setPriority(assignment.getPriority());
+                            config.setCreatedAt(Instant.now());
+                            taskStepAssignmentConfigRepository.save(config);
+                            log.info("Saved priority config for FIXED step {} with priority {} in task {}", 
+                                    step.getId(), assignment.getPriority(), task.getId());
+                        }
+                    }
+                }
+            }
+        }
 
         // Create StepTask for first business step (pending)
         StepTask businessStepTask = new StepTask();
@@ -128,8 +192,49 @@ public class TaskServiceImpl implements TaskService {
         businessStepTask.setTask(task);
         businessStepTask.setWorkflowStep(firstBusinessStep);
         businessStepTask.setStepSequence(2);
-        businessStepTask.setStatus("PENDING");
+        businessStepTask.setStatus(StepTaskStatus.IN_PROGRESS);
         businessStepTask.setBeginDate(Instant.now());
+
+        // Set assignee and priority based on step type
+        // Default priority is NORMAL if not provided
+        businessStepTask.setPriority(Priority.NORMAL);
+        
+        if (firstBusinessStep.getAssigneeType() != null && firstBusinessStep.getAssigneeType().name().equals("DYNAMIC")) {
+            TaskStepAssignmentConfig config = taskStepAssignmentConfigRepository
+                    .findByTaskIdAndWorkflowStepId(task.getId(), firstBusinessStep.getId())
+                    .orElse(null);
+            if (config != null && config.getAssignee() != null) {
+                businessStepTask.setAssignedUser(config.getAssignee());
+                if (config.getPriority() != null) {
+                    businessStepTask.setPriority(config.getPriority());
+                }
+                log.info("Snapshotted assignee {} with priority {} for step {} in task {}", 
+                        config.getAssignee().getId(), config.getPriority(), firstBusinessStep.getId(), task.getId());
+                // Config will be deleted when this StepTask is COMPLETED
+            }
+        } else if (firstBusinessStep.getAssigneeType() != null && firstBusinessStep.getAssigneeType().name().equals("FIXED")) {
+            // For FIXED steps, get assignee from step's assigneeValue
+            if (firstBusinessStep.getAssigneeValue() != null) {
+                try {
+                    Long assigneeId = Long.parseLong(firstBusinessStep.getAssigneeValue());
+                    User assignee = userRepository.findById(assigneeId).orElse(null);
+                    if (assignee != null) {
+                        businessStepTask.setAssignedUser(assignee);
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid assignee value for step {}: {}", firstBusinessStep.getId(), firstBusinessStep.getAssigneeValue());
+                }
+            }
+            // For FIXED steps, check if priority is in config
+            TaskStepAssignmentConfig config = taskStepAssignmentConfigRepository
+                    .findByTaskIdAndWorkflowStepId(task.getId(), firstBusinessStep.getId())
+                    .orElse(null);
+            if (config != null && config.getPriority() != null) {
+                businessStepTask.setPriority(config.getPriority());
+                // Config will be deleted when this StepTask is COMPLETED
+            }
+        }
+
         stepTaskRepository.save(businessStepTask);
         log.info("Created first business StepTask for task {}", task.getId());
 

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import com.hust.auraflow.common.enums.StepTaskStatus;
 
 import java.time.Instant;
 
@@ -33,8 +34,9 @@ public class StepTask {
     @Column(name = "step_sequence")
     private Integer stepSequence;
 
-    @Column(name = "status", length = Integer.MAX_VALUE)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private StepTaskStatus status;
 
     @Column(name = "work_progress", length = Integer.MAX_VALUE)
     private String workProgress;
@@ -51,5 +53,9 @@ public class StepTask {
 
     @Column(name = "note", length = Integer.MAX_VALUE)
     private String note;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority")
+    private com.hust.auraflow.common.enums.Priority priority;
 
 }

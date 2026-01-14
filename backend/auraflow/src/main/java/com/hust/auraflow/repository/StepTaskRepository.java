@@ -1,5 +1,6 @@
 package com.hust.auraflow.repository;
 
+import com.hust.auraflow.common.enums.StepTaskStatus;
 import com.hust.auraflow.entity.StepTask;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -33,16 +34,16 @@ public interface StepTaskRepository extends JpaRepository<StepTask, Long> {
     Optional<StepTask> findByTaskIdAndWorkflowStepId(Long taskId, Long workflowStepId);
 
     /**
-     * Find all pending step tasks for a given task.
+     * Find all step tasks for a given task with specific status.
      */
-    @Query("SELECT st FROM StepTask st WHERE st.task.id = :taskId AND st.status = 'PENDING'")
-    List<StepTask> findPendingByTaskId(@Param("taskId") Long taskId);
+    @Query("SELECT st FROM StepTask st WHERE st.task.id = :taskId AND st.status = :status")
+    List<StepTask> findByTaskIdAndStatus(@Param("taskId") Long taskId, @Param("status") StepTaskStatus status);
 
     /**
-     * Find the current active step task for a given task.
+     * Find the current active step task for a given task (IN_PROGRESS status).
      */
-    @Query("SELECT st FROM StepTask st WHERE st.task.id = :taskId AND st.status = 'IN_PROGRESS' ORDER BY st.stepSequence DESC")
-    Optional<StepTask> findCurrentActiveByTaskId(@Param("taskId") Long taskId);
+    @Query("SELECT st FROM StepTask st WHERE st.task.id = :taskId AND st.status = :status ORDER BY st.stepSequence DESC")
+    Optional<StepTask> findCurrentActiveByTaskId(@Param("taskId") Long taskId, @Param("status") StepTaskStatus status);
 
     /**
      * Delete all step tasks for a given task.

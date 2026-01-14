@@ -1,6 +1,6 @@
 package com.hust.auraflow.dto.request;
 
-import com.hust.auraflow.entity.TaskPriority;
+import com.hust.auraflow.common.enums.Priority;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 
 @Data
 @Builder
@@ -26,9 +27,25 @@ public class CreateTaskRequest {
 
     private String description;
 
-    private TaskPriority priority;
+    private Priority priority;
 
     private Instant beginDate;
 
     private Instant endDate;
+
+    private List<StepAssignment> stepAssignments;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StepAssignment {
+        @NotNull
+        private Long workflowStepId;
+
+        @NotNull
+        private Long assigneeId;
+
+        private Priority priority;
+    }
 }

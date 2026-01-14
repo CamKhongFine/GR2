@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
     Drawer,
     Steps,
@@ -31,16 +31,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchWorkflows,
     getWorkflowById,
-    WorkflowResponse,
-    WorkflowDetailResponse,
-    WorkflowStepResponse,
-    AssigneeType,
 } from '../../api/workflow.api';
-import { fetchUsers, UserResponse } from '../../api/user.api';
-import { fetchTenantDepartments, DepartmentResponse } from '../../api/department.api';
-import { fetchRoles, RoleResponse } from '../../api/role.api';
-import { PagedResponse } from '../../api/workflow.api';
-import { createTask, CreateTaskRequest, TaskPriority } from '../../api/task.api';
+import { fetchUsers } from '../../api/user.api';
+import { createTask, CreateTaskRequest, TaskPriority, StepAssignment } from '../../api/task.api';
 import WorkflowCanvas from '../workflow/WorkflowCanvas';
 import { ProjectResponse } from '../../api/project.api';
 import dayjs from 'dayjs';
@@ -56,11 +49,12 @@ interface CreateTaskDrawerProps {
     onSuccess?: () => void;
 }
 
-interface StepAssignment {
+interface LocalStepAssignment {
     stepId: number;
     assigneeType: 'USER' | 'ROLE' | 'DEPARTMENT';
     assigneeId: number;
     assigneeName: string;
+    priority?: TaskPriority;
 }
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
@@ -78,7 +72,7 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
     const queryClient = useQueryClient();
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedWorkflowId, setSelectedWorkflowId] = useState<number | null>(null);
-    const [stepAssignments, setStepAssignments] = useState<Map<number, StepAssignment>>(new Map());
+    const [stepAssignments, setStepAssignments] = useState<Map<number, LocalStepAssignment>>(new Map());
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [isNodeConfigOpen, setIsNodeConfigOpen] = useState(false);
     const [confirmedTaskValues, setConfirmedTaskValues] = useState<any>(null);
@@ -105,17 +99,6 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
         enabled: !!project.departmentId,
     });
 
-    // Fetch departments for assignment
-    const { data: departmentsData } = useQuery({
-        queryKey: ['departments-for-assignment'],
-        queryFn: () => fetchTenantDepartments(0, 100),
-    });
-
-    // Fetch roles for assignment
-    const { data: rolesData } = useQuery({
-        queryKey: ['roles-for-assignment'],
-        queryFn: () => fetchRoles(0, 100),
-    });
 
     // Create task mutation
     const createTaskMutation = useMutation({
@@ -133,10 +116,6 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
 
     const workflows = workflowsData?.content || [];
     const users = usersData?.content || [];
-    const departments = departmentsData?.content || [];
-    const roles = rolesData?.content || [];
-
-    const selectedWorkflow = workflows.find((w) => w.id === selectedWorkflowId);
 
     const handleWorkflowSelect = (workflowId: number) => {
         setSelectedWorkflowId(workflowId);
@@ -160,6 +139,7 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
         const existingAssignment = stepAssignments.get(step.id);
         form.setFieldsValue({
             assigneeId: existingAssignment?.assigneeId || undefined,
+            priority: existingAssignment?.priority || undefined,
         });
     };
 
@@ -170,26 +150,79 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
         if (!step) return;
 
         form.validateFields().then((values) => {
-            const user = users.find((u) => u.id === values.assigneeId);
-            const assigneeName =
-                user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : '';
+            if (step.assigneeType === 'DYNAMIC') {
+                // For DYNAMIC steps, assigneeId is required
+                if (!values.assigneeId) {
+                    message.error('Please select a user');
+                    return;
+                }
+                const user = users.find((u) => u.id === values.assigneeId);
+                const assigneeName =
+                    user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : '';
 
-            const assignment: StepAssignment = {
-                stepId: step.id,
-                assigneeType: 'USER',
-                assigneeId: values.assigneeId,
-                assigneeName,
-            };
+                const assignment: LocalStepAssignment = {
+                    stepId: step.id,
+                    assigneeType: 'USER',
+                    assigneeId: values.assigneeId,
+                    assigneeName,
+                    priority: values.priority,
+                };
 
-            setStepAssignments(new Map(stepAssignments.set(step.id, assignment)));
+                setStepAssignments(new Map(stepAssignments.set(step.id, assignment)));
+            } else if (step.assigneeType === 'FIXED') {
+                // For FIXED steps, only priority is needed
+                const assignment: LocalStepAssignment = {
+                    stepId: step.id,
+                    assigneeType: 'USER',
+                    assigneeId: step.assigneeValue ? parseInt(step.assigneeValue) : 0,
+                    assigneeName: step.assigneeName || 'Fixed Assignee',
+                    priority: values.priority,
+                };
+
+                setStepAssignments(new Map(stepAssignments.set(step.id, assignment)));
+            }
+
             setIsNodeConfigOpen(false);
             form.resetFields();
             message.success('Assignment configured');
+        }).catch(() => {
+            // Validation failed
         });
     };
 
     const handleCreateTask = async () => {
         if (!workflowDetail || !selectedWorkflowId || !confirmedTaskValues) return;
+
+        // Convert stepAssignments Map to array for API
+        const stepAssignmentsArray: StepAssignment[] = Array.from(stepAssignments.values())
+            .filter((assignment: LocalStepAssignment) => {
+                // Include DYNAMIC steps (with assignee) and FIXED steps (with priority)
+                const step = workflowDetail.steps.find(s => s.id === assignment.stepId);
+                if (!step) return false;
+                if (step.assigneeType === 'DYNAMIC') {
+                    return true; // DYNAMIC steps need assignee
+                }
+                if (step.assigneeType === 'FIXED' && assignment.priority) {
+                    return true; // FIXED steps only need priority
+                }
+                return false;
+            })
+            .map((assignment: LocalStepAssignment) => {
+                const step = workflowDetail.steps.find(s => s.id === assignment.stepId);
+                // For FIXED steps, get assigneeId from step's assigneeValue
+                if (step?.assigneeType === 'FIXED' && step.assigneeValue) {
+                    return {
+                        workflowStepId: assignment.stepId,
+                        assigneeId: parseInt(step.assigneeValue) || 0,
+                        priority: assignment.priority,
+                    };
+                }
+                return {
+                    workflowStepId: assignment.stepId,
+                    assigneeId: assignment.assigneeId,
+                    priority: assignment.priority,
+                };
+            });
 
         const request: CreateTaskRequest = {
             projectId: project.id,
@@ -199,6 +232,7 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
             priority: confirmedTaskValues.priority,
             beginDate: confirmedTaskValues.beginDate ? confirmedTaskValues.beginDate.toISOString() : undefined,
             endDate: confirmedTaskValues.endDate ? confirmedTaskValues.endDate.toISOString() : undefined,
+            stepAssignments: stepAssignmentsArray.length > 0 ? stepAssignmentsArray : undefined,
         };
 
         createTaskMutation.mutate(request);
@@ -600,15 +634,41 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                                         })}
                                     </Select>
                                 </Form.Item>
+                                <Form.Item
+                                    name="priority"
+                                    label="Priority"
+                                >
+                                    <Select placeholder="Select priority">
+                                        {PRIORITY_OPTIONS.map((option) => (
+                                            <Select.Option key={option.value} value={option.value}>
+                                                <Tag color={option.color}>{option.label}</Tag>
+                                            </Select.Option>
+                                        ))}
+                                    </Select>
+                                </Form.Item>
                             </Form>
                         )}
 
                         {selectedStep.assigneeType === 'FIXED' && (
-                            <div style={{ padding: 16, backgroundColor: '#f9fafb', borderRadius: 8 }}>
-                                <Text type="secondary">
-                                    This step has a fixed assignee configured in the workflow template and cannot be changed.
-                                </Text>
-                            </div>
+                            <Form form={form} layout="vertical">
+                                <div style={{ padding: 16, backgroundColor: '#f9fafb', borderRadius: 8, marginBottom: 16 }}>
+                                    <Text type="secondary">
+                                        This step has a fixed assignee configured in the workflow template and cannot be changed.
+                                    </Text>
+                                </div>
+                                <Form.Item
+                                    name="priority"
+                                    label="Priority"
+                                >
+                                    <Select placeholder="Select priority">
+                                        {PRIORITY_OPTIONS.map((option) => (
+                                            <Select.Option key={option.value} value={option.value}>
+                                                <Tag color={option.color}>{option.label}</Tag>
+                                            </Select.Option>
+                                        ))}
+                                    </Select>
+                                </Form.Item>
+                            </Form>
                         )}
                     </div>
                 )}
