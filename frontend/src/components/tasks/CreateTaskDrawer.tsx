@@ -10,7 +10,8 @@ import {
     Modal,
     Form,
     Select,
-    Descriptions,
+    Input,
+    DatePicker,
     Tag,
     Avatar,
     Empty,
@@ -24,8 +25,9 @@ import {
     WarningOutlined,
     UserOutlined,
     TeamOutlined,
+    EditOutlined,
 } from '@ant-design/icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchWorkflows,
     getWorkflowById,
@@ -38,11 +40,14 @@ import { fetchUsers, UserResponse } from '../../api/user.api';
 import { fetchTenantDepartments, DepartmentResponse } from '../../api/department.api';
 import { fetchRoles, RoleResponse } from '../../api/role.api';
 import { PagedResponse } from '../../api/workflow.api';
+import { createTask, CreateTaskRequest, TaskPriority } from '../../api/task.api';
 import WorkflowCanvas from '../workflow/WorkflowCanvas';
 import { ProjectResponse } from '../../api/project.api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 const { Step } = Steps;
+const { TextArea } = Input;
 
 interface CreateTaskDrawerProps {
     open: boolean;
@@ -58,18 +63,27 @@ interface StepAssignment {
     assigneeName: string;
 }
 
+const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
+    { value: 'LOW', label: 'Low', color: 'default' },
+    { value: 'NORMAL', label: 'Normal', color: 'blue' },
+    { value: 'HIGH', label: 'High', color: 'red' },
+];
+
 const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
     open,
     onClose,
     project,
     onSuccess,
 }) => {
+    const queryClient = useQueryClient();
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedWorkflowId, setSelectedWorkflowId] = useState<number | null>(null);
     const [stepAssignments, setStepAssignments] = useState<Map<number, StepAssignment>>(new Map());
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [isNodeConfigOpen, setIsNodeConfigOpen] = useState(false);
+    const [confirmedTaskValues, setConfirmedTaskValues] = useState<any>(null);
     const [form] = Form.useForm();
+    const [taskForm] = Form.useForm();
 
     // Fetch workflows
     const { data: workflowsData, isLoading: workflowsLoading } = useQuery({
@@ -101,6 +115,20 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
     const { data: rolesData } = useQuery({
         queryKey: ['roles-for-assignment'],
         queryFn: () => fetchRoles(0, 100),
+    });
+
+    // Create task mutation
+    const createTaskMutation = useMutation({
+        mutationFn: createTask,
+        onSuccess: () => {
+            message.success('Task created successfully');
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            onSuccess?.();
+            handleClose();
+        },
+        onError: (error: any) => {
+            message.error(error?.response?.data?.message || 'Failed to create task');
+        },
     });
 
     const workflows = workflowsData?.content || [];
@@ -161,30 +189,19 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
     };
 
     const handleCreateTask = async () => {
-        if (!workflowDetail) return;
+        if (!workflowDetail || !selectedWorkflowId || !confirmedTaskValues) return;
 
-        const configurableSteps = workflowDetail.steps.filter(
-            (s) => s.type !== 'START' && s.type !== 'END'
-        );
+        const request: CreateTaskRequest = {
+            projectId: project.id,
+            workflowId: selectedWorkflowId,
+            title: confirmedTaskValues.title,
+            description: confirmedTaskValues.description,
+            priority: confirmedTaskValues.priority,
+            beginDate: confirmedTaskValues.beginDate ? confirmedTaskValues.beginDate.toISOString() : undefined,
+            endDate: confirmedTaskValues.endDate ? confirmedTaskValues.endDate.toISOString() : undefined,
+        };
 
-        const missingAssignments = configurableSteps.filter(
-            (s) => s.assigneeType === 'DYNAMIC' && !stepAssignments.has(s.id)
-        );
-
-        if (missingAssignments.length > 0) {
-            message.error(
-                `Please configure assignments for: ${missingAssignments.map((s) => s.name).join(', ')}`
-            );
-            return;
-        }
-
-        try {
-            message.success('Task created successfully');
-            onSuccess?.();
-            handleClose();
-        } catch (error) {
-            message.error('Failed to create task');
-        }
+        createTaskMutation.mutate(request);
     };
 
     const handleClose = () => {
@@ -193,24 +210,33 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
         setStepAssignments(new Map());
         setSelectedNodeId(null);
         setIsNodeConfigOpen(false);
+        setConfirmedTaskValues(null);
         form.resetFields();
+        taskForm.resetFields();
         onClose();
     };
 
     const selectedStep = workflowDetail?.steps.find((s) => s.id.toString() === selectedNodeId);
 
+    // Calculate drawer width based on step
+    const getDrawerWidth = () => {
+        if (currentStep === 1) return 1200; // Config assignments step
+        return 1000; // All other steps
+    };
+
     return (
         <>
             <Drawer
                 title="Create Task"
-                width={currentStep === 1 ? 1200 : 600}
+                width={getDrawerWidth()}
                 open={open}
                 onClose={handleClose}
                 footer={null}
             >
                 <Steps current={currentStep} style={{ marginBottom: 32 }}>
                     <Step title="Select Workflow" icon={<FileTextOutlined />} />
-                    <Step title="Configure Task" icon={<SettingOutlined />} />
+                    <Step title="Configure" icon={<SettingOutlined />} />
+                    <Step title="Information" icon={<EditOutlined />} />
                     <Step title="Confirm" icon={<CheckOutlined />} />
                 </Steps>
 
@@ -278,9 +304,6 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                 {currentStep === 1 && (
                     <div>
                         <div style={{ marginBottom: 16 }}>
-                            <Title level={4} style={{ marginBottom: 8 }}>
-                                Configure Task Assignments
-                            </Title>
                             <Text type="secondary" style={{ fontSize: 13 }}>
                                 Click on workflow steps to configure assignees. START and END steps are read-only.
                             </Text>
@@ -291,7 +314,7 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                                 <Spin size="large" />
                             </div>
                         ) : workflowDetail ? (
-                            <div style={{ height: 600, border: '1px solid #e5e7eb', borderRadius: 8 }}>
+                            <div style={{ height: 500, border: '1px solid #e5e7eb', borderRadius: 8 }}>
                                 <WorkflowCanvas
                                     initialSteps={workflowDetail.steps}
                                     initialTransitions={workflowDetail.transitions}
@@ -318,8 +341,91 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                     </div>
                 )}
 
-                {/* Step 3: Confirm & Create */}
-                {currentStep === 2 && workflowDetail && (() => {
+                {/* Step 3: Task Details */}
+                {currentStep === 2 && (
+                    <div>
+
+                        <Form
+                            form={taskForm}
+                            layout="vertical"
+                            initialValues={{ priority: 'NORMAL' }}
+                        >
+                            <Form.Item
+                                name="title"
+                                label="Title"
+                                rules={[{ required: true, message: 'Please enter a title' }]}
+                            >
+                                <Input placeholder="Enter title" />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="description"
+                                label="Description"
+                            >
+                                <TextArea
+                                    rows={3}
+                                    placeholder="Enter task description (optional)"
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="priority"
+                                label="Priority"
+                            >
+                                <Select>
+                                    {PRIORITY_OPTIONS.map((option) => (
+                                        <Select.Option key={option.value} value={option.value}>
+                                            <Tag color={option.color}>{option.label}</Tag>
+                                        </Select.Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+
+                            <div style={{ display: 'flex', gap: 16 }}>
+                                <Form.Item
+                                    name="beginDate"
+                                    label="Start Date"
+                                    style={{ flex: 1 }}
+                                    rules={[{ required: true, message: 'Please select a start date' }]}
+                                >
+                                    <DatePicker style={{ width: '100%' }} />
+                                </Form.Item>
+
+                                <Form.Item
+                                    name="endDate"
+                                    label="Due Date"
+                                    style={{ flex: 1 }}
+                                    rules={[{ required: true, message: 'Please select a due date' }]}
+                                >
+                                    <DatePicker style={{ width: '100%' }} />
+                                </Form.Item>
+                            </div>
+                        </Form>
+
+                        <div style={{ marginTop: 24 }}>
+                            <Button onClick={() => setCurrentStep(1)} style={{ marginRight: 8 }}>
+                                Back
+                            </Button>
+                            <Button
+                                type="primary"
+                                onClick={async () => {
+                                    try {
+                                        const values = await taskForm.validateFields();
+                                        setConfirmedTaskValues(values);
+                                        setCurrentStep(3);
+                                    } catch {
+                                        // validation failed
+                                    }
+                                }}
+                            >
+                                Continue
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 4: Confirm & Create */}
+                {currentStep === 3 && workflowDetail && (() => {
                     const stepsRequiringAssignment = workflowDetail.steps.filter(
                         (s) => s.type !== 'START' && s.type !== 'END' && s.assigneeType === 'DYNAMIC'
                     );
@@ -329,15 +435,50 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                     );
 
                     const isReady = unassignedSteps.length === 0;
+                    const taskValues = confirmedTaskValues || {};
 
                     return (
                         <div>
-                            <div style={{ marginBottom: 32 }}>
-                                <Text strong style={{ fontSize: 16 }}>{workflowDetail.name}</Text>
-                            </div>
+                            <Card size="small" style={{ marginBottom: 16 }}>
+                                <div style={{ marginBottom: 12 }}>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>WORKFLOW</Text>
+                                    <div><Text strong>{workflowDetail.name}</Text></div>
+                                </div>
+                                <div style={{ marginBottom: 12 }}>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>TASK TITLE</Text>
+                                    <div><Text strong>{taskValues.title}</Text></div>
+                                </div>
+                                {taskValues.description && (
+                                    <div style={{ marginBottom: 12 }}>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>DESCRIPTION</Text>
+                                        <div><Text>{taskValues.description}</Text></div>
+                                    </div>
+                                )}
+                                <div style={{ marginBottom: 12 }}>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>PRIORITY</Text>
+                                    <div>
+                                        <Tag color={PRIORITY_OPTIONS.find(p => p.value === taskValues.priority)?.color}>
+                                            {PRIORITY_OPTIONS.find(p => p.value === taskValues.priority)?.label}
+                                        </Tag>
+                                    </div>
+                                </div>
+                                {(taskValues.beginDate || taskValues.endDate) && (
+                                    <div>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>DATES</Text>
+                                        <div>
+                                            {taskValues.beginDate && <Text>{dayjs(taskValues.beginDate).format('MMM D, YYYY')}</Text>}
+                                            {taskValues.beginDate && taskValues.endDate && <Text> → </Text>}
+                                            {taskValues.endDate && <Text>{dayjs(taskValues.endDate).format('MMM D, YYYY')}</Text>}
+                                        </div>
+                                    </div>
+                                )}
+                            </Card>
 
                             {stepsRequiringAssignment.length > 0 && (
-                                <div style={{ marginBottom: 32 }}>
+                                <div style={{ marginBottom: 24 }}>
+                                    <Text type="secondary" style={{ fontSize: 12, marginBottom: 8, display: 'block' }}>
+                                        STEP ASSIGNMENTS
+                                    </Text>
                                     {stepsRequiringAssignment.map((step) => {
                                         const assignment = stepAssignments.get(step.id);
                                         const isUnassigned = !assignment;
@@ -348,8 +489,8 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                                             <div
                                                 key={step.id}
                                                 style={{
-                                                    padding: 16,
-                                                    marginBottom: 12,
+                                                    padding: 12,
+                                                    marginBottom: 8,
                                                     borderRadius: 8,
                                                     border: isUnassigned ? '1px solid #ff7875' : '1px solid #e5e7eb',
                                                     backgroundColor: isUnassigned ? '#fff2f0' : '#f6ffed',
@@ -359,26 +500,26 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                                                 }}
                                             >
                                                 {isUnassigned ? (
-                                                    <WarningOutlined style={{ color: '#ff7875', fontSize: 18 }} />
+                                                    <WarningOutlined style={{ color: '#ff7875', fontSize: 16 }} />
                                                 ) : isMultiple ? (
-                                                    <TeamOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+                                                    <TeamOutlined style={{ color: '#52c41a', fontSize: 16 }} />
                                                 ) : (
-                                                    <UserOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+                                                    <UserOutlined style={{ color: '#52c41a', fontSize: 16 }} />
                                                 )}
                                                 <div style={{ flex: 1 }}>
-                                                    <Text strong={isUnassigned} style={{ fontSize: 14 }}>
+                                                    <Text strong={isUnassigned} style={{ fontSize: 13 }}>
                                                         {step.name}
                                                     </Text>
                                                     {isUnassigned && (
-                                                        <div style={{ marginTop: 4 }}>
-                                                            <Text type="secondary" style={{ fontSize: 12, color: '#ff7875' }}>
+                                                        <div style={{ marginTop: 2 }}>
+                                                            <Text type="secondary" style={{ fontSize: 11, color: '#ff7875' }}>
                                                                 Assignment required
                                                             </Text>
                                                         </div>
                                                     )}
                                                     {assignment && (
-                                                        <div style={{ marginTop: 4 }}>
-                                                            <Text strong style={{ fontSize: 12, color: '#52c41a' }}>
+                                                        <div style={{ marginTop: 2 }}>
+                                                            <Text strong style={{ fontSize: 11, color: '#52c41a' }}>
                                                                 {assignment.assigneeName}
                                                             </Text>
                                                         </div>
@@ -391,15 +532,16 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                             )}
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Button onClick={() => setCurrentStep(1)}>
+                                <Button onClick={() => setCurrentStep(2)}>
                                     Back
                                 </Button>
                                 <Button
                                     type="primary"
                                     onClick={handleCreateTask}
                                     disabled={!isReady}
+                                    loading={createTaskMutation.isPending}
                                 >
-                                    Create Task
+                                    Create
                                 </Button>
                             </div>
                         </div>

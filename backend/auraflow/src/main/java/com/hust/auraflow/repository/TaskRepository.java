@@ -1,7 +1,6 @@
 package com.hust.auraflow.repository;
 
 import com.hust.auraflow.entity.Task;
-import com.hust.auraflow.entity.TaskPriority;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,17 +20,17 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
          */
         boolean existsByWorkflowId(Long workflowId);
 
-        @Query("SELECT t FROM Task t " +
-                        "WHERE t.tenant.id = :tenantId " +
-                        "AND (:projectId IS NULL OR t.project.id = :projectId) " +
-                        "AND (:title IS NULL OR lower(t.title) LIKE lower(concat('%', :title, '%'))) " +
-                        "AND (:status IS NULL OR t.status = :status) " +
-                        "AND (:priority IS NULL OR t.priority = :priority)")
+        @Query(value = "SELECT * FROM tasks t WHERE " +
+                        "t.tenant_id = :tenantId AND " +
+                        "(:projectId IS NULL OR t.project_id = :projectId) AND " +
+                        "(:title IS NULL OR LOWER(CAST(t.title AS TEXT)) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
+                        "(:status IS NULL OR t.status = :status) AND " +
+                        "(:priority IS NULL OR t.priority = :priority)", nativeQuery = true)
         Page<Task> findByTenantIdAndFilters(
                         @Param("tenantId") Long tenantId,
                         @Param("projectId") Long projectId,
                         @Param("title") String title,
                         @Param("status") String status,
-                        @Param("priority") TaskPriority priority,
+                        @Param("priority") String priority,
                         Pageable pageable);
 }

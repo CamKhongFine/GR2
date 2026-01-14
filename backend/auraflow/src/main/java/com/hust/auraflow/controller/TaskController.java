@@ -3,7 +3,6 @@ package com.hust.auraflow.controller;
 import com.hust.auraflow.dto.request.CreateTaskRequest;
 import com.hust.auraflow.dto.request.UpdateTaskRequest;
 import com.hust.auraflow.dto.response.TaskResponse;
-import com.hust.auraflow.entity.TaskPriority;
 import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.TaskService;
 import jakarta.validation.Valid;
@@ -15,7 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/tasks")
+@RequestMapping("/api/tasks")
 @RequiredArgsConstructor
 public class TaskController {
 
@@ -27,7 +26,7 @@ public class TaskController {
             @RequestParam(required = false) Long projectId,
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) TaskPriority priority,
+            @RequestParam(required = false) String priority,
             Pageable pageable) {
         return ResponseEntity.ok(taskService.getTasks(principal, projectId, title, status, priority, pageable));
     }

@@ -51,6 +51,7 @@ const stepsToNodes = (steps: WorkflowStepResponse[], onNodeClick?: (nodeId: stri
             description: step.description,
             assigneeType: step.assigneeType,
             assigneeValue: step.assigneeValue,
+            assigneeName: step.assigneeName || undefined,
             onClick: onNodeClick,
         },
         position: {

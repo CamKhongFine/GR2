@@ -11,6 +11,9 @@ import {
     Avatar,
     Drawer,
     Descriptions,
+    Spin,
+    Empty,
+    message,
 } from 'antd';
 import {
     PlusOutlined,
@@ -20,12 +23,13 @@ import {
     FolderOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     fetchProjects,
     ProjectResponse,
     ProjectStatus,
 } from '../../api/project.api';
+import { fetchTasks, TaskResponse, TaskPriority } from '../../api/task.api';
 import CreateTaskDrawer from '../../components/tasks/CreateTaskDrawer';
 import WorkspaceLayout, { SidebarItemConfig } from '../../layouts/WorkspaceLayout';
 import { useUserStore } from '../../store/userStore';
@@ -34,31 +38,23 @@ import {
     CheckSquareOutlined,
     ProjectOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
-interface TaskRow {
-    id: number;
-    name: string;
-    reference: string;
-    step: string;
-    assignee: string;
-    status: string;
-    updatedAt: string;
-}
-
-const STATUS_FILTER_OPTIONS = ['In Progress', 'Awaiting Approval', 'Pending', 'Completed'];
-const STEP_FILTER_OPTIONS = ['Submission', 'Review', 'Approval', 'Fulfillment'];
+const STATUS_FILTER_OPTIONS = ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+const PRIORITY_FILTER_OPTIONS: TaskPriority[] = ['LOW', 'NORMAL', 'HIGH'];
 
 const DepartmentProjectTaskPage: React.FC = () => {
     const params = useParams();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { user } = useUserStore();
 
     const [searchValue, setSearchValue] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | undefined>();
-    const [stepFilter, setStepFilter] = useState<string | undefined>();
-    const [selectedTask, setSelectedTask] = useState<TaskRow | null>(null);
+    const [priorityFilter, setPriorityFilter] = useState<TaskPriority | undefined>();
+    const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null);
     const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
 
     const departmentId = user?.department?.id;
@@ -66,7 +62,6 @@ const DepartmentProjectTaskPage: React.FC = () => {
 
     const { data: projectsData } = useQuery({
         queryKey: ['department-projects-for-task-view', departmentId],
-        // Lấy tất cả project trong department (không giới hạn ACTIVE) để hỗ trợ cả Draft
         queryFn: () => fetchProjects(0, 50, departmentId, undefined, undefined),
         enabled: !!departmentId,
     });
@@ -81,6 +76,15 @@ const DepartmentProjectTaskPage: React.FC = () => {
         }
         return projects[0];
     }, [projects, projectIdParam]);
+
+    // Fetch tasks for current project
+    const { data: tasksData, isLoading: tasksLoading } = useQuery({
+        queryKey: ['tasks', currentProject?.id, searchValue, statusFilter, priorityFilter],
+        queryFn: () => fetchTasks(0, 50, currentProject?.id, searchValue || undefined, statusFilter, priorityFilter),
+        enabled: !!currentProject?.id,
+    });
+
+    const tasks = tasksData?.content || [];
 
     const sidebarItems: SidebarItemConfig[] = [
         {
@@ -103,129 +107,72 @@ const DepartmentProjectTaskPage: React.FC = () => {
         },
     ];
 
-    const taskRows: TaskRow[] = useMemo(() => {
-        if (!currentProject) return [];
-        const baseName = currentProject.name;
-        const idBase = currentProject.id;
-        return [
-            {
-                id: idBase * 10 + 1,
-                name: `${baseName} – Submission package`,
-                reference: `PRJ-${idBase}-001`,
-                step: 'Submission',
-                assignee: 'Jane Doe',
-                status: 'In Progress',
-                updatedAt: '2026-01-14 09:32',
-            },
-            {
-                id: idBase * 10 + 2,
-                name: `${baseName} – Compliance review`,
-                reference: `PRJ-${idBase}-002`,
-                step: 'Review',
-                assignee: 'John Smith',
-                status: 'Awaiting Approval',
-                updatedAt: '2026-01-14 08:15',
-            },
-            {
-                id: idBase * 10 + 3,
-                name: `${baseName} – Approval packet`,
-                reference: `PRJ-${idBase}-003`,
-                step: 'Approval',
-                assignee: 'Sarah Chen',
-                status: 'Pending',
-                updatedAt: '2026-01-13 16:40',
-            },
-            {
-                id: idBase * 10 + 4,
-                name: `${baseName} – Vendor confirmation`,
-                reference: `PRJ-${idBase}-004`,
-                step: 'Fulfillment',
-                assignee: 'Bob Wilson',
-                status: 'In Progress',
-                updatedAt: '2026-01-13 11:22',
-            },
-            {
-                id: idBase * 10 + 5,
-                name: `${baseName} – QA sign-off`,
-                reference: `PRJ-${idBase}-005`,
-                step: 'Approval',
-                assignee: 'Alice Brown',
-                status: 'Completed',
-                updatedAt: '2026-01-12 17:05',
-            },
-            {
-                id: idBase * 10 + 6,
-                name: `${baseName} – Handover`,
-                reference: `PRJ-${idBase}-006`,
-                step: 'Fulfillment',
-                assignee: 'Tom Lee',
-                status: 'Awaiting Approval',
-                updatedAt: '2026-01-12 10:18',
-            },
-        ];
-    }, [currentProject]);
-
-    const filteredTasks = useMemo(() => {
-        return taskRows.filter((task) => {
-            const matchesSearch =
-                !searchValue ||
-                task.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-                task.reference.toLowerCase().includes(searchValue.toLowerCase());
-            const matchesStatus = !statusFilter || task.status === statusFilter;
-            const matchesStep = !stepFilter || task.step === stepFilter;
-            return matchesSearch && matchesStatus && matchesStep;
-        });
-    }, [taskRows, searchValue, statusFilter, stepFilter]);
-
     const getStatusStyle = (status: string) => {
         const styles: Record<string, { bg: string; border: string; text: string }> = {
-            'Completed': { bg: '#f0fdf4', border: '#86efac', text: '#166534' },
-            'Awaiting Approval': { bg: '#fffbeb', border: '#fde68a', text: '#92400e' },
-            'In Progress': { bg: '#eff6ff', border: '#93c5fd', text: '#1e40af' },
-            'Pending': { bg: '#f9fafb', border: '#e5e7eb', text: '#6b7280' },
+            'COMPLETED': { bg: '#f0fdf4', border: '#86efac', text: '#166534' },
+            'IN_PROGRESS': { bg: '#eff6ff', border: '#93c5fd', text: '#1e40af' },
+            'OPEN': { bg: '#fffbeb', border: '#fde68a', text: '#92400e' },
+            'CANCELLED': { bg: '#f9fafb', border: '#e5e7eb', text: '#6b7280' },
         };
-        return styles[status] || styles['Pending'];
+        return styles[status] || styles['OPEN'];
+    };
+
+    const getPriorityStyle = (priority: TaskPriority | null) => {
+        const styles: Record<string, { color: string }> = {
+            'HIGH': { color: 'red' },
+            'NORMAL': { color: 'blue' },
+            'LOW': { color: 'default' },
+        };
+        return styles[priority || 'NORMAL'] || styles['NORMAL'];
     };
 
     const columns = [
         {
             title: 'Task',
-            dataIndex: 'name',
-            key: 'name',
-            render: (_: unknown, record: TaskRow) => (
+            dataIndex: 'title',
+            key: 'title',
+            render: (_: unknown, record: TaskResponse) => (
                 <div>
-                    <div style={{ fontWeight: 600, color: '#111827', fontSize: 14, lineHeight: 1.5, marginBottom: 2 }}>{record.name}</div>
-                    <div style={{ fontSize: 12, color: '#9ca3af', fontWeight: 400 }}>{record.reference}</div>
+                    <div style={{ fontWeight: 600, color: '#111827', fontSize: 14, lineHeight: 1.5, marginBottom: 2 }}>{record.title}</div>
+                    <div style={{ fontSize: 12, color: '#9ca3af', fontWeight: 400 }}>#{record.id}</div>
                 </div>
             ),
         },
         {
             title: 'Current Step',
-            dataIndex: 'step',
-            key: 'step',
-            render: (value: string) => (
-                <Text style={{ fontSize: 13, color: '#374151', fontWeight: 400 }}>{value}</Text>
+            dataIndex: 'currentStepName',
+            key: 'currentStepName',
+            render: (value: string | null) => (
+                <Text style={{ fontSize: 13, color: '#374151', fontWeight: 400 }}>{value || '-'}</Text>
             ),
         },
         {
-            title: 'Assignee',
-            dataIndex: 'assignee',
-            key: 'assignee',
-            render: (value: string) => (
+            title: 'Creator',
+            dataIndex: 'creatorName',
+            key: 'creatorName',
+            render: (value: string | null) => (
                 <Space size={10} style={{ alignItems: 'center' }}>
-                    <Avatar 
+                    <Avatar
                         size={28}
-                        style={{ 
+                        style={{
                             backgroundColor: '#e5e7eb',
                             color: '#374151',
                             fontSize: 12,
                             fontWeight: 500,
                         }}
                     >
-                        {value.charAt(0)}
+                        {value?.charAt(0) || '?'}
                     </Avatar>
-                    <Text style={{ fontSize: 13, color: '#374151', fontWeight: 400 }}>{value}</Text>
+                    <Text style={{ fontSize: 13, color: '#374151', fontWeight: 400 }}>{value || 'Unknown'}</Text>
                 </Space>
+            ),
+        },
+        {
+            title: 'Priority',
+            dataIndex: 'priority',
+            key: 'priority',
+            render: (value: TaskPriority | null) => (
+                <Tag color={getPriorityStyle(value).color}>{value || 'NORMAL'}</Tag>
             ),
         },
         {
@@ -257,13 +204,19 @@ const DepartmentProjectTaskPage: React.FC = () => {
             dataIndex: 'updatedAt',
             key: 'updatedAt',
             render: (value: string) => (
-                <Text style={{ fontSize: 12, color: '#9ca3af', fontWeight: 400 }}>{value}</Text>
+                <Text style={{ fontSize: 12, color: '#9ca3af', fontWeight: 400 }}>
+                    {value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '-'}
+                </Text>
             ),
         },
     ];
 
     const handleProjectChange = (projectId: number) => {
         navigate(`/department/projects/${projectId}`);
+    };
+
+    const handleTaskCreateSuccess = () => {
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
     };
 
     return (
@@ -376,64 +329,72 @@ const DepartmentProjectTaskPage: React.FC = () => {
                                 value={statusFilter}
                                 onChange={setStatusFilter}
                                 options={STATUS_FILTER_OPTIONS.map((status) => ({
-                                    label: status,
+                                    label: status.replace('_', ' '),
                                     value: status,
                                 }))}
                             />
                             <Select
                                 allowClear
                                 size="small"
-                                placeholder="Workflow step"
-                                style={{ width: 160 }}
-                                value={stepFilter}
-                                onChange={setStepFilter}
-                                options={STEP_FILTER_OPTIONS.map((step) => ({
-                                    label: step,
-                                    value: step,
+                                placeholder="Priority"
+                                style={{ width: 120 }}
+                                value={priorityFilter}
+                                onChange={setPriorityFilter}
+                                options={PRIORITY_FILTER_OPTIONS.map((priority) => ({
+                                    label: priority,
+                                    value: priority,
                                 }))}
                             />
                         </Space>
                     </div>
 
-                    <Table
-                        rowKey="id"
-                        columns={columns}
-                        dataSource={filteredTasks}
-                        pagination={false}
-                        size="middle"
-                        onRow={(record: TaskRow) => ({
-                            onClick: () => setSelectedTask(record),
-                            style: { cursor: 'pointer' },
-                        })}
-                        rowClassName={() => 'task-table-row'}
-                        style={{
-                            fontSize: 13,
-                        }}
-                        components={{
-                            header: {
-                                cell: (props: any) => (
-                                    <th
-                                        {...props}
-                                        style={{
-                                            ...props.style,
-                                            backgroundColor: '#f9fafb',
-                                            borderBottom: '1px solid #e5e7eb',
-                                            padding: '12px 16px',
-                                            fontWeight: 500,
-                                            fontSize: 12,
-                                            color: '#6b7280',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '0.5px',
-                                        }}
-                                    />
-                                ),
-                            },
-                        }}
-                    />
+                    {tasksLoading ? (
+                        <div style={{ textAlign: 'center', padding: 40 }}>
+                            <Spin size="large" />
+                        </div>
+                    ) : tasks.length === 0 ? (
+                        <Empty description="No tasks found" />
+                    ) : (
+                        <Table
+                            rowKey="id"
+                            columns={columns}
+                            dataSource={tasks}
+                            pagination={false}
+                            size="middle"
+                            onRow={(record: TaskResponse) => ({
+                                onClick: () => setSelectedTask(record),
+                                style: { cursor: 'pointer' },
+                            })}
+                            rowClassName={() => 'task-table-row'}
+                            style={{
+                                fontSize: 13,
+                            }}
+                            components={{
+                                header: {
+                                    cell: (props: any) => (
+                                        <th
+                                            {...props}
+                                            style={{
+                                                ...props.style,
+                                                backgroundColor: '#f9fafb',
+                                                borderBottom: '1px solid #e5e7eb',
+                                                padding: '12px 16px',
+                                                fontWeight: 500,
+                                                fontSize: 12,
+                                                color: '#6b7280',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.5px',
+                                            }}
+                                        />
+                                    ),
+                                },
+                            }}
+                        />
+                    )}
                 </Card>
 
                 <Drawer
-                    title={selectedTask?.name}
+                    title={selectedTask?.title}
                     width={440}
                     open={!!selectedTask}
                     onClose={() => setSelectedTask(null)}
@@ -447,14 +408,22 @@ const DepartmentProjectTaskPage: React.FC = () => {
                                 labelStyle={{ width: 120, color: '#6b7280' }}
                                 contentStyle={{ color: '#111827' }}
                             >
-                                <Descriptions.Item label="Reference">
-                                    {selectedTask.reference}
+                                <Descriptions.Item label="ID">
+                                    #{selectedTask.id}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Workflow">
+                                    {selectedTask.workflowName || '-'}
                                 </Descriptions.Item>
                                 <Descriptions.Item label="Current step">
-                                    {selectedTask.step}
+                                    {selectedTask.currentStepName || '-'}
                                 </Descriptions.Item>
-                                <Descriptions.Item label="Assignee">
-                                    {selectedTask.assignee}
+                                <Descriptions.Item label="Creator">
+                                    {selectedTask.creatorName || 'Unknown'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Priority">
+                                    <Tag color={getPriorityStyle(selectedTask.priority).color}>
+                                        {selectedTask.priority || 'NORMAL'}
+                                    </Tag>
                                 </Descriptions.Item>
                                 <Descriptions.Item label="Status">
                                     {(() => {
@@ -477,8 +446,16 @@ const DepartmentProjectTaskPage: React.FC = () => {
                                         );
                                     })()}
                                 </Descriptions.Item>
+                                {selectedTask.description && (
+                                    <Descriptions.Item label="Description">
+                                        {selectedTask.description}
+                                    </Descriptions.Item>
+                                )}
+                                <Descriptions.Item label="Created">
+                                    {selectedTask.createdAt ? dayjs(selectedTask.createdAt).format('YYYY-MM-DD HH:mm') : '-'}
+                                </Descriptions.Item>
                                 <Descriptions.Item label="Last updated">
-                                    {selectedTask.updatedAt}
+                                    {selectedTask.updatedAt ? dayjs(selectedTask.updatedAt).format('YYYY-MM-DD HH:mm') : '-'}
                                 </Descriptions.Item>
                             </Descriptions>
 
@@ -500,22 +477,6 @@ const DepartmentProjectTaskPage: React.FC = () => {
                                     </Button>
                                 </Space>
                             </Card>
-
-                            <Card
-                                size="small"
-                                title="History"
-                                bordered={false}
-                                style={{ backgroundColor: '#f9fafb' }}
-                            >
-                                <Space direction="vertical" size={6}>
-                                    <Text style={{ fontSize: 12, color: '#4b5563' }}>
-                                        2026-01-14 09:32 · Status changed to {selectedTask.status}
-                                    </Text>
-                                    <Text style={{ fontSize: 12, color: '#4b5563' }}>
-                                        2026-01-13 16:10 · Step updated to {selectedTask.step}
-                                    </Text>
-                                </Space>
-                            </Card>
                         </Space>
                     )}
                 </Drawer>
@@ -525,9 +486,7 @@ const DepartmentProjectTaskPage: React.FC = () => {
                         open={isCreateDrawerOpen}
                         onClose={() => setIsCreateDrawerOpen(false)}
                         project={currentProject}
-                        onSuccess={() => {
-                            message.success('Task created successfully');
-                        }}
+                        onSuccess={handleTaskCreateSuccess}
                     />
                 )}
             </div>
@@ -536,4 +495,3 @@ const DepartmentProjectTaskPage: React.FC = () => {
 };
 
 export default DepartmentProjectTaskPage;
-

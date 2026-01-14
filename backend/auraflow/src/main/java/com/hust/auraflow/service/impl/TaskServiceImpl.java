@@ -3,9 +3,9 @@ package com.hust.auraflow.service.impl;
 import com.hust.auraflow.dto.request.CreateTaskRequest;
 import com.hust.auraflow.dto.request.UpdateTaskRequest;
 import com.hust.auraflow.dto.response.TaskResponse;
+import com.hust.auraflow.common.enums.ProjectStatus;
 import com.hust.auraflow.entity.Project;
 import com.hust.auraflow.entity.Task;
-import com.hust.auraflow.entity.TaskPriority;
 import com.hust.auraflow.entity.User;
 import com.hust.auraflow.entity.Workflow;
 import com.hust.auraflow.repository.ProjectRepository;
@@ -35,7 +35,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public Page<TaskResponse> getTasks(UserPrincipal principal, Long projectId, String title, String status,
-            TaskPriority priority, Pageable pageable) {
+            String priority, Pageable pageable) {
         Long tenantId = principal.getTenantId();
         if (tenantId == null) {
             throw new IllegalStateException("User does not have a tenant");
@@ -84,8 +84,6 @@ public class TaskServiceImpl implements TaskService {
         task.setTitle(request.getTitle());
         task.setDescription(request.getDescription());
         task.setPriority(request.getPriority());
-        // Status? Default to first step? Or Request?
-        // Task entity has "status" string.
         task.setStatus("OPEN"); // Default status
         task.setCreator(creator);
         task.setBeginDate(request.getBeginDate());
@@ -95,6 +93,14 @@ public class TaskServiceImpl implements TaskService {
 
         task = taskRepository.save(task);
         log.info("Created task: {} by user {}", task.getId(), principal.getUserId());
+
+        // If project is DRAFT, change it to ACTIVE when first task is created
+        if (ProjectStatus.DRAFT.equals(project.getStatus())) {
+            project.setStatus(ProjectStatus.ACTIVE);
+            project.setUpdatedAt(Instant.now());
+            projectRepository.save(project);
+            log.info("Project {} status changed from DRAFT to ACTIVE", project.getId());
+        }
 
         return toTaskResponse(task);
     }

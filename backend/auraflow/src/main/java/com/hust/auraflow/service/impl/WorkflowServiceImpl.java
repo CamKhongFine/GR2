@@ -367,6 +367,25 @@ public class WorkflowServiceImpl implements WorkflowService {
             log.warn("Unknown step type: {} for step {}", step.getStepType(), step.getId());
         }
 
+        // Resolve assignee name if assigneeValue is a user ID
+        String assigneeName = null;
+        if (step.getAssigneeValue() != null && !step.getAssigneeValue().isEmpty()) {
+            try {
+                Long userId = Long.parseLong(step.getAssigneeValue());
+                assigneeName = userRepository.findById(userId)
+                        .map(user -> {
+                            String firstName = user.getFirstName() != null ? user.getFirstName() : "";
+                            String lastName = user.getLastName() != null ? user.getLastName() : "";
+                            String fullName = (firstName + " " + lastName).trim();
+                            return fullName.isEmpty() ? user.getEmail() : fullName;
+                        })
+                        .orElse(null);
+            } catch (NumberFormatException e) {
+                // assigneeValue is not a user ID (could be role/department)
+                assigneeName = step.getAssigneeValue();
+            }
+        }
+
         return WorkflowStepResponse.builder()
                 .id(step.getId())
                 .name(step.getName())
@@ -375,6 +394,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                 .stepOrder(step.getStepOrder())
                 .assigneeType(step.getAssigneeType())
                 .assigneeValue(step.getAssigneeValue())
+                .assigneeName(assigneeName)
                 .build();
     }
 

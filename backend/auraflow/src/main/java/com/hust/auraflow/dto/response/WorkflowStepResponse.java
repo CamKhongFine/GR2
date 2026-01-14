@@ -35,4 +35,9 @@ public class WorkflowStepResponse {
      * Assignee value - user ID for FIXED type, null for DYNAMIC.
      */
     private String assigneeValue;
+
+    /**
+     * Resolved assignee name when assigneeType is FIXED.
+     */
+    private String assigneeName;
 }

@@ -64,25 +64,25 @@ export const fetchProjects = async (
     if (name) params.append('name', name);
     if (status) params.append('status', status);
 
-    const response = await apiClient.get<PagedResponse<ProjectResponse>>(`/api/v1/projects?${params.toString()}`);
+    const response = await apiClient.get<PagedResponse<ProjectResponse>>(`/api/projects?${params.toString()}`);
     return response.data;
 };
 
 export const getProjectById = async (id: number): Promise<ProjectResponse> => {
-    const response = await apiClient.get<ProjectResponse>(`/api/v1/projects/${id}`);
+    const response = await apiClient.get<ProjectResponse>(`/api/projects/${id}`);
     return response.data;
 };
 
 export const createProject = async (data: CreateProjectRequest): Promise<ProjectResponse> => {
-    const response = await apiClient.post<ProjectResponse>('/api/v1/projects', data);
+    const response = await apiClient.post<ProjectResponse>('/api/projects', data);
     return response.data;
 };
 
 export const updateProject = async (id: number, data: UpdateProjectRequest): Promise<ProjectResponse> => {
-    const response = await apiClient.put<ProjectResponse>(`/api/v1/projects/${id}`, data);
+    const response = await apiClient.put<ProjectResponse>(`/api/projects/${id}`, data);
     return response.data;
 };
 
 export const deleteProject = async (id: number): Promise<void> => {
-    await apiClient.delete(`/api/v1/projects/${id}`);
+    await apiClient.delete(`/api/projects/${id}`);
 };

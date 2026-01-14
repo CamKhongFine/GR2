@@ -1,43 +1,105 @@
-import { Task, TaskStatus, TaskPriority } from '../types/task';
+import apiClient from '../lib/apiClient';
 
-const MOCK_USERS = [
-    { id: '1', name: 'John Doe', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John' },
-    { id: '2', name: 'Jane Smith', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jane' },
-    { id: '3', name: 'Bob Johnson', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob' },
-];
+// Types matching backend DTOs
+export type TaskPriority = 'LOW' | 'NORMAL' | 'HIGH';
 
-const generateMockTasks = (count: number): Task[] => {
-    return Array.from({ length: count }).map((_, index) => ({
-        id: `TASK-${index + 1}`,
-        title: `Task ${index + 1} - ${['Fix bug', 'Implement feature', 'Design review', 'Update docs'][Math.floor(Math.random() * 4)]}`,
-        status: ['todo', 'in-progress', 'review', 'done'][Math.floor(Math.random() * 4)] as TaskStatus,
-        priority: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as TaskPriority,
-        assignees: MOCK_USERS.slice(0, Math.floor(Math.random() * 3) + 1),
-        dueDate: new Date(Date.now() + Math.random() * 1000000000).toISOString(),
-        createdAt: new Date().toISOString(),
-    }));
+export interface TaskResponse {
+    id: number;
+    projectId: number | null;
+    projectName: string | null;
+    workflowId: number | null;
+    workflowName: string | null;
+    title: string;
+    description: string | null;
+    status: string;
+    priority: TaskPriority | null;
+    currentStepId: number | null;
+    currentStepName: string | null;
+    creatorId: number | null;
+    creatorName: string | null;
+    beginDate: string | null;
+    endDate: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateTaskRequest {
+    projectId: number;
+    workflowId: number;
+    title: string;
+    description?: string;
+    priority?: TaskPriority;
+    beginDate?: string;
+    endDate?: string;
+}
+
+export interface UpdateTaskRequest {
+    title?: string;
+    description?: string;
+    priority?: TaskPriority;
+    beginDate?: string;
+    endDate?: string;
+}
+
+export interface PagedTaskResponse {
+    content: TaskResponse[];
+    totalElements: number;
+    totalPages: number;
+    size: number;
+    number: number;
+}
+
+/**
+ * Fetch tasks with optional filters
+ */
+export const fetchTasks = async (
+    page: number = 0,
+    size: number = 20,
+    projectId?: number,
+    title?: string,
+    status?: string,
+    priority?: TaskPriority
+): Promise<PagedTaskResponse> => {
+    const params = new URLSearchParams({
+        page: page.toString(),
+        size: size.toString(),
+    });
+    if (projectId) params.append('projectId', projectId.toString());
+    if (title) params.append('title', title);
+    if (status) params.append('status', status);
+    if (priority) params.append('priority', priority);
+
+    const response = await apiClient.get<PagedTaskResponse>(`/api/tasks?${params.toString()}`);
+    return response.data;
 };
 
-const MOCK_TASKS = generateMockTasks(50);
-
-export const fetchTasks = async (): Promise<Task[]> => {
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return MOCK_TASKS;
+/**
+ * Get a single task by ID
+ */
+export const getTaskById = async (taskId: number): Promise<TaskResponse> => {
+    const response = await apiClient.get<TaskResponse>(`/api/tasks/${taskId}`);
+    return response.data;
 };
 
-export const createTask = async (task: Partial<Task>): Promise<Task> => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const newTask: Task = {
-        id: `TASK-${MOCK_TASKS.length + 1}`,
-        title: task.title || 'New Task',
-        status: 'todo',
-        priority: 'medium',
-        assignees: [],
-        dueDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        ...task,
-    } as Task;
-    MOCK_TASKS.unshift(newTask);
-    return newTask;
+/**
+ * Create a new task
+ */
+export const createTask = async (request: CreateTaskRequest): Promise<TaskResponse> => {
+    const response = await apiClient.post<TaskResponse>('/api/tasks', request);
+    return response.data;
+};
+
+/**
+ * Update an existing task
+ */
+export const updateTask = async (taskId: number, request: UpdateTaskRequest): Promise<TaskResponse> => {
+    const response = await apiClient.put<TaskResponse>(`/api/tasks/${taskId}`, request);
+    return response.data;
+};
+
+/**
+ * Delete a task
+ */
+export const deleteTask = async (taskId: number): Promise<void> => {
+    await apiClient.delete(`/api/tasks/${taskId}`);
 };

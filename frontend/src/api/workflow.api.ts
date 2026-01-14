@@ -50,6 +50,7 @@ export interface WorkflowStepResponse {
     stepOrder?: number;
     assigneeType?: AssigneeType;
     assigneeValue?: string | null;
+    assigneeName?: string | null;
 }
 
 export interface WorkflowTransitionResponse {
