@@ -7,7 +7,6 @@ import LandingPage from '../pages/landing/LandingPage';
 import AuthPage from '../pages/auth/AuthPage';
 import AppEntry from '../pages/AppEntry';
 import ProfileEntry from '../pages/ProfileEntry';
-import AppWorkspace from '../pages/AppWorkspace';
 import ForbiddenPage from '../pages/ForbiddenPage';
 import TenantManagementPage from '../pages/super-admin/TenantManagementPage';
 import SuperAdminUserManagementPage from '../pages/super-admin/UserManagementPage';
@@ -268,11 +267,6 @@ export const router = createBrowserRouter([
                 <WorkspaceProfilePage workspaceType="staff" />
             </RequireRoleLevel>
         ),
-    },
-    // Workspace routes (all authenticated users)
-    {
-        path: '/workspace',
-        element: <AppWorkspace />,
     },
     // 403 Forbidden page
     {

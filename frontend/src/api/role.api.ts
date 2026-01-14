@@ -111,9 +111,9 @@ export function getDefaultRouteForRole(roleLevel: number): string {
         case RoleLevel.DEPARTMENT_LEADER:
             return '/department/dashboard';
         case RoleLevel.STAFF:
-            return '/workspace';
+            return '/staff/workspace';
         default:
-            return '/workspace'; // Default fallback
+            return '/staff/workspace'; // Default fallback
     }
 }
 
@@ -131,9 +131,9 @@ export function getProfileRouteForRole(roleLevel: number): string {
         case RoleLevel.DEPARTMENT_LEADER:
             return '/department/profile';
         case RoleLevel.STAFF:
-            return '/workspace/profile';
+            return '/staff/profile';
         default:
-            return '/workspace/profile'; // Default fallback
+            return '/staff/profile'; // Default fallback
     }
 }
 

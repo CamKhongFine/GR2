@@ -130,11 +130,12 @@ const StaffWorkspacePage: React.FC = () => {
         },
     ];
 
-    // Left header content
+    // Left header content - Department prominently displayed
     const leftHeaderContent = (
-        <div className="flex items-center gap-2 bg-white/80 px-4 py-2 rounded-xl shadow-sm border border-white/50">
-            <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold text-xs">W</div>
-            <span className="font-semibold text-gray-700">My Workspace</span>
+        <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 bg-gradient-to-r from-green-600 to-green-700 px-5 py-2.5 rounded-xl shadow-lg">
+                <span className="font-bold text-white text-base">{departmentName}</span>
+            </div>
         </div>
     );
 
@@ -180,7 +181,8 @@ const StaffWorkspacePage: React.FC = () => {
         <WorkspaceLayout
             sidebarItems={sidebarItems}
             activeItem="workspace"
-            themeColor="purple"
+            themeColor="green"
+            headerOverSidebar
             leftHeaderContent={leftHeaderContent}
         >
             <div className="max-w-7xl mx-auto">

@@ -88,7 +88,8 @@ const LandingPage: React.FC = () => {
 
     const handleUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
         if (key === 'dashboard') {
-            navigate('/app'); // Use /app entry point for role-based redirect
+            // Route to StaffWorkspace for default "Workspace" option
+            navigate('/staff/workspace');
         } else if (key === 'profile') {
             navigate('/profile'); // Navigate to /profile which will redirect to appropriate profile
         } else if (key === 'logout') {
