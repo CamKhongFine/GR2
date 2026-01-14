@@ -33,4 +33,17 @@ public interface StepTaskService {
      * Execute a workflow action (approve, reject, submit, etc.)
      */
     TaskResponse executeAction(UserPrincipal principal, Long taskId, ExecuteActionRequest request);
+
+    /**
+     * Get all StepTasks assigned to current user with IN_PROGRESS status.
+     * Sorted by priority (desc) and beginDate (asc).
+     * Max 5 items.
+     */
+    List<StepTaskResponse> getMyAssignedStepTasks(UserPrincipal principal);
+
+    /**
+     * Get recent activity (StepTaskActions) for tasks where user is involved.
+     * Returns last 7 events, ordered by createdAt DESC.
+     */
+    List<StepTaskActionResponse> getMyRecentActivity(UserPrincipal principal);
 }

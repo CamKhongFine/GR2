@@ -161,6 +161,12 @@ const DepartmentProjectsPage: React.FC = () => {
             path: '/department/my-tasks',
         },
         {
+            key: 'my-requests',
+            icon: <CheckSquareOutlined />,
+            label: 'My Request',
+            path: '/department/my-requests',
+        },
+        {
             key: 'project',
             icon: <ProjectOutlined />,
             label: 'Project',

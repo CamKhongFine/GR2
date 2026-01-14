@@ -68,7 +68,8 @@ export const fetchTasks = async (
     projectId?: number,
     title?: string,
     status?: string,
-    priority?: TaskPriority
+    priority?: TaskPriority,
+    creatorId?: number
 ): Promise<PagedTaskResponse> => {
     const params = new URLSearchParams({
         page: page.toString(),
@@ -78,6 +79,7 @@ export const fetchTasks = async (
     if (title) params.append('title', title);
     if (status) params.append('status', status);
     if (priority) params.append('priority', priority);
+    if (creatorId) params.append('creatorId', creatorId.toString());
 
     const response = await apiClient.get<PagedTaskResponse>(`/api/tasks?${params.toString()}`);
     return response.data;
@@ -118,12 +120,14 @@ export const deleteTask = async (taskId: number): Promise<void> => {
 export interface StepTaskResponse {
     id: number;
     taskId: number;
+    taskTitle: string | null;
     workflowStepId: number;
     workflowStepName: string;
     stepSequence: number;
     status: string;
     assignedUserId: number | null;
     assignedUserName: string | null;
+    priority?: 'LOW' | 'NORMAL' | 'HIGH';
     beginDate: string | null;
     endDate: string | null;
     note: string | null;
@@ -186,5 +190,23 @@ export const getTaskActions = async (taskId: number): Promise<StepTaskActionResp
  */
 export const executeAction = async (taskId: number, request: ExecuteActionRequest): Promise<TaskResponse> => {
     const response = await apiClient.post<TaskResponse>(`/api/step-tasks/task/${taskId}/execute-action`, request);
+    return response.data;
+};
+
+/**
+ * Get all StepTasks assigned to current user with IN_PROGRESS status.
+ * Sorted by priority (desc) and beginDate (asc). Max 5 items.
+ */
+export const getMyAssignedStepTasks = async (): Promise<StepTaskResponse[]> => {
+    const response = await apiClient.get<StepTaskResponse[]>(`/api/step-tasks/my-assigned`);
+    return response.data;
+};
+
+/**
+ * Get recent activity (StepTaskActions) for tasks where user is involved.
+ * Returns last 7 events, ordered by createdAt DESC.
+ */
+export const getMyRecentActivity = async (): Promise<StepTaskActionResponse[]> => {
+    const response = await apiClient.get<StepTaskActionResponse[]>(`/api/step-tasks/my-recent-activity`);
     return response.data;
 };

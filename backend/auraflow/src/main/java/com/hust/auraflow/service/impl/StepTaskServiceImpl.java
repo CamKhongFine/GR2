@@ -292,6 +292,7 @@ public class StepTaskServiceImpl implements StepTaskService {
         return StepTaskResponse.builder()
                 .id(stepTask.getId())
                 .taskId(stepTask.getTask() != null ? stepTask.getTask().getId() : null)
+                .taskTitle(stepTask.getTask() != null ? stepTask.getTask().getTitle() : null)
                 .workflowStepId(stepTask.getWorkflowStep() != null ? stepTask.getWorkflowStep().getId() : null)
                 .workflowStepName(stepTask.getWorkflowStep() != null ? stepTask.getWorkflowStep().getName() : null)
                 .stepSequence(stepTask.getStepSequence())
@@ -325,5 +326,35 @@ public class StepTaskServiceImpl implements StepTaskService {
                 .comment(action.getComment())
                 .createdAt(action.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StepTaskResponse> getMyAssignedStepTasks(UserPrincipal principal) {
+        Long userId = principal.getUserId();
+        List<StepTask> stepTasks = stepTaskRepository.findByAssignedUserIdAndStatus(
+                userId, com.hust.auraflow.common.enums.StepTaskStatus.IN_PROGRESS);
+        
+        // Limit to 5 items (already sorted by priority desc and beginDate asc in query)
+        return stepTasks.stream()
+                .limit(5)
+                .map(this::toStepTaskResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StepTaskActionResponse> getMyRecentActivity(UserPrincipal principal) {
+        Long userId = principal.getUserId();
+        Long tenantId = principal.getTenantId();
+        
+        // Get recent actions for tasks where user is involved (as actor or assignee)
+        List<StepTaskAction> actions = stepTaskActionRepository.findByTenantIdAndUserIdOrderByCreatedAtDesc(tenantId, userId);
+        
+        // Limit to 7 items
+        return actions.stream()
+                .limit(7)
+                .map(this::toStepTaskActionResponse)
+                .collect(java.util.stream.Collectors.toList());
     }
 }

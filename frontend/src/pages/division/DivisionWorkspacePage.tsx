@@ -69,6 +69,12 @@ const DivisionWorkspacePage: React.FC = () => {
             label: 'My Task',
             path: '/division/my-tasks',
         },
+        {
+            key: 'my-requests',
+            icon: <CheckSquareOutlined />,
+            label: 'My Request',
+            path: '/division/my-requests',
+        },
     ];
 
     // Left header content - Division prominently displayed

@@ -71,4 +71,24 @@ public class StepTaskController {
             @Valid @RequestBody ExecuteActionRequest request) {
         return ResponseEntity.ok(stepTaskService.executeAction(principal, taskId, request));
     }
+
+    /**
+     * Get all StepTasks assigned to current user with IN_PROGRESS status.
+     * Sorted by priority (desc) and beginDate (asc). Max 5 items.
+     */
+    @GetMapping("/my-assigned")
+    public ResponseEntity<List<StepTaskResponse>> getMyAssignedStepTasks(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(stepTaskService.getMyAssignedStepTasks(principal));
+    }
+
+    /**
+     * Get recent activity (StepTaskActions) for tasks where user is involved.
+     * Returns last 7 events, ordered by createdAt DESC.
+     */
+    @GetMapping("/my-recent-activity")
+    public ResponseEntity<List<StepTaskActionResponse>> getMyRecentActivity(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(stepTaskService.getMyRecentActivity(principal));
+    }
 }

@@ -16,6 +16,7 @@ import java.time.Instant;
 public class StepTaskResponse {
     private Long id;
     private Long taskId;
+    private String taskTitle;
     private Long workflowStepId;
     private String workflowStepName;
     private Integer stepSequence;

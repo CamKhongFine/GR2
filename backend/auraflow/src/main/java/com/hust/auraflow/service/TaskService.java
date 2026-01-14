@@ -9,8 +9,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface TaskService {
     Page<TaskResponse> getTasks(UserPrincipal principal, Long projectId, String title, String status,
-            String priority,
-            Pageable pageable);
+            String priority, Long creatorId, Pageable pageable);
 
     TaskResponse getTaskById(UserPrincipal principal, Long taskId);
 

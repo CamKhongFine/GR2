@@ -26,6 +26,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../../store/userStore';
 import { TypewriterEffectSmooth } from '../../components/ui/typewriter-effect';
+import { getDefaultRouteForRole } from '../../api/role.api';
 import heroIllustration from '../../assets/auraflow_hero_illustration.png';
 
 const { Title, Paragraph, Text } = Typography;
@@ -88,8 +89,13 @@ const LandingPage: React.FC = () => {
 
     const handleUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
         if (key === 'dashboard') {
-            // Route to StaffWorkspace for default "Workspace" option
-            navigate('/staff/workspace');
+            // Route based on role level
+            if (roleLevel !== null) {
+                const route = getDefaultRouteForRole(roleLevel);
+                navigate(route);
+            } else {
+                navigate('/staff/workspace'); // Fallback
+            }
         } else if (key === 'profile') {
             navigate('/profile'); // Navigate to /profile which will redirect to appropriate profile
         } else if (key === 'logout') {

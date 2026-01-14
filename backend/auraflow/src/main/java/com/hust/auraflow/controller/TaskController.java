@@ -27,8 +27,9 @@ public class TaskController {
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority,
+            @RequestParam(required = false) Long creatorId,
             Pageable pageable) {
-        return ResponseEntity.ok(taskService.getTasks(principal, projectId, title, status, priority, pageable));
+        return ResponseEntity.ok(taskService.getTasks(principal, projectId, title, status, priority, creatorId, pageable));
     }
 
     @GetMapping("/{id}")

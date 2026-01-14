@@ -36,13 +36,13 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public Page<TaskResponse> getTasks(UserPrincipal principal, Long projectId, String title, String status,
-            String priority, Pageable pageable) {
+            String priority, Long creatorId, Pageable pageable) {
         Long tenantId = principal.getTenantId();
         if (tenantId == null) {
             throw new IllegalStateException("User does not have a tenant");
         }
 
-        return taskRepository.findByTenantIdAndFilters(tenantId, projectId, title, status, priority, pageable)
+        return taskRepository.findByTenantIdAndFilters(tenantId, projectId, title, status, priority, creatorId, pageable)
                 .map(this::toTaskResponse);
     }
 

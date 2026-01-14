@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
     Card,
     Typography,
@@ -8,9 +8,6 @@ import {
     Select,
     Table,
     Tag,
-    Avatar,
-    Drawer,
-    Descriptions,
     Spin,
     Empty,
     message,
@@ -23,14 +20,12 @@ import {
 import {
     PlusOutlined,
     SearchOutlined,
-    LeftOutlined,
-    SwapOutlined,
-    FolderOutlined,
     EditOutlined,
     DeleteOutlined,
     MoreOutlined,
+    FolderOutlined,
+    SwapOutlined,
 } from '@ant-design/icons';
-import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
     fetchProjects,
@@ -41,11 +36,6 @@ import CreateTaskDrawer from '../../components/tasks/CreateTaskDrawer';
 import RequestDetailView from '../../components/tasks/RequestDetailView';
 import WorkspaceLayout, { SidebarItemConfig } from '../../layouts/WorkspaceLayout';
 import { useUserStore } from '../../store/userStore';
-import {
-    TeamOutlined,
-    CheckSquareOutlined,
-    ProjectOutlined,
-} from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;
@@ -60,46 +50,59 @@ const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] 
     { value: 'HIGH', label: 'High', color: 'red' },
 ];
 
-const DepartmentProjectTaskPage: React.FC = () => {
-    const params = useParams();
-    const navigate = useNavigate();
+interface MyRequestsPageProps {
+    sidebarItems: SidebarItemConfig[];
+    activeItem: string;
+    themeColor: 'blue' | 'green' | 'purple';
+    workspaceType: 'staff' | 'department' | 'division';
+}
+
+const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
+    sidebarItems,
+    activeItem,
+    themeColor,
+    workspaceType,
+}) => {
     const queryClient = useQueryClient();
     const { user } = useUserStore();
 
     const [searchValue, setSearchValue] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | undefined>();
     const [priorityFilter, setPriorityFilter] = useState<TaskPriority | undefined>();
+    const [selectedProjectContext, setSelectedProjectContext] = useState<ProjectResponse | null>(null);
     const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null);
     const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [taskToUpdate, setTaskToUpdate] = useState<TaskResponse | null>(null);
     const [form] = Form.useForm();
+    const [selectedProject, setSelectedProject] = useState<ProjectResponse | null>(null);
 
     const departmentId = user?.department?.id;
-    const projectIdParam = params.id ? Number(params.id) : undefined;
+    const divisionId = user?.division?.id;
+    const creatorId = user?.id;
+
+    // Fetch projects for creating new requests
+    const projectQueryKey = workspaceType === 'division' 
+        ? ['division-projects-for-requests', divisionId]
+        : ['department-projects-for-requests', departmentId];
+    
+    const projectQueryFn = workspaceType === 'division'
+        ? () => fetchProjects(0, 50, undefined, divisionId, undefined)
+        : () => fetchProjects(0, 50, departmentId, undefined, undefined);
 
     const { data: projectsData } = useQuery({
-        queryKey: ['department-projects-for-task-view', departmentId],
-        queryFn: () => fetchProjects(0, 50, departmentId, undefined, undefined),
-        enabled: !!departmentId,
+        queryKey: projectQueryKey,
+        queryFn: projectQueryFn,
+        enabled: workspaceType === 'division' ? !!divisionId : !!departmentId,
     });
 
     const projects = projectsData?.content || [];
 
-    const currentProject: ProjectResponse | undefined = useMemo(() => {
-        if (!projects.length) return undefined;
-        if (projectIdParam) {
-            const found = projects.find((p) => p.id === projectIdParam);
-            if (found) return found;
-        }
-        return projects[0];
-    }, [projects, projectIdParam]);
-
-    // Fetch tasks for current project
+    // Fetch tasks created by current user
     const { data: tasksData, isLoading: tasksLoading } = useQuery({
-        queryKey: ['tasks', currentProject?.id, searchValue, statusFilter, priorityFilter],
-        queryFn: () => fetchTasks(0, 50, currentProject?.id, searchValue || undefined, statusFilter, priorityFilter),
-        enabled: !!currentProject?.id,
+        queryKey: ['my-requests', searchValue, statusFilter, priorityFilter, creatorId, selectedProjectContext?.id],
+        queryFn: () => fetchTasks(0, 50, selectedProjectContext?.id, searchValue || undefined, statusFilter, priorityFilter, creatorId),
+        enabled: !!creatorId,
     });
 
     const tasks = tasksData?.content || [];
@@ -110,7 +113,7 @@ const DepartmentProjectTaskPage: React.FC = () => {
             updateTask(taskId, request),
         onSuccess: () => {
             message.success('Request updated successfully');
-            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            queryClient.invalidateQueries({ queryKey: ['my-requests'] });
             setIsUpdateModalOpen(false);
             setTaskToUpdate(null);
             form.resetFields();
@@ -125,39 +128,12 @@ const DepartmentProjectTaskPage: React.FC = () => {
         mutationFn: deleteTask,
         onSuccess: () => {
             message.success('Request deleted successfully');
-            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            queryClient.invalidateQueries({ queryKey: ['my-requests'] });
         },
         onError: (error: any) => {
             message.error(error?.response?.data?.message || 'Failed to delete request');
         },
     });
-
-    const sidebarItems: SidebarItemConfig[] = [
-        {
-            key: 'department',
-            icon: <TeamOutlined />,
-            label: 'Department',
-            path: '/department/dashboard',
-        },
-        {
-            key: 'my-tasks',
-            icon: <CheckSquareOutlined />,
-            label: 'My Task',
-            path: '/department/my-tasks',
-        },
-        {
-            key: 'my-requests',
-            icon: <CheckSquareOutlined />,
-            label: 'My Request',
-            path: '/department/my-requests',
-        },
-        {
-            key: 'project',
-            icon: <ProjectOutlined />,
-            label: 'Project',
-            path: '/department/projects',
-        },
-    ];
 
     const getStatusStyle = (status: string) => {
         const styles: Record<string, { bg: string; border: string; text: string }> = {
@@ -238,6 +214,20 @@ const DepartmentProjectTaskPage: React.FC = () => {
         }
     };
 
+    const handleCreateRequest = () => {
+        if (projects.length === 0) {
+            message.warning('No projects available. Please contact your department leader.');
+            return;
+        }
+        // Use selected project context if available, otherwise show warning
+        if (!selectedProjectContext) {
+            message.warning('Please select a project context first');
+            return;
+        }
+        setSelectedProject(selectedProjectContext);
+        setIsCreateDrawerOpen(true);
+    };
+
     const columns = [
         {
             title: 'Request',
@@ -258,24 +248,11 @@ const DepartmentProjectTaskPage: React.FC = () => {
             ),
         },
         {
-            title: 'Creator',
-            dataIndex: 'creatorName',
-            key: 'creatorName',
+            title: 'Project',
+            dataIndex: 'projectName',
+            key: 'projectName',
             render: (value: string | null) => (
-                <Space size={10} style={{ alignItems: 'center' }}>
-                    <Avatar
-                        size={28}
-                        style={{
-                            backgroundColor: '#e5e7eb',
-                            color: '#374151',
-                            fontSize: 12,
-                            fontWeight: 500,
-                        }}
-                    >
-                        {value?.charAt(0) || '?'}
-                    </Avatar>
-                    <Text style={{ fontSize: 13, color: '#374151', fontWeight: 400 }}>{value || 'Unknown'}</Text>
-                </Space>
+                <Text style={{ fontSize: 13, color: '#374151', fontWeight: 400 }}>{value || '-'}</Text>
             ),
         },
         {
@@ -395,47 +372,22 @@ const DepartmentProjectTaskPage: React.FC = () => {
         },
     ];
 
-    const handleProjectChange = (projectId: number) => {
-        navigate(`/department/projects/${projectId}`);
-    };
-
     const handleTaskCreateSuccess = () => {
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['my-requests'] });
+        setSelectedProject(null);
     };
 
     return (
         <WorkspaceLayout
             sidebarItems={sidebarItems}
-            activeItem="project"
-            themeColor="green"
+            activeItem={activeItem}
+            themeColor={themeColor}
+            headerOverSidebar
         >
             <div className="max-w-7xl mx-auto px-4">
-                <Card
-                    style={{
-                        marginBottom: 20,
-                        borderRadius: 8,
-                        border: 'none',
-                        backgroundColor: 'transparent',
-                        boxShadow: 'none',
-                    }}
-                    bodyStyle={{ padding: 0 }}
-                >
-                    <div className="flex items-center justify-between gap-4 mb-6">
-                        <Button
-                            type="text"
-                            icon={<LeftOutlined />}
-                            onClick={() => navigate('/department/projects')}
-                            style={{
-                                paddingInline: 0,
-                                height: 32,
-                                fontSize: 13,
-                                display: 'flex',
-                                alignItems: 'center',
-                                color: '#374151',
-                            }}
-                        >
-                            Projects
-                        </Button>
+                {/* Project Context Selector - Top Right */}
+                {projects.length > 0 && (
+                    <div className="flex justify-end mb-4">
                         <div
                             style={{
                                 display: 'flex',
@@ -446,6 +398,7 @@ const DepartmentProjectTaskPage: React.FC = () => {
                                 border: '1.5px solid #cbd5e1',
                                 borderRadius: 8,
                                 boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                                width: 'fit-content',
                             }}
                         >
                             <FolderOutlined style={{ color: '#475569', fontSize: 14 }} />
@@ -457,9 +410,13 @@ const DepartmentProjectTaskPage: React.FC = () => {
                                     fontWeight: 500,
                                     fontSize: 13,
                                 }}
-                                placeholder="Switch project"
-                                value={currentProject?.id}
-                                onChange={handleProjectChange}
+                                placeholder="Select project"
+                                value={selectedProjectContext?.id}
+                                onChange={(value) => {
+                                    const project = projects.find(p => p.id === value);
+                                    setSelectedProjectContext(project || null);
+                                }}
+                                allowClear
                                 options={projects.map((p) => ({
                                     label: p.name,
                                     value: p.id,
@@ -468,7 +425,7 @@ const DepartmentProjectTaskPage: React.FC = () => {
                             />
                         </div>
                     </div>
-                </Card>
+                )}
 
                 <Card
                     style={{
@@ -483,7 +440,7 @@ const DepartmentProjectTaskPage: React.FC = () => {
                         <Button
                             type="primary"
                             icon={<PlusOutlined />}
-                            onClick={() => setIsCreateDrawerOpen(true)}
+                            onClick={handleCreateRequest}
                             size="middle"
                             style={{
                                 height: 36,
@@ -583,11 +540,14 @@ const DepartmentProjectTaskPage: React.FC = () => {
                     onClose={() => setSelectedTask(null)}
                 />
 
-                {currentProject && (
+                {selectedProject && (
                     <CreateTaskDrawer
                         open={isCreateDrawerOpen}
-                        onClose={() => setIsCreateDrawerOpen(false)}
-                        project={currentProject}
+                        onClose={() => {
+                            setIsCreateDrawerOpen(false);
+                            setSelectedProject(null);
+                        }}
+                        project={selectedProject}
                         onSuccess={handleTaskCreateSuccess}
                     />
                 )}
@@ -702,4 +662,4 @@ const DepartmentProjectTaskPage: React.FC = () => {
     );
 };
 
-export default DepartmentProjectTaskPage;
+export default MyRequestsPage;

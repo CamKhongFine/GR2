@@ -25,12 +25,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
                         "(:projectId IS NULL OR t.project_id = :projectId) AND " +
                         "(:title IS NULL OR LOWER(CAST(t.title AS TEXT)) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
                         "(:status IS NULL OR t.status = :status) AND " +
-                        "(:priority IS NULL OR t.priority = :priority)", nativeQuery = true)
+                        "(:priority IS NULL OR t.priority = :priority) AND " +
+                        "(:creatorId IS NULL OR t.creator_id = :creatorId)", nativeQuery = true)
         Page<Task> findByTenantIdAndFilters(
                         @Param("tenantId") Long tenantId,
                         @Param("projectId") Long projectId,
                         @Param("title") String title,
                         @Param("status") String status,
                         @Param("priority") String priority,
+                        @Param("creatorId") Long creatorId,
                         Pageable pageable);
 }
