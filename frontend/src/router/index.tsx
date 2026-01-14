@@ -23,6 +23,7 @@ import WorkflowManagementPage from '../pages/admin/WorkflowManagementPage';
 import WorkflowEditorPage from '../pages/admin/WorkflowEditorPage';
 import DepartmentWorkspacePage from '../pages/department/DepartmentWorkspacePage';
 import DepartmentProjectsPage from '../pages/department/DepartmentProjectsPage';
+import DepartmentProjectTaskPage from '../pages/department/DepartmentProjectTaskPage';
 import DivisionWorkspacePage from '../pages/division/DivisionWorkspacePage';
 import WorkspaceProfilePage from '../pages/shared/WorkspaceProfilePage';
 import StaffWorkspacePage from '../pages/staff/StaffWorkspacePage';
@@ -216,6 +217,14 @@ export const router = createBrowserRouter([
         element: (
             <RequireRoleLevel maxLevel={3}>
                 <DepartmentProjectsPage />
+            </RequireRoleLevel>
+        ),
+    },
+    {
+        path: '/department/projects/:id',
+        element: (
+            <RequireRoleLevel maxLevel={3}>
+                <DepartmentProjectTaskPage />
             </RequireRoleLevel>
         ),
     },

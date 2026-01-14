@@ -24,3 +24,21 @@ body {
   opacity: 1;
   font-size: 13px;
 }
+
+/* Task table row styling for enterprise workflow UI */
+.task-table-row {
+  transition: background-color 0.15s ease;
+}
+
+.task-table-row:hover {
+  background-color: #f9fafb !important;
+}
+
+.task-table-row td {
+  padding: 16px !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.task-table-row:last-child td {
+  border-bottom: none !important;
+}
