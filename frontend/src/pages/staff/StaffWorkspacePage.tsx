@@ -212,7 +212,7 @@ const StaffWorkspacePage: React.FC = () => {
                         <Card className="shadow-sm" style={{ borderRadius: 12 }} bodyStyle={{ padding: '16px 20px' }}>
                             <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
                                 <div className="flex items-baseline gap-2">
-                                    <ClockCircleOutlined className="text-orange-500 text-lg" style={{ marginTop: '6px' }} />
+                                    <ClockCircleOutlined className="text-orange-500 text-lg" style={{ marginTop: '10px' }} />
                                     <Title level={4} className="mb-0">Action Required</Title>
                                 </div>
                                 {assignedStepTasks.length > 0 && (
