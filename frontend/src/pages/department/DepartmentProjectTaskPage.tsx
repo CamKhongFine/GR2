@@ -26,6 +26,7 @@ import {
     ProjectResponse,
     ProjectStatus,
 } from '../../api/project.api';
+import CreateTaskDrawer from '../../components/tasks/CreateTaskDrawer';
 import WorkspaceLayout, { SidebarItemConfig } from '../../layouts/WorkspaceLayout';
 import { useUserStore } from '../../store/userStore';
 import {
@@ -519,16 +520,16 @@ const DepartmentProjectTaskPage: React.FC = () => {
                     )}
                 </Drawer>
 
-                <Drawer
-                    title="Create task"
-                    width={420}
-                    open={isCreateDrawerOpen}
-                    onClose={() => setIsCreateDrawerOpen(false)}
-                >
-                    <Text type="secondary" style={{ fontSize: 13 }}>
-                        Task creation will be wired to workflow templates in a later iteration.
-                    </Text>
-                </Drawer>
+                {currentProject && (
+                    <CreateTaskDrawer
+                        open={isCreateDrawerOpen}
+                        onClose={() => setIsCreateDrawerOpen(false)}
+                        project={currentProject}
+                        onSuccess={() => {
+                            message.success('Task created successfully');
+                        }}
+                    />
+                )}
             </div>
         </WorkspaceLayout>
     );

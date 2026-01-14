@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import ReactFlow, {
     Node,
     Edge,
@@ -29,6 +29,7 @@ interface WorkflowCanvasProps {
     initialTransitions?: WorkflowTransitionResponse[];
     readOnly?: boolean;
     onSave?: (steps: WorkflowStepRequest[], transitions: WorkflowTransitionRequest[]) => void;
+    onNodeClick?: (nodeId: string) => void;
 }
 
 // Counter for generating unique node IDs
@@ -40,13 +41,17 @@ const nodeTypes = {
 };
 
 // Convert API steps to ReactFlow nodes
-const stepsToNodes = (steps: WorkflowStepResponse[]): Node<WorkflowNodeData>[] => {
+const stepsToNodes = (steps: WorkflowStepResponse[], onNodeClick?: (nodeId: string) => void): Node<WorkflowNodeData>[] => {
     return steps.map((step, index) => ({
         id: step.id.toString(),
         type: 'workflowNode',
         data: {
             name: step.name,
             type: step.type,
+            description: step.description,
+            assigneeType: step.assigneeType,
+            assigneeValue: step.assigneeValue,
+            onClick: onNodeClick,
         },
         position: {
             x: (step.stepOrder ?? index) * 250 + 50,
@@ -123,12 +128,28 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
     initialSteps = [],
     initialTransitions = [],
     readOnly = false,
+    onNodeClick,
 }) => {
-    const initialNodes = useMemo(() => stepsToNodes(initialSteps), [initialSteps]);
+    const initialNodes = useMemo(() => stepsToNodes(initialSteps, onNodeClick), [initialSteps, onNodeClick]);
     const initialEdges = useMemo(() => transitionsToEdges(initialTransitions), [initialTransitions]);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNodeData>(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+    // Update nodes when onNodeClick changes
+    React.useEffect(() => {
+        if (onNodeClick) {
+            setNodes((nds) =>
+                nds.map((node) => ({
+                    ...node,
+                    data: {
+                        ...node.data,
+                        onClick: onNodeClick,
+                    },
+                }))
+            );
+        }
+    }, [onNodeClick, setNodes]);
 
     // Modal state for adding nodes
     const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
@@ -242,11 +263,14 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                     onNodesDelete={(deleted) => {
                         deleted.forEach((n) => handleDeleteNode(n.id));
                     }}
+                    nodesDraggable={!readOnly}
+                    nodesConnectable={!readOnly}
+                    elementsSelectable={true}
                     fitView
                     fitViewOptions={{ padding: 0.2 }}
                     deleteKeyCode={readOnly ? null : 'Delete'}
                 >
-                    <Controls />
+                    <Controls showInteractive={!readOnly} />
                     <MiniMap
                         nodeColor={(node) => {
                             const typeColors: Record<WorkflowStepType, string> = {
