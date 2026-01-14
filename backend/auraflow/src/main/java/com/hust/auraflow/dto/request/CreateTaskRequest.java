@@ -1,5 +1,6 @@
 package com.hust.auraflow.dto.request;
 
+import com.hust.auraflow.entity.TaskPriority;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -25,7 +26,7 @@ public class CreateTaskRequest {
 
     private String description;
 
-    private String priority;
+    private TaskPriority priority;
 
     private Instant beginDate;
 

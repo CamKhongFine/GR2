@@ -39,8 +39,9 @@ public class Task {
     @Column(name = "status", length = Integer.MAX_VALUE)
     private String status;
 
-    @Column(name = "priority", length = Integer.MAX_VALUE)
-    private String priority;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority")
+    private TaskPriority priority;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")

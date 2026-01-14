@@ -3,6 +3,7 @@ package com.hust.auraflow.controller;
 import com.hust.auraflow.dto.request.CreateTaskRequest;
 import com.hust.auraflow.dto.request.UpdateTaskRequest;
 import com.hust.auraflow.dto.response.TaskResponse;
+import com.hust.auraflow.entity.TaskPriority;
 import com.hust.auraflow.security.UserPrincipal;
 import com.hust.auraflow.service.TaskService;
 import jakarta.validation.Valid;
@@ -26,7 +27,7 @@ public class TaskController {
             @RequestParam(required = false) Long projectId,
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) TaskPriority priority,
             Pageable pageable) {
         return ResponseEntity.ok(taskService.getTasks(principal, projectId, title, status, priority, pageable));
     }

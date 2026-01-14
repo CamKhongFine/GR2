@@ -1,5 +1,6 @@
 package com.hust.auraflow.dto.request;
 
+import com.hust.auraflow.entity.TaskPriority;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +15,7 @@ import java.time.Instant;
 public class UpdateTaskRequest {
     private String title;
     private String description;
-    private String priority;
+    private TaskPriority priority;
     private Instant beginDate;
     private Instant endDate;
 }

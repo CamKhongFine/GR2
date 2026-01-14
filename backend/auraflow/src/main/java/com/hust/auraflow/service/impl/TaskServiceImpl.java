@@ -5,6 +5,7 @@ import com.hust.auraflow.dto.request.UpdateTaskRequest;
 import com.hust.auraflow.dto.response.TaskResponse;
 import com.hust.auraflow.entity.Project;
 import com.hust.auraflow.entity.Task;
+import com.hust.auraflow.entity.TaskPriority;
 import com.hust.auraflow.entity.User;
 import com.hust.auraflow.entity.Workflow;
 import com.hust.auraflow.repository.ProjectRepository;
@@ -34,7 +35,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public Page<TaskResponse> getTasks(UserPrincipal principal, Long projectId, String title, String status,
-            String priority, Pageable pageable) {
+            TaskPriority priority, Pageable pageable) {
         Long tenantId = principal.getTenantId();
         if (tenantId == null) {
             throw new IllegalStateException("User does not have a tenant");
