@@ -121,13 +121,13 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
     const createTaskMutation = useMutation({
         mutationFn: createTask,
         onSuccess: () => {
-            message.success('Task created successfully');
+            message.success('Request created successfully');
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
             onSuccess?.();
             handleClose();
         },
         onError: (error: any) => {
-            message.error(error?.response?.data?.message || 'Failed to create task');
+            message.error(error?.response?.data?.message || 'Failed to create request');
         },
     });
 
@@ -227,7 +227,7 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
     return (
         <>
             <Drawer
-                title="Create Task"
+                title="Create Request"
                 width={getDrawerWidth()}
                 open={open}
                 onClose={handleClose}
@@ -247,7 +247,7 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                             Select Workflow Template
                         </Title>
                         <Text type="secondary" style={{ marginBottom: 24, display: 'block' }}>
-                            Choose a workflow template to create a task instance
+                            Choose a workflow template to create a request instance
                         </Text>
 
                         {workflowsLoading ? (
@@ -341,7 +341,7 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                     </div>
                 )}
 
-                {/* Step 3: Task Details */}
+                {/* Step 3: Request Details */}
                 {currentStep === 2 && (
                     <div>
 
@@ -364,7 +364,7 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                             >
                                 <TextArea
                                     rows={3}
-                                    placeholder="Enter task description (optional)"
+                                    placeholder="Enter request description (optional)"
                                 />
                             </Form.Item>
 
@@ -445,7 +445,7 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                                     <div><Text strong>{workflowDetail.name}</Text></div>
                                 </div>
                                 <div style={{ marginBottom: 12 }}>
-                                    <Text type="secondary" style={{ fontSize: 12 }}>TASK TITLE</Text>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>REQUEST TITLE</Text>
                                     <div><Text strong>{taskValues.title}</Text></div>
                                 </div>
                                 {taskValues.description && (
@@ -576,26 +576,28 @@ const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                                         placeholder="Select user"
                                         showSearch
                                         optionFilterProp="children"
-                                        filterOption={(input, option) =>
-                                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                        }
+                                        filterOption={(input, option) => {
+                                            const label = option?.label as string | undefined;
+                                            return (label ?? '').toLowerCase().includes(input.toLowerCase());
+                                        }}
                                     >
-                                        {users.map((user) => (
-                                            <Select.Option
-                                                key={user.id}
-                                                value={user.id}
-                                                label={`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
-                                            >
-                                                <Space>
-                                                    <Avatar size="small" src={user.avatarUrl}>
-                                                        {user.firstName?.charAt(0) || user.email.charAt(0)}
-                                                    </Avatar>
-                                                    <span>
-                                                        {`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
-                                                    </span>
-                                                </Space>
-                                            </Select.Option>
-                                        ))}
+                                        {users.map((user) => {
+                                            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+                                            return (
+                                                <Select.Option
+                                                    key={user.id}
+                                                    value={user.id}
+                                                    label={userName}
+                                                >
+                                                    <Space>
+                                                        <Avatar size="small" src={user.avatarUrl}>
+                                                            {user.firstName?.charAt(0) || user.email.charAt(0)}
+                                                        </Avatar>
+                                                        <span>{userName}</span>
+                                                    </Space>
+                                                </Select.Option>
+                                            );
+                                        })}
                                     </Select>
                                 </Form.Item>
                             </Form>

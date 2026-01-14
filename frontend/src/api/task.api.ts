@@ -106,3 +106,78 @@ export const updateTask = async (taskId: number, request: UpdateTaskRequest): Pr
 export const deleteTask = async (taskId: number): Promise<void> => {
     await apiClient.delete(`/api/tasks/${taskId}`);
 };
+
+// StepTask types and APIs
+export interface StepTaskResponse {
+    id: number;
+    taskId: number;
+    workflowStepId: number;
+    workflowStepName: string;
+    stepSequence: number;
+    status: string;
+    assignedUserId: number | null;
+    assignedUserName: string | null;
+    beginDate: string | null;
+    endDate: string | null;
+    note: string | null;
+}
+
+export interface StepTaskActionResponse {
+    id: number;
+    taskId: number;
+    stepTaskId: number;
+    fromStepId: number;
+    fromStepName: string;
+    toStepId: number | null;
+    toStepName: string | null;
+    actionName: string;
+    actorId: number;
+    actorName: string;
+    comment: string | null;
+    createdAt: string;
+}
+
+export interface ExecuteActionRequest {
+    actionName: string;
+    comment?: string;
+}
+
+/**
+ * Get all step tasks for a task
+ */
+export const getStepTasksByTaskId = async (taskId: number): Promise<StepTaskResponse[]> => {
+    const response = await apiClient.get<StepTaskResponse[]>(`/api/step-tasks/task/${taskId}`);
+    return response.data;
+};
+
+/**
+ * Get current step task for a task
+ */
+export const getCurrentStepTask = async (taskId: number): Promise<StepTaskResponse> => {
+    const response = await apiClient.get<StepTaskResponse>(`/api/step-tasks/task/${taskId}/current`);
+    return response.data;
+};
+
+/**
+ * Check if current user is assignee of current step
+ */
+export const isUserAssignee = async (taskId: number): Promise<boolean> => {
+    const response = await apiClient.get<boolean>(`/api/step-tasks/task/${taskId}/is-assignee`);
+    return response.data;
+};
+
+/**
+ * Get all actions for a task (activity log)
+ */
+export const getTaskActions = async (taskId: number): Promise<StepTaskActionResponse[]> => {
+    const response = await apiClient.get<StepTaskActionResponse[]>(`/api/step-tasks/task/${taskId}/actions`);
+    return response.data;
+};
+
+/**
+ * Execute a workflow action (approve, reject, submit, etc.)
+ */
+export const executeAction = async (taskId: number, request: ExecuteActionRequest): Promise<TaskResponse> => {
+    const response = await apiClient.post<TaskResponse>(`/api/step-tasks/task/${taskId}/execute-action`, request);
+    return response.data;
+};

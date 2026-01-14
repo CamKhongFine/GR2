@@ -204,15 +204,15 @@ public class TaskServiceImpl implements TaskService {
 
         validateTenantAccess(principal, task);
 
-        // Task must be CANCELLED before deletion
-        if (task.getStatus() != TaskStatus.CANCELLED) {
+        // Task must be COMPLETED or CANCELLED before deletion
+        if (task.getStatus() != TaskStatus.COMPLETED && task.getStatus() != TaskStatus.CANCELLED) {
             throw new IllegalStateException(
-                    "Task must be cancelled before deletion. Current status: " + task.getStatus());
+                    "Task can only be deleted when status is COMPLETED or CANCELLED. Current status: " + task.getStatus());
         }
 
         // Delete all related step tasks first
         stepTaskRepository.deleteByTaskId(taskId);
-        log.info("Deleted {} step tasks for task {}", stepTaskRepository.findByTaskId(taskId).size(), taskId);
+        log.info("Deleted step tasks for task {}", taskId);
 
         // Delete the task
         taskRepository.delete(task);
