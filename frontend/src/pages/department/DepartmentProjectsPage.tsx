@@ -250,7 +250,13 @@ const DepartmentProjectsPage: React.FC = () => {
                                 <Card
                                     key={project.id}
                                     hoverable
-                                    className="transition-all hover:shadow-md"
+                                    className="transition-all hover:shadow-lg"
+                                    style={{
+                                        borderRadius: 12,
+                                        border: '1px solid #52c41a',
+                                        background: 'linear-gradient(135deg, #f6ffed 0%, #ffffff 55%, #f0f5ff 100%)',
+                                        boxShadow: '0 8px 20px rgba(0,0,0,0.06)',
+                                    }}
                                     bodyStyle={{ padding: 16 }}
                                     actions={[
                                         <div style={{ padding: '8px 16px', borderTop: '1px solid #f0f0f0' }}>

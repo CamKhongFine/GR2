@@ -200,6 +200,7 @@ const DepartmentWorkspacePage: React.FC = () => {
             sidebarItems={sidebarItems}
             activeItem="department"
             themeColor="green"
+            headerOverSidebar
             leftHeaderContent={leftHeaderContent}
         >
             <div className="max-w-7xl mx-auto">

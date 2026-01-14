@@ -55,6 +55,7 @@ export interface WorkspaceLayoutProps {
     sidebarItems: SidebarItemConfig[];
     activeItem: string;
     themeColor?: 'blue' | 'green' | 'purple';
+    headerOverSidebar?: boolean;
     children: React.ReactNode;
 }
 
@@ -96,6 +97,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     sidebarItems,
     activeItem,
     themeColor = 'blue',
+    headerOverSidebar = false,
     children,
 }) => {
     const navigate = useNavigate();
@@ -134,7 +136,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     return (
         <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
             {/* Sidebar */}
-            <div className="w-[80px] h-screen bg-slate-800 border-r border-slate-700 flex flex-col items-center py-3 fixed left-0 top-0 z-50">
+            <div className="w-[80px] h-screen bg-slate-900 border-r border-slate-700 flex flex-col items-center py-3 fixed left-0 top-0 z-50">
                 <div className="mb-8">
                     <div className={`w-10 h-10 bg-gradient-to-br ${theme.gradient} rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
                         A
@@ -164,7 +166,10 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             {/* Main Content */}
             <div className="flex-1 ml-[80px] flex flex-col">
                 {/* Enterprise Application Header */}
-                <div className="h-14 flex items-center justify-between px-6 sticky top-0 z-40 bg-slate-900 border-b border-slate-700">
+                <div
+                    className="h-14 flex items-center justify-between px-6 sticky top-0 bg-slate-900 border-b border-slate-700"
+                    style={{ zIndex: headerOverSidebar ? 60 : 40 }}
+                >
                     {/* Left - Application Anchor */}
                     <div className="flex items-center gap-3">
                         {organizationalScope && (
