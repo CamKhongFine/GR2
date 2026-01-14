@@ -76,7 +76,8 @@ public class ProjectServiceImpl implements ProjectService {
         User creator = userRepository.findById(principal.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        Tenant tenant = tenantRepository.findById(creator.getId()).orElseThrow(RuntimeException::new);
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new IllegalArgumentException("Tenant not found"));
 
         Project project = new Project();
         project.setTenant(tenant);

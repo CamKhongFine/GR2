@@ -46,15 +46,11 @@ const WORKSPACE_CONFIG = {
         themeColor: 'blue' as const,
         gradient: 'from-blue-600 to-blue-700',
         sidebarItems: (user: UserResponse | null): SidebarItemConfig[] => {
-            const isDivisionLeader = user?.roles?.some(r => r.name === 'DIVISION_LEADER');
-            const label = isDivisionLeader ? 'Division' : 'Project';
-            const icon = isDivisionLeader ? <ApartmentOutlined /> : <ProjectOutlined />;
-
             return [
                 {
                     key: 'division',
-                    icon: icon,
-                    label: label,
+                    icon: <ApartmentOutlined />,
+                    label: 'Division',
                     path: '/division/dashboard',
                 },
                 {
@@ -66,8 +62,7 @@ const WORKSPACE_CONFIG = {
             ];
         },
         getHeaderName: (user: UserResponse | null) => {
-            const isDivisionLeader = user?.roles?.some(r => r.name === 'DIVISION_LEADER');
-            return user?.division?.name || (isDivisionLeader ? 'Division' : 'Project');
+            return user?.division?.name || 'Division';
         },
     },
     department: {
@@ -86,6 +81,12 @@ const WORKSPACE_CONFIG = {
                     icon: <CheckSquareOutlined />,
                     label: 'My Task',
                     path: '/department/my-tasks',
+                },
+                {
+                    key: 'project',
+                    icon: <ProjectOutlined />,
+                    label: 'Project',
+                    path: '/department/projects',
                 },
                 {
                     key: 'division',
@@ -138,8 +139,8 @@ const WorkspaceProfilePage: React.FC<WorkspaceProfilePageProps> = ({ workspaceTy
         storeUser?.roles?.some(r => r.name === 'DIVISION_LEADER')
         , [storeUser]);
 
-    const projectLabel = isDivisionLeader ? 'Division' : 'Project';
-    const projectIcon = isDivisionLeader ? <ApartmentOutlined /> : <ProjectOutlined />;
+    const projectLabel = workspaceType === 'department' ? 'Division' : (isDivisionLeader ? 'Division' : 'Project');
+    const projectIcon = workspaceType === 'department' ? <ApartmentOutlined /> : (isDivisionLeader ? <ApartmentOutlined /> : <ProjectOutlined />);
 
     // Get workspace config
     const config = WORKSPACE_CONFIG[workspaceType];

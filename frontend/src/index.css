@@ -11,3 +11,16 @@ body {
   padding: 0;
   background-color: #F5F7FA;
 }
+
+/* Style for search input placeholder */
+.search-input-white-placeholder .ant-input::placeholder {
+  color: #94a3b8 !important; /* slate-400 */
+  opacity: 1;
+  font-size: 13px;
+}
+
+.search-input-white-placeholder input::placeholder {
+  color: #94a3b8 !important; /* slate-400 */
+  opacity: 1;
+  font-size: 13px;
+}

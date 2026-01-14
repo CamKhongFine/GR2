@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
     Card,
     Typography,
@@ -18,11 +17,9 @@ import {
     Collapse,
 } from 'antd';
 import {
-    UserOutlined,
     TeamOutlined,
     CheckCircleOutlined,
     PlusOutlined,
-    ApartmentOutlined,
     ExclamationCircleOutlined,
     ClockCircleOutlined,
     EyeOutlined,
@@ -30,6 +27,7 @@ import {
     AlertOutlined,
     FolderOutlined,
     CheckSquareOutlined,
+    ProjectOutlined,
 } from '@ant-design/icons';
 import WorkspaceLayout, { SidebarItemConfig } from '../../layouts/WorkspaceLayout';
 import { useUserStore } from '../../store/userStore';
@@ -116,7 +114,6 @@ const MOCK_STAFF = [
 ];
 
 const DepartmentWorkspacePage: React.FC = () => {
-    const navigate = useNavigate();
     const [isCreateTaskDrawerOpen, setIsCreateTaskDrawerOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<typeof MOCK_STAFF[0] | null>(null);
     const [form] = Form.useForm();
@@ -140,10 +137,10 @@ const DepartmentWorkspacePage: React.FC = () => {
             path: '/department/my-tasks',
         },
         {
-            key: 'division',
-            icon: <ApartmentOutlined />,
-            label: 'Division',
-            path: '/division/dashboard',
+            key: 'project',
+            icon: <ProjectOutlined />,
+            label: 'Project',
+            path: '/department/projects',
         },
     ];
 
@@ -265,7 +262,7 @@ const DepartmentWorkspacePage: React.FC = () => {
                     />
                 </Card>
 
-                {/* Active Tasks by Project */}
+                {/* Active Tasks by Division */}
                 <Card className="shadow-sm mb-6">
                     <div className="flex items-center gap-2 mb-4">
                         <CheckCircleOutlined className="text-blue-500 text-lg" />
@@ -370,14 +367,11 @@ const DepartmentWorkspacePage: React.FC = () => {
                         <TextArea rows={3} placeholder="Enter task description" />
                     </Form.Item>
                     <Form.Item
-                        label="Project"
-                        name="projectId"
-                        rules={[{ required: true, message: 'Please select a project' }]}
+                        label="Division"
+                        name="divisionId"
+                        rules={[{ required: true, message: 'Please select a division' }]}
                     >
-                        <Select placeholder="Select project">
-                            {MOCK_TASKS_BY_PROJECT.map((p) => (
-                                <Select.Option key={p.projectId} value={p.projectId}>{p.projectName}</Select.Option>
-                            ))}
+                        <Select placeholder="Select division">
                         </Select>
                     </Form.Item>
                     <Form.Item

@@ -55,7 +55,6 @@ export interface WorkspaceLayoutProps {
     sidebarItems: SidebarItemConfig[];
     activeItem: string;
     themeColor?: 'blue' | 'green' | 'purple';
-    leftHeaderContent?: React.ReactNode;
     children: React.ReactNode;
 }
 
@@ -97,7 +96,6 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     sidebarItems,
     activeItem,
     themeColor = 'blue',
-    leftHeaderContent,
     children,
 }) => {
     const navigate = useNavigate();
@@ -114,6 +112,13 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         const firstName = user.firstName || '';
         const lastName = user.lastName || '';
         return `${firstName} ${lastName}`.trim() || user.email;
+    }, [user]);
+
+    // Get organizational scope
+    const organizationalScope = useMemo(() => {
+        if (user?.department?.name) return user.department.name;
+        if (user?.division?.name) return user.division.name;
+        return null;
     }, [user]);
 
 
@@ -158,38 +163,45 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
             {/* Main Content */}
             <div className="flex-1 ml-[80px] flex flex-col">
-                {/* Header with Enhanced Background */}
-                <div className="h-16 flex items-center justify-between px-8 sticky top-0 z-40 bg-white shadow-sm border-b border-gray-200">
-                    <div className="flex items-center gap-4">
-                        {leftHeaderContent}
+                {/* Enterprise Application Header */}
+                <div className="h-14 flex items-center justify-between px-6 sticky top-0 z-40 bg-slate-900 border-b border-slate-700">
+                    {/* Left - Application Anchor */}
+                    <div className="flex items-center gap-3">
+                        {organizationalScope && (
+                            <span className="text-sm font-medium text-slate-300">
+                                {organizationalScope}
+                            </span>
+                        )}
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    {/* Center - Breathing Space */}
+                    <div className="flex-1" />
+
+                    {/* Right - Utilities */}
+                    <div className="flex items-center gap-3">
                         {/* Search Input */}
                         <Input
                             placeholder="Search..."
-                            prefix={<SearchOutlined className="text-gray-400" />}
-                            className="w-56 rounded-lg"
-                            size="middle"
+                            prefix={<SearchOutlined className="text-slate-400" />}
+                            className="w-48 bg-slate-800 border-slate-700 text-slate-200 search-input-white-placeholder"
+                            size="small"
+                            style={{ borderRadius: 6 }}
                         />
 
-                        {/* Messenger Button */}
-                        <div
-                            className="w-11 h-11 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center shadow-sm cursor-pointer hover:shadow-md hover:from-blue-100 hover:to-blue-200 transition-all relative border border-blue-200"
-                            title="Messenger"
-                        >
-                            <MessageOutlined className="text-xl text-blue-600" />
+                        {/* Message Button */}
+                        <div className="w-9 h-9 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-700 transition-colors">
+                            <MessageOutlined className="text-base text-slate-300" />
                         </div>
 
                         {/* Notification Button */}
-                        <div className="w-11 h-11 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl flex items-center justify-center shadow-sm cursor-pointer hover:shadow-md hover:from-orange-100 hover:to-orange-200 transition-all relative border border-orange-200">
-                            <BellOutlined className="text-xl text-orange-600" />
-                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
-                                <span className="text-[10px] text-white font-bold">3</span>
+                        <div className="w-9 h-9 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-700 transition-colors relative">
+                            <BellOutlined className="text-base text-slate-300" />
+                            <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                                <span className="text-[9px] text-white font-semibold">3</span>
                             </div>
                         </div>
 
-                        {/* User Info - Dropdown menu */}
+                        {/* User Avatar - Dropdown menu */}
                         <Dropdown
                             menu={{
                                 items: [
@@ -223,19 +235,14 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                             }}
                             trigger={['click']}
                             placement="bottomRight"
-                            overlayStyle={{ marginTop: 15, minWidth: 140 }}
+                            overlayStyle={{ marginTop: 10, minWidth: 140 }}
                         >
-                            <div
-                                className="flex items-center gap-3 cursor-pointer pl-4 ml-2 border-l border-gray-200 hover:bg-gray-50 py-1 px-3 rounded-lg transition-colors"
-                            >
-                                <div className="text-right hidden md:block">
-                                    <div className="text-sm font-bold text-gray-800">{displayName}</div>
-                                </div>
+                            <div className="flex items-center gap-2 cursor-pointer pl-3 border-l border-slate-700 hover:bg-slate-800 py-1 px-2 rounded transition-colors">
                                 <Avatar
-                                    size={44}
+                                    size={32}
                                     src={user?.avatarUrl}
                                     icon={!user?.avatarUrl ? <UserOutlined /> : undefined}
-                                    className="border-2 border-gray-200 shadow-sm"
+                                    className="border border-slate-600"
                                 />
                             </div>
                         </Dropdown>
