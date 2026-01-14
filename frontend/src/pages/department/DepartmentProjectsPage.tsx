@@ -253,22 +253,25 @@ const DepartmentProjectsPage: React.FC = () => {
                                     className="transition-all hover:shadow-lg"
                                     style={{
                                         borderRadius: 12,
-                                        border: '1px solid #52c41a',
-                                        background: 'linear-gradient(135deg, #f6ffed 0%, #ffffff 55%, #f0f5ff 100%)',
+                                        border: '1px solid #B3BFFF',
+                                        background: '#FFF58A',
                                         boxShadow: '0 8px 20px rgba(0,0,0,0.06)',
                                     }}
                                     bodyStyle={{ padding: 16 }}
                                     actions={[
-                                        <div style={{ padding: '8px 16px', borderTop: '1px solid #f0f0f0' }}>
+                                        <div style={{ padding: '10px 16px' }}>
                                             <Button
-                                                type="text"
+                                                type="primary"
                                                 icon={<RightOutlined />}
                                                 onClick={() => handleOpenProject(project)}
                                                 size="small"
                                                 style={{ 
-                                                    color: '#8c8c8c',
-                                                    fontWeight: 400,
-                                                    fontSize: 12
+                                                    backgroundColor: '#1677ff',
+                                                    borderColor: '#1677ff',
+                                                    color: '#ffffff',
+                                                    fontWeight: 600,
+                                                    fontSize: 12,
+                                                    borderRadius: 8
                                                 }}
                                             >
                                                 Open
