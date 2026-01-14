@@ -42,7 +42,7 @@ import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
-const STATUS_FILTER_OPTIONS = ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+const STATUS_FILTER_OPTIONS = ['RUNNING', 'COMPLETED', 'CANCELLED'];
 const PRIORITY_FILTER_OPTIONS: TaskPriority[] = ['LOW', 'NORMAL', 'HIGH'];
 
 const DepartmentProjectTaskPage: React.FC = () => {
@@ -110,11 +110,10 @@ const DepartmentProjectTaskPage: React.FC = () => {
     const getStatusStyle = (status: string) => {
         const styles: Record<string, { bg: string; border: string; text: string }> = {
             'COMPLETED': { bg: '#f0fdf4', border: '#86efac', text: '#166534' },
-            'IN_PROGRESS': { bg: '#eff6ff', border: '#93c5fd', text: '#1e40af' },
-            'OPEN': { bg: '#fffbeb', border: '#fde68a', text: '#92400e' },
+            'RUNNING': { bg: '#eff6ff', border: '#93c5fd', text: '#1e40af' },
             'CANCELLED': { bg: '#f9fafb', border: '#e5e7eb', text: '#6b7280' },
         };
-        return styles[status] || styles['OPEN'];
+        return styles[status] || styles['RUNNING'];
     };
 
     const getPriorityStyle = (priority: TaskPriority | null) => {
@@ -132,9 +131,8 @@ const DepartmentProjectTaskPage: React.FC = () => {
             dataIndex: 'title',
             key: 'title',
             render: (_: unknown, record: TaskResponse) => (
-                <div>
-                    <div style={{ fontWeight: 600, color: '#111827', fontSize: 14, lineHeight: 1.5, marginBottom: 2 }}>{record.title}</div>
-                    <div style={{ fontSize: 12, color: '#9ca3af', fontWeight: 400 }}>#{record.id}</div>
+                <div style={{ fontWeight: 600, color: '#111827', fontSize: 14, lineHeight: 1.5 }}>
+                    {record.title}
                 </div>
             ),
         },
@@ -200,14 +198,28 @@ const DepartmentProjectTaskPage: React.FC = () => {
             },
         },
         {
-            title: 'Last Updated',
-            dataIndex: 'updatedAt',
-            key: 'updatedAt',
-            render: (value: string) => (
-                <Text style={{ fontSize: 12, color: '#9ca3af', fontWeight: 400 }}>
-                    {value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '-'}
-                </Text>
-            ),
+            title: 'Deadline',
+            dataIndex: 'endDate',
+            key: 'deadline',
+            render: (_: unknown, record: TaskResponse) => {
+                if (!record.endDate) return <Text style={{ fontSize: 12, color: '#9ca3af' }}>-</Text>;
+                const endDate = dayjs(record.endDate);
+                const today = dayjs();
+                const daysLeft = endDate.diff(today, 'day');
+                const isOverdue = daysLeft < 0;
+                const isDueSoon = daysLeft >= 0 && daysLeft <= 3;
+
+                return (
+                    <div>
+                        <Text style={{ fontSize: 12, color: isOverdue ? '#dc2626' : isDueSoon ? '#f59e0b' : '#374151' }}>
+                            {endDate.format('MMM D, YYYY')}
+                        </Text>
+                        <div style={{ fontSize: 11, color: isOverdue ? '#dc2626' : isDueSoon ? '#f59e0b' : '#9ca3af' }}>
+                            {isOverdue ? `${Math.abs(daysLeft)} days overdue` : daysLeft === 0 ? 'Due today' : `${daysLeft} days left`}
+                        </div>
+                    </div>
+                );
+            },
         },
     ];
 

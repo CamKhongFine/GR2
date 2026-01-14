@@ -2,6 +2,7 @@ import apiClient from '../lib/apiClient';
 
 // Types matching backend DTOs
 export type TaskPriority = 'LOW' | 'NORMAL' | 'HIGH';
+export type TaskStatus = 'RUNNING' | 'COMPLETED' | 'CANCELLED';
 
 export interface TaskResponse {
     id: number;
@@ -11,7 +12,7 @@ export interface TaskResponse {
     workflowName: string | null;
     title: string;
     description: string | null;
-    status: string;
+    status: TaskStatus;
     priority: TaskPriority | null;
     currentStepId: number | null;
     currentStepName: string | null;
@@ -37,6 +38,8 @@ export interface UpdateTaskRequest {
     title?: string;
     description?: string;
     priority?: TaskPriority;
+    status?: TaskStatus;
+    projectId?: number;
     beginDate?: string;
     endDate?: string;
 }

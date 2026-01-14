@@ -3,33 +3,25 @@ package com.hust.auraflow.common.enums;
 import java.util.Arrays;
 
 /**
- * Represents the overall lifecycle status of a workflow task (similar to Jira
- * issue status).
- * This status tracks the high-level state of the entire workflow instance,
- * not individual step executions.
+ * Represents the overall lifecycle status of a workflow task.
+ * This status tracks the high-level state of the entire workflow instance.
  *
  * <p>
  * Lifecycle flow:
  * </p>
  * 
  * <pre>
- * PENDING → IN_PROGRESS → COMPLETED
- *                       ↘ CANCELLED
+ * RUNNING → COMPLETED
+ *        ↘ CANCELLED
  * </pre>
  */
 public enum TaskStatus {
 
     /**
-     * Task has been created but the workflow has not started execution yet.
+     * Workflow is actively running with one or more step tasks in progress.
      * This is the initial state when a task is first created.
      */
-    PENDING("PENDING", "Pending"),
-
-    /**
-     * Workflow is actively running with one or more step tasks in progress.
-     * The workflow engine is processing steps and waiting for user actions.
-     */
-    IN_PROGRESS("IN_PROGRESS", "In Progress"),
+    RUNNING("RUNNING", "Running"),
 
     /**
      * Workflow has successfully reached an END step.
@@ -39,9 +31,7 @@ public enum TaskStatus {
 
     /**
      * Task was manually cancelled before reaching completion.
-     * This is a terminal state triggered by user action, not by business rules like
-     * rejection.
-     * Cancellation invalidates all pending step tasks.
+     * This is a terminal state triggered by user action.
      */
     CANCELLED("CANCELLED", "Cancelled");
 

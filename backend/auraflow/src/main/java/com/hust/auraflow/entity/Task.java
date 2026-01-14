@@ -1,5 +1,6 @@
 package com.hust.auraflow.entity;
 
+import com.hust.auraflow.common.enums.TaskStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -36,8 +37,9 @@ public class Task {
     @Column(name = "description", length = Integer.MAX_VALUE)
     private String description;
 
-    @Column(name = "status", length = Integer.MAX_VALUE)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private TaskStatus status;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "priority")
