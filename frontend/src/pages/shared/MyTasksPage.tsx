@@ -71,24 +71,21 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
         return matchesSearch && matchesPriority;
     });
 
-    // Get priority display with modern gradient badge
+    // Get priority display with solid color badge
     const getPriorityDisplay = (priority?: 'LOW' | 'NORMAL' | 'HIGH') => {
         const priorityText = priority || 'NORMAL';
         const badgeConfig = {
             'HIGH': {
-                gradient: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%)',
+                bg: '#ef4444',
                 text: '#fff',
-                shadow: '0 2px 8px rgba(238, 90, 90, 0.3)',
             },
             'NORMAL': {
-                gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                bg: '#3b82f6',
                 text: '#fff',
-                shadow: '0 2px 8px rgba(79, 172, 254, 0.3)',
             },
             'LOW': {
-                gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                text: '#666',
-                shadow: '0 2px 8px rgba(168, 237, 234, 0.3)',
+                bg: '#9ca3af',
+                text: '#fff',
             },
         };
         const config = badgeConfig[priorityText];
@@ -97,13 +94,12 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                 style={{
                     display: 'inline-block',
                     padding: '4px 12px',
-                    background: config.gradient,
+                    background: config.bg,
                     borderRadius: 20,
                     fontSize: 11,
                     color: config.text,
                     fontWeight: 600,
                     letterSpacing: '0.5px',
-                    boxShadow: config.shadow,
                     textTransform: 'uppercase',
                 }}
             >
@@ -112,7 +108,7 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
         );
     };
 
-    // Get assigner display with gradient avatar
+    // Get assigner display with solid color avatar
     const getAssignerDisplay = (creatorName: string | null | undefined) => {
         if (!creatorName) {
             return <Text style={{ fontSize: 13, color: '#9ca3af' }}>—</Text>;
@@ -125,13 +121,7 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
             .slice(0, 2);
 
         // Generate color based on name
-        const colors = [
-            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-        ];
+        const colors = ['#6366f1', '#ec4899', '#3b82f6', '#10b981', '#f59e0b'];
         const colorIndex = creatorName.charCodeAt(0) % colors.length;
 
         return (
@@ -148,7 +138,6 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                         color: '#fff',
                         fontSize: 12,
                         fontWeight: 600,
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                     }}
                 >
                     {initials}
@@ -205,7 +194,7 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                     alignItems: 'center',
                     gap: 8,
                     padding: '4px 12px',
-                    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                    background: '#e0f2fe',
                     borderRadius: 8,
                     width: 'fit-content',
                 }}>
@@ -273,11 +262,11 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                 {/* Modern Header with Stats */}
                 <div
                     style={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        background: '#4f46e5',
                         borderRadius: 16,
                         padding: '28px 32px',
                         marginBottom: 24,
-                        boxShadow: '0 10px 40px rgba(102, 126, 234, 0.3)',
+                        boxShadow: '0 10px 40px rgba(79, 70, 229, 0.25)',
                     }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -395,7 +384,7 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                                     width: 80,
                                     height: 80,
                                     borderRadius: '50%',
-                                    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                                    background: '#e0f2fe',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -442,7 +431,7 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                                             {...props}
                                             style={{
                                                 ...props.style,
-                                                background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+                                                background: '#f8fafc',
                                                 borderBottom: '1px solid #e2e8f0',
                                                 padding: '14px 20px',
                                                 fontWeight: 600,

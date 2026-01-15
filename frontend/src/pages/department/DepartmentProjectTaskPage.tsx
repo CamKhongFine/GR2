@@ -2,17 +2,12 @@ import React, { useMemo, useState } from 'react';
 import {
     Card,
     Typography,
-    Space,
     Button,
     Input,
     Select,
     Table,
     Tag,
-    Avatar,
-    Drawer,
-    Descriptions,
     Spin,
-    Empty,
     message,
     Modal,
     Form,
@@ -29,6 +24,13 @@ import {
     EditOutlined,
     DeleteOutlined,
     MoreOutlined,
+    ClockCircleOutlined,
+    CheckCircleOutlined,
+    CloseCircleOutlined,
+    SyncOutlined,
+    RightOutlined,
+    InboxOutlined,
+    FileTextOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
@@ -48,7 +50,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
-const { Text } = Typography;
+const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const STATUS_FILTER_OPTIONS = ['RUNNING', 'COMPLETED', 'CANCELLED'];
@@ -103,6 +105,11 @@ const DepartmentProjectTaskPage: React.FC = () => {
     });
 
     const tasks = tasksData?.content || [];
+
+    // Stats
+    const totalTasks = tasks.length;
+    const runningCount = tasks.filter(t => t.status === 'RUNNING').length;
+    const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
 
     // Update task mutation
     const updateTaskMutation = useMutation({
@@ -159,22 +166,122 @@ const DepartmentProjectTaskPage: React.FC = () => {
         },
     ];
 
-    const getStatusStyle = (status: string) => {
-        const styles: Record<string, { bg: string; border: string; text: string }> = {
-            'COMPLETED': { bg: '#f0fdf4', border: '#86efac', text: '#166534' },
-            'RUNNING': { bg: '#eff6ff', border: '#93c5fd', text: '#1e40af' },
-            'CANCELLED': { bg: '#f9fafb', border: '#e5e7eb', text: '#6b7280' },
+    // Get status display with solid color badge
+    const getStatusDisplay = (status: string) => {
+        const config: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
+            'COMPLETED': {
+                bg: '#10b981',
+                text: '#fff',
+                icon: <CheckCircleOutlined style={{ fontSize: 12 }} />,
+            },
+            'RUNNING': {
+                bg: '#3b82f6',
+                text: '#fff',
+                icon: <SyncOutlined spin style={{ fontSize: 12 }} />,
+            },
+            'CANCELLED': {
+                bg: '#9ca3af',
+                text: '#fff',
+                icon: <CloseCircleOutlined style={{ fontSize: 12 }} />,
+            },
         };
-        return styles[status] || styles['RUNNING'];
+        const statusConfig = config[status] || config['RUNNING'];
+        return (
+            <span
+                style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 12px',
+                    background: statusConfig.bg,
+                    borderRadius: 20,
+                    fontSize: 11,
+                    color: statusConfig.text,
+                    fontWeight: 600,
+                    letterSpacing: '0.3px',
+                }}
+            >
+                {statusConfig.icon}
+                {status}
+            </span>
+        );
     };
 
-    const getPriorityStyle = (priority: TaskPriority | null) => {
-        const styles: Record<string, { color: string }> = {
-            'HIGH': { color: 'red' },
-            'NORMAL': { color: 'blue' },
-            'LOW': { color: 'default' },
+    // Get priority display with solid color badge
+    const getPriorityDisplay = (priority: TaskPriority | null) => {
+        const priorityText = priority || 'NORMAL';
+        const config: Record<string, { bg: string; text: string }> = {
+            'HIGH': {
+                bg: '#ef4444',
+                text: '#fff',
+            },
+            'NORMAL': {
+                bg: '#3b82f6',
+                text: '#fff',
+            },
+            'LOW': {
+                bg: '#9ca3af',
+                text: '#fff',
+            },
         };
-        return styles[priority || 'NORMAL'] || styles['NORMAL'];
+        const priorityConfig = config[priorityText];
+        return (
+            <span
+                style={{
+                    display: 'inline-block',
+                    padding: '4px 12px',
+                    background: priorityConfig.bg,
+                    borderRadius: 20,
+                    fontSize: 11,
+                    color: priorityConfig.text,
+                    fontWeight: 600,
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                }}
+            >
+                {priorityText}
+            </span>
+        );
+    };
+
+    // Get creator display with solid color avatar
+    const getCreatorDisplay = (creatorName: string | null) => {
+        if (!creatorName) {
+            return <Text style={{ fontSize: 13, color: '#9ca3af' }}>Unknown</Text>;
+        }
+        const initials = creatorName
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+
+        const colors = ['#6366f1', '#ec4899', '#3b82f6', '#10b981', '#f59e0b'];
+        const colorIndex = creatorName.charCodeAt(0) % colors.length;
+
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                    style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        background: colors[colorIndex],
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: 600,
+                    }}
+                >
+                    {initials}
+                </div>
+                <Text style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>
+                    {creatorName}
+                </Text>
+            </div>
+        );
     };
 
     const handleUpdate = (record: TaskResponse, e?: React.MouseEvent) => {
@@ -196,8 +303,7 @@ const DepartmentProjectTaskPage: React.FC = () => {
 
     const handleDelete = (record: TaskResponse, e: React.MouseEvent) => {
         e.stopPropagation();
-        
-        // Check if task can be deleted
+
         if (record.status !== 'COMPLETED' && record.status !== 'CANCELLED') {
             message.warning('Request can only be deleted when status is COMPLETED or CANCELLED');
             return;
@@ -240,82 +346,71 @@ const DepartmentProjectTaskPage: React.FC = () => {
 
     const columns = [
         {
-            title: 'Request',
+            title: 'REQUEST',
             dataIndex: 'title',
             key: 'title',
             render: (_: unknown, record: TaskResponse) => (
-                <div style={{ fontWeight: 600, color: '#111827', fontSize: 14, lineHeight: 1.5 }}>
-                    {record.title}
+                <div>
+                    <Text strong style={{ fontSize: 15, color: '#111827', fontWeight: 600, display: 'block' }}>
+                        {record.title}
+                    </Text>
                 </div>
             ),
         },
         {
-            title: 'Current Step',
+            title: 'CURRENT STEP',
             dataIndex: 'currentStepName',
             key: 'currentStepName',
+            width: 180,
             render: (value: string | null) => (
-                <Text style={{ fontSize: 13, color: '#374151', fontWeight: 400 }}>{value || '-'}</Text>
+                value ? (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '4px 12px',
+                        background: '#e0f2fe',
+                        borderRadius: 8,
+                        width: 'fit-content',
+                    }}>
+                        <FileTextOutlined style={{ fontSize: 14, color: '#0284c7' }} />
+                        <Text style={{ fontSize: 13, color: '#0369a1', fontWeight: 500 }}>
+                            {value}
+                        </Text>
+                    </div>
+                ) : (
+                    <Text style={{ fontSize: 13, color: '#9ca3af' }}>—</Text>
+                )
             ),
         },
         {
-            title: 'Creator',
+            title: 'CREATOR',
             dataIndex: 'creatorName',
             key: 'creatorName',
-            render: (value: string | null) => (
-                <Space size={10} style={{ alignItems: 'center' }}>
-                    <Avatar
-                        size={28}
-                        style={{
-                            backgroundColor: '#e5e7eb',
-                            color: '#374151',
-                            fontSize: 12,
-                            fontWeight: 500,
-                        }}
-                    >
-                        {value?.charAt(0) || '?'}
-                    </Avatar>
-                    <Text style={{ fontSize: 13, color: '#374151', fontWeight: 400 }}>{value || 'Unknown'}</Text>
-                </Space>
-            ),
+            width: 200,
+            render: (value: string | null) => getCreatorDisplay(value),
         },
         {
-            title: 'Priority',
+            title: 'PRIORITY',
             dataIndex: 'priority',
             key: 'priority',
-            render: (value: TaskPriority | null) => (
-                <Tag color={getPriorityStyle(value).color}>{value || 'NORMAL'}</Tag>
-            ),
+            width: 120,
+            render: (value: TaskPriority | null) => getPriorityDisplay(value),
         },
         {
-            title: 'Status',
+            title: 'STATUS',
             dataIndex: 'status',
             key: 'status',
-            render: (value: string) => {
-                const style = getStatusStyle(value);
-                return (
-                    <span
-                        style={{
-                            display: 'inline-block',
-                            fontSize: 12,
-                            fontWeight: 500,
-                            padding: '4px 10px',
-                            borderRadius: 6,
-                            backgroundColor: style.bg,
-                            border: `1px solid ${style.border}`,
-                            color: style.text,
-                        }}
-                    >
-                        {value}
-                    </span>
-                );
-            },
+            width: 140,
+            render: (value: string) => getStatusDisplay(value),
         },
         {
-            title: 'Deadline',
+            title: 'DEADLINE',
             dataIndex: 'endDate',
             key: 'deadline',
+            width: 150,
             render: (_: unknown, record: TaskResponse) => {
-                if (!record.endDate) return <Text style={{ fontSize: 12, color: '#9ca3af' }}>-</Text>;
+                if (!record.endDate) return <Text style={{ fontSize: 12, color: '#9ca3af' }}>—</Text>;
                 const endDate = dayjs(record.endDate);
                 const today = dayjs();
                 const daysLeft = endDate.diff(today, 'day');
@@ -324,23 +419,30 @@ const DepartmentProjectTaskPage: React.FC = () => {
 
                 return (
                     <div>
-                        <Text style={{ fontSize: 12, color: isOverdue ? '#dc2626' : isDueSoon ? '#f59e0b' : '#374151' }}>
-                            {endDate.format('MMM D, YYYY')}
-                        </Text>
-                        <div style={{ fontSize: 11, color: isOverdue ? '#dc2626' : isDueSoon ? '#f59e0b' : '#9ca3af' }}>
-                            {isOverdue ? `${Math.abs(daysLeft)} days overdue` : daysLeft === 0 ? 'Due today' : `${daysLeft} days left`}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <ClockCircleOutlined style={{
+                                fontSize: 12,
+                                color: isOverdue ? '#dc2626' : isDueSoon ? '#f59e0b' : '#6b7280'
+                            }} />
+                            <Text style={{
+                                fontSize: 13,
+                                color: isOverdue ? '#dc2626' : isDueSoon ? '#f59e0b' : '#374151',
+                                fontWeight: 500,
+                            }}>
+                                {endDate.format('MMM D, YYYY')}
+                            </Text>
                         </div>
                     </div>
                 );
             },
         },
         {
-            title: 'Actions',
+            title: '',
             key: 'actions',
             width: 80,
             render: (_: unknown, record: TaskResponse) => {
                 const canDelete = canDeleteTask(record.status);
-                
+
                 const menuItems: MenuProps['items'] = [
                     {
                         key: 'update',
@@ -369,27 +471,31 @@ const DepartmentProjectTaskPage: React.FC = () => {
                 ];
 
                 return (
-                    <Dropdown
-                        menu={{ items: menuItems }}
-                        trigger={['click']}
-                        placement="bottomRight"
-                    >
-                        <Button
-                            type="text"
-                            icon={<MoreOutlined />}
-                            size="small"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                            }}
-                            style={{
-                                fontSize: 18,
-                                color: '#8c8c8c',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        />
-                    </Dropdown>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Dropdown
+                            menu={{ items: menuItems }}
+                            trigger={['click']}
+                            placement="bottomRight"
+                        >
+                            <Button
+                                type="text"
+                                icon={<MoreOutlined />}
+                                size="small"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                }}
+                                style={{
+                                    fontSize: 18,
+                                    color: '#6b7280',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: 8,
+                                }}
+                            />
+                        </Dropdown>
+                        <RightOutlined style={{ fontSize: 12, color: '#9ca3af' }} />
+                    </div>
                 );
             },
         },
@@ -410,134 +516,260 @@ const DepartmentProjectTaskPage: React.FC = () => {
             themeColor="green"
         >
             <div className="max-w-7xl mx-auto px-4">
+                {/* Back Button and Project Selector */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                    <Button
+                        type="text"
+                        icon={<LeftOutlined />}
+                        onClick={() => navigate('/department/projects')}
+                        style={{
+                            paddingInline: 0,
+                            height: 36,
+                            fontSize: 14,
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: '#374151',
+                            fontWeight: 500,
+                        }}
+                    >
+                        Back to Projects
+                    </Button>
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            padding: '0 14px',
+                            height: 42,
+                            backgroundColor: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: 10,
+                        }}
+                    >
+                        <FolderOutlined style={{ color: '#64748b', fontSize: 14 }} />
+                        <Select
+                            size="middle"
+                            bordered={false}
+                            style={{
+                                minWidth: 200,
+                                fontWeight: 500,
+                                fontSize: 13,
+                            }}
+                            placeholder="Switch project"
+                            value={currentProject?.id}
+                            onChange={handleProjectChange}
+                            options={projects.map((p) => ({
+                                label: p.name,
+                                value: p.id,
+                            }))}
+                            suffixIcon={<SwapOutlined style={{ color: '#64748b', fontSize: 12 }} />}
+                        />
+                    </div>
+                </div>
+
+                {/* Project Header with Stats */}
+                <div
+                    style={{
+                        background: '#4f46e5',
+                        borderRadius: 16,
+                        padding: '24px 28px',
+                        marginBottom: 24,
+                        boxShadow: '0 10px 40px rgba(79, 70, 229, 0.25)',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                                <div
+                                    style={{
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 12,
+                                        background: 'rgba(255, 255, 255, 0.2)',
+                                        backdropFilter: 'blur(8px)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <FolderOutlined style={{ fontSize: 22, color: '#fff' }} />
+                                </div>
+                                <div>
+                                    <Title level={3} style={{ margin: 0, color: '#fff', fontWeight: 700 }}>
+                                        {currentProject?.name || 'Project'}
+                                    </Title>
+                                    <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 13 }}>
+                                        Project Requests
+                                    </Text>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Stats Cards */}
+                        <div style={{ display: 'flex', gap: 12 }}>
+                            <div
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.15)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 12,
+                                    padding: '12px 18px',
+                                    textAlign: 'center',
+                                    minWidth: 80,
+                                }}
+                            >
+                                <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>
+                                    {totalTasks}
+                                </div>
+                                <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.8)', fontWeight: 500 }}>
+                                    Total
+                                </div>
+                            </div>
+                            <div
+                                style={{
+                                    background: 'rgba(59, 130, 246, 0.3)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 12,
+                                    padding: '12px 18px',
+                                    textAlign: 'center',
+                                    minWidth: 80,
+                                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                                }}
+                            >
+                                <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>
+                                    {runningCount}
+                                </div>
+                                <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.8)', fontWeight: 500 }}>
+                                    Running
+                                </div>
+                            </div>
+                            <div
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.25)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 12,
+                                    padding: '12px 18px',
+                                    textAlign: 'center',
+                                    minWidth: 80,
+                                }}
+                            >
+                                <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>
+                                    {completedCount}
+                                </div>
+                                <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.8)', fontWeight: 500 }}>
+                                    Done
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Action Bar */}
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 16,
+                        marginBottom: 20,
+                        flexWrap: 'wrap',
+                    }}
+                >
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => setIsCreateDrawerOpen(true)}
+                        style={{
+                            height: 42,
+                            paddingLeft: 20,
+                            paddingRight: 20,
+                            fontSize: 14,
+                            fontWeight: 600,
+                            borderRadius: 10,
+                            background: '#4f46e5',
+                            border: 'none',
+                        }}
+                    >
+                        New Request
+                    </Button>
+
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <Input
+                            placeholder="Search requests..."
+                            prefix={<SearchOutlined style={{ color: '#9ca3af' }} />}
+                            value={searchValue}
+                            onChange={(e) => setSearchValue(e.target.value)}
+                            style={{
+                                width: 240,
+                                height: 42,
+                                borderRadius: 10,
+                                border: '1px solid #e5e7eb',
+                            }}
+                            allowClear
+                        />
+                        <Select
+                            allowClear
+                            placeholder="Status"
+                            style={{ width: 130, height: 42 }}
+                            value={statusFilter}
+                            onChange={setStatusFilter}
+                            options={STATUS_FILTER_OPTIONS.map((status) => ({
+                                label: status.replace('_', ' '),
+                                value: status,
+                            }))}
+                        />
+                        <Select
+                            allowClear
+                            placeholder="Priority"
+                            style={{ width: 120, height: 42 }}
+                            value={priorityFilter}
+                            onChange={setPriorityFilter}
+                            options={PRIORITY_FILTER_OPTIONS.map((priority) => ({
+                                label: priority,
+                                value: priority,
+                            }))}
+                        />
+                    </div>
+                </div>
+
+                {/* Tasks Table */}
                 <Card
                     style={{
-                        marginBottom: 20,
-                        borderRadius: 8,
+                        borderRadius: 16,
                         border: 'none',
-                        backgroundColor: 'transparent',
-                        boxShadow: 'none',
+                        backgroundColor: '#ffffff',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+                        overflow: 'hidden',
                     }}
                     bodyStyle={{ padding: 0 }}
                 >
-                    <div className="flex items-center justify-between gap-4 mb-6">
-                        <Button
-                            type="text"
-                            icon={<LeftOutlined />}
-                            onClick={() => navigate('/department/projects')}
-                            style={{
-                                paddingInline: 0,
-                                height: 32,
-                                fontSize: 13,
-                                display: 'flex',
-                                alignItems: 'center',
-                                color: '#374151',
-                            }}
-                        >
-                            Projects
-                        </Button>
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                padding: '6px 12px',
-                                backgroundColor: '#f8fafc',
-                                border: '1.5px solid #cbd5e1',
-                                borderRadius: 8,
-                                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                            }}
-                        >
-                            <FolderOutlined style={{ color: '#475569', fontSize: 14 }} />
-                            <Select
-                                size="small"
-                                bordered={false}
-                                style={{
-                                    minWidth: 200,
-                                    fontWeight: 500,
-                                    fontSize: 13,
-                                }}
-                                placeholder="Switch project"
-                                value={currentProject?.id}
-                                onChange={handleProjectChange}
-                                options={projects.map((p) => ({
-                                    label: p.name,
-                                    value: p.id,
-                                }))}
-                                suffixIcon={<SwapOutlined style={{ color: '#64748b', fontSize: 12 }} />}
-                            />
-                        </div>
-                    </div>
-                </Card>
-
-                <Card
-                    style={{
-                        borderRadius: 8,
-                        border: '1px solid #e5e7eb',
-                        backgroundColor: '#ffffff',
-                        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                    }}
-                    bodyStyle={{ padding: 20 }}
-                >
-                    <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
-                        <Button
-                            type="primary"
-                            icon={<PlusOutlined />}
-                            onClick={() => setIsCreateDrawerOpen(true)}
-                            size="middle"
-                            style={{
-                                height: 36,
-                                paddingLeft: 16,
-                                paddingRight: 16,
-                                fontSize: 13,
-                                fontWeight: 500,
-                            }}
-                        >
-                            Create Request
-                        </Button>
-                        <Space size={10} wrap>
-                            <Input
-                                placeholder="Search requests"
-                                prefix={<SearchOutlined style={{ color: '#9ca3af' }} />}
-                                value={searchValue}
-                                onChange={(e) => setSearchValue(e.target.value)}
-                                style={{ width: 240 }}
-                                allowClear
-                                size="small"
-                            />
-                            <Select
-                                allowClear
-                                size="small"
-                                placeholder="Status"
-                                style={{ width: 140 }}
-                                value={statusFilter}
-                                onChange={setStatusFilter}
-                                options={STATUS_FILTER_OPTIONS.map((status) => ({
-                                    label: status.replace('_', ' '),
-                                    value: status,
-                                }))}
-                            />
-                            <Select
-                                allowClear
-                                size="small"
-                                placeholder="Priority"
-                                style={{ width: 120 }}
-                                value={priorityFilter}
-                                onChange={setPriorityFilter}
-                                options={PRIORITY_FILTER_OPTIONS.map((priority) => ({
-                                    label: priority,
-                                    value: priority,
-                                }))}
-                            />
-                        </Space>
-                    </div>
-
                     {tasksLoading ? (
-                        <div style={{ textAlign: 'center', padding: 40 }}>
+                        <div style={{ textAlign: 'center', padding: 60 }}>
                             <Spin size="large" />
+                            <div style={{ marginTop: 16, color: '#6b7280' }}>Loading requests...</div>
                         </div>
                     ) : tasks.length === 0 ? (
-                        <Empty description="No requests found" />
+                        <div style={{ padding: '80px 0', textAlign: 'center' }}>
+                            <div
+                                style={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: '50%',
+                                    background: '#d1fae5',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    margin: '0 auto 20px',
+                                }}
+                            >
+                                <InboxOutlined style={{ fontSize: 36, color: '#10b981' }} />
+                            </div>
+                            <Title level={4} style={{ color: '#374151', marginBottom: 8 }}>
+                                No requests found
+                            </Title>
+                            <Text style={{ color: '#9ca3af' }}>
+                                Create a new request to get started
+                            </Text>
+                        </div>
                     ) : (
                         <Table
                             rowKey="id"
@@ -547,12 +779,17 @@ const DepartmentProjectTaskPage: React.FC = () => {
                             size="middle"
                             onRow={(record: TaskResponse) => ({
                                 onClick: () => setSelectedTask(record),
-                                style: { cursor: 'pointer' },
+                                style: {
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                },
+                                onMouseEnter: (e: React.MouseEvent<HTMLTableRowElement>) => {
+                                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                                },
+                                onMouseLeave: (e: React.MouseEvent<HTMLTableRowElement>) => {
+                                    e.currentTarget.style.backgroundColor = '#ffffff';
+                                },
                             })}
-                            rowClassName={() => 'task-table-row'}
-                            style={{
-                                fontSize: 13,
-                            }}
                             components={{
                                 header: {
                                     cell: (props: any) => (
@@ -560,14 +797,34 @@ const DepartmentProjectTaskPage: React.FC = () => {
                                             {...props}
                                             style={{
                                                 ...props.style,
-                                                backgroundColor: '#f9fafb',
-                                                borderBottom: '1px solid #e5e7eb',
-                                                padding: '12px 16px',
-                                                fontWeight: 500,
-                                                fontSize: 12,
-                                                color: '#6b7280',
+                                                background: '#f8fafc',
+                                                borderBottom: '1px solid #e2e8f0',
+                                                padding: '14px 20px',
+                                                fontWeight: 600,
+                                                fontSize: 11,
+                                                color: '#64748b',
                                                 textTransform: 'uppercase',
-                                                letterSpacing: '0.5px',
+                                                letterSpacing: '0.8px',
+                                            }}
+                                        />
+                                    ),
+                                },
+                                body: {
+                                    row: (props: any) => (
+                                        <tr
+                                            {...props}
+                                            style={{
+                                                ...props.style,
+                                                borderBottom: '1px solid #f1f5f9',
+                                            }}
+                                        />
+                                    ),
+                                    cell: (props: any) => (
+                                        <td
+                                            {...props}
+                                            style={{
+                                                ...props.style,
+                                                padding: '16px 20px',
                                             }}
                                         />
                                     ),
@@ -594,7 +851,24 @@ const DepartmentProjectTaskPage: React.FC = () => {
 
                 {/* Update Request Modal */}
                 <Modal
-                    title="Update Request"
+                    title={
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 8,
+                                    background: '#4f46e5',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <EditOutlined style={{ color: '#fff', fontSize: 16 }} />
+                            </div>
+                            <span style={{ fontWeight: 600, fontSize: 18 }}>Update Request</span>
+                        </div>
+                    }
                     open={isUpdateModalOpen}
                     onOk={handleUpdateSubmit}
                     onCancel={() => {
@@ -606,6 +880,9 @@ const DepartmentProjectTaskPage: React.FC = () => {
                     cancelText="Cancel"
                     confirmLoading={updateTaskMutation.isPending}
                     width={600}
+                    styles={{
+                        body: { paddingTop: 20 },
+                    }}
                 >
                     <Form
                         form={form}
@@ -617,7 +894,7 @@ const DepartmentProjectTaskPage: React.FC = () => {
                             label="Title"
                             rules={[{ required: true, message: 'Please enter a title' }]}
                         >
-                            <Input placeholder="Enter title" />
+                            <Input placeholder="Enter title" style={{ borderRadius: 8 }} />
                         </Form.Item>
 
                         <Form.Item
@@ -627,6 +904,7 @@ const DepartmentProjectTaskPage: React.FC = () => {
                             <TextArea
                                 rows={3}
                                 placeholder="Enter request description (optional)"
+                                style={{ borderRadius: 8 }}
                             />
                         </Form.Item>
 
@@ -684,7 +962,7 @@ const DepartmentProjectTaskPage: React.FC = () => {
                                 label="Start Date"
                                 style={{ flex: 1 }}
                             >
-                                <DatePicker style={{ width: '100%' }} />
+                                <DatePicker style={{ width: '100%', borderRadius: 8 }} />
                             </Form.Item>
 
                             <Form.Item
@@ -692,7 +970,7 @@ const DepartmentProjectTaskPage: React.FC = () => {
                                 label="Due Date"
                                 style={{ flex: 1 }}
                             >
-                                <DatePicker style={{ width: '100%' }} />
+                                <DatePicker style={{ width: '100%', borderRadius: 8 }} />
                             </Form.Item>
                         </div>
                     </Form>

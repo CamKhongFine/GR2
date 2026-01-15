@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import {
     Card,
     Typography,
-    Space,
     Button,
     Input,
     Select,
     Table,
     Tag,
     Spin,
-    Empty,
     message,
     Modal,
     Form,
@@ -147,21 +145,21 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
         },
     });
 
-    // Get status display with gradient badge
+    // Get status display with solid color badge
     const getStatusDisplay = (status: string) => {
-        const config: Record<string, { gradient: string; text: string; icon: React.ReactNode }> = {
+        const config: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
             'COMPLETED': {
-                gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                bg: '#10b981',
                 text: '#fff',
                 icon: <CheckCircleOutlined style={{ fontSize: 12 }} />,
             },
             'RUNNING': {
-                gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                bg: '#3b82f6',
                 text: '#fff',
                 icon: <SyncOutlined spin style={{ fontSize: 12 }} />,
             },
             'CANCELLED': {
-                gradient: 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)',
+                bg: '#9ca3af',
                 text: '#fff',
                 icon: <CloseCircleOutlined style={{ fontSize: 12 }} />,
             },
@@ -174,13 +172,12 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                     alignItems: 'center',
                     gap: 6,
                     padding: '5px 12px',
-                    background: statusConfig.gradient,
+                    background: statusConfig.bg,
                     borderRadius: 20,
                     fontSize: 11,
                     color: statusConfig.text,
                     fontWeight: 600,
                     letterSpacing: '0.3px',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                 }}
             >
                 {statusConfig.icon}
@@ -189,24 +186,21 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
         );
     };
 
-    // Get priority display with gradient badge
+    // Get priority display with solid color badge
     const getPriorityDisplay = (priority: TaskPriority | null) => {
         const priorityText = priority || 'NORMAL';
-        const config: Record<string, { gradient: string; text: string; shadow: string }> = {
+        const config: Record<string, { bg: string; text: string }> = {
             'HIGH': {
-                gradient: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%)',
+                bg: '#ef4444',
                 text: '#fff',
-                shadow: '0 2px 8px rgba(238, 90, 90, 0.3)',
             },
             'NORMAL': {
-                gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                bg: '#3b82f6',
                 text: '#fff',
-                shadow: '0 2px 8px rgba(79, 172, 254, 0.3)',
             },
             'LOW': {
-                gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                text: '#666',
-                shadow: '0 2px 8px rgba(168, 237, 234, 0.3)',
+                bg: '#9ca3af',
+                text: '#fff',
             },
         };
         const priorityConfig = config[priorityText];
@@ -215,13 +209,12 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                 style={{
                     display: 'inline-block',
                     padding: '4px 12px',
-                    background: priorityConfig.gradient,
+                    background: priorityConfig.bg,
                     borderRadius: 20,
                     fontSize: 11,
                     color: priorityConfig.text,
                     fontWeight: 600,
                     letterSpacing: '0.5px',
-                    boxShadow: priorityConfig.shadow,
                     textTransform: 'uppercase',
                 }}
             >
@@ -315,9 +308,6 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                     <Text strong style={{ fontSize: 15, color: '#111827', fontWeight: 600, display: 'block' }}>
                         {record.title}
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#9ca3af' }}>
-                        #{record.id}
-                    </Text>
                 </div>
             ),
         },
@@ -333,7 +323,7 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                         alignItems: 'center',
                         gap: 8,
                         padding: '4px 12px',
-                        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                        background: '#e0f2fe',
                         borderRadius: 8,
                         width: 'fit-content',
                     }}>
@@ -360,7 +350,7 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                                 width: 28,
                                 height: 28,
                                 borderRadius: 6,
-                                background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)',
+                                background: '#f3e8ff',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -419,13 +409,6 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                                 {endDate.format('MMM D, YYYY')}
                             </Text>
                         </div>
-                        <Text style={{
-                            fontSize: 11,
-                            color: isOverdue ? '#dc2626' : isDueSoon ? '#f59e0b' : '#9ca3af',
-                            marginLeft: 18,
-                        }}>
-                            {isOverdue ? `${Math.abs(daysLeft)} days overdue` : daysLeft === 0 ? 'Due today' : `${daysLeft} days left`}
-                        </Text>
                     </div>
                 );
             },
@@ -511,11 +494,11 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                 {/* Modern Header with Stats */}
                 <div
                     style={{
-                        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                        background: '#4f46e5',
                         borderRadius: 16,
                         padding: '28px 32px',
                         marginBottom: 24,
-                        boxShadow: '0 10px 40px rgba(240, 147, 251, 0.3)',
+                        boxShadow: '0 10px 40px rgba(79, 70, 229, 0.25)',
                     }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -611,9 +594,8 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                                 fontSize: 14,
                                 fontWeight: 600,
                                 borderRadius: 10,
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                background: '#4f46e5',
                                 border: 'none',
-                                boxShadow: '0 4px 14px rgba(102, 126, 234, 0.4)',
                             }}
                         >
                             New Request
@@ -625,7 +607,8 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: 8,
-                                    padding: '8px 14px',
+                                    padding: '0 14px',
+                                    height: 42,
                                     backgroundColor: '#f8fafc',
                                     border: '1px solid #e2e8f0',
                                     borderRadius: 10,
@@ -720,7 +703,7 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                                     width: 80,
                                     height: 80,
                                     borderRadius: '50%',
-                                    background: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)',
+                                    background: '#fce7f3',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -765,7 +748,7 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                                             {...props}
                                             style={{
                                                 ...props.style,
-                                                background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+                                                background: '#f8fafc',
                                                 borderBottom: '1px solid #e2e8f0',
                                                 padding: '14px 20px',
                                                 fontWeight: 600,
@@ -829,7 +812,7 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                                     width: 32,
                                     height: 32,
                                     borderRadius: 8,
-                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    background: '#4f46e5',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
