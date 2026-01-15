@@ -293,6 +293,12 @@ public class StepTaskServiceImpl implements StepTaskService {
         if (stepTask.getTask() != null && stepTask.getTask().getProject() != null) {
             projectName = stepTask.getTask().getProject().getName();
         }
+        String creatorName = null;
+        Long creatorId = null;
+        if (stepTask.getTask() != null && stepTask.getTask().getCreator() != null) {
+            creatorId = stepTask.getTask().getCreator().getId();
+            creatorName = (stepTask.getTask().getCreator().getFirstName() + " " + stepTask.getTask().getCreator().getLastName()).trim();
+        }
         return StepTaskResponse.builder()
                 .id(stepTask.getId())
                 .taskId(stepTask.getTask() != null ? stepTask.getTask().getId() : null)
@@ -307,6 +313,8 @@ public class StepTaskServiceImpl implements StepTaskService {
                         ? (stepTask.getAssignedUser().getFirstName() + " " + stepTask.getAssignedUser().getLastName())
                                 .trim()
                         : null)
+                .creatorId(creatorId)
+                .creatorName(creatorName)
                 .priority(stepTask.getPriority())
                 .beginDate(stepTask.getBeginDate())
                 .endDate(stepTask.getEndDate())

@@ -128,6 +128,8 @@ export interface StepTaskResponse {
     status: string;
     assignedUserId: number | null;
     assignedUserName: string | null;
+    creatorId?: number | null;
+    creatorName?: string | null;
     priority?: 'LOW' | 'NORMAL' | 'HIGH';
     beginDate: string | null;
     endDate: string | null;

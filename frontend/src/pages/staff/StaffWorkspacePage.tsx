@@ -5,7 +5,6 @@ import {
     Tag,
     Space,
     Button,
-    Timeline,
     Empty,
     Spin,
     Badge,
@@ -22,10 +21,10 @@ import {
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import WorkspaceLayout, { SidebarItemConfig } from '../../layouts/WorkspaceLayout';
-import { 
-    getMyAssignedStepTasksForWorkspace, 
-    getMyRecentActivity, 
-    StepTaskResponse, 
+import {
+    getMyAssignedStepTasksForWorkspace,
+    getMyRecentActivity,
+    StepTaskResponse,
     StepTaskActionResponse,
     getTaskById,
 } from '../../api/task.api';
@@ -151,11 +150,11 @@ const StaffWorkspacePage: React.FC = () => {
     // Format urgency cue
     const getUrgencyCue = (stepTask: StepTaskResponse) => {
         if (!stepTask.beginDate) return null;
-        
+
         const beginDate = dayjs(stepTask.beginDate);
         const now = dayjs();
         const daysDiff = now.diff(beginDate, 'day');
-        
+
         if (daysDiff > 3) {
             return <Tag color="red">Overdue</Tag>;
         } else if (daysDiff >= 2) {
@@ -168,7 +167,7 @@ const StaffWorkspacePage: React.FC = () => {
     const formatActivityDescription = (action: StepTaskActionResponse): string => {
         const actionName = action.actionName.charAt(0).toUpperCase() + action.actionName.slice(1);
         const taskTitle = action.taskId ? `Request #${action.taskId}` : 'Request';
-        
+
         if (action.toStepName) {
             return `${actionName} → ${action.toStepName}`;
         }
@@ -209,168 +208,346 @@ const StaffWorkspacePage: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Action Required - PRIMARY SECTION */}
                     <div className="lg:col-span-2">
-                        <Card className="shadow-sm" style={{ borderRadius: 12 }} bodyStyle={{ padding: '16px 20px' }}>
-                            <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-                                <div className="flex items-baseline gap-2">
-                                    <ClockCircleOutlined className="text-orange-500 text-lg" style={{ marginTop: '10px' }} />
-                                    <Title level={4} className="mb-0">Action Required</Title>
+                        <Card
+                            className="shadow-lg hover:shadow-xl transition-shadow duration-300"
+                            style={{
+                                borderRadius: 16,
+                                border: 'none',
+                                overflow: 'hidden',
+                                background: 'linear-gradient(145deg, #ffffff 0%, #fafbfc 100%)',
+                            }}
+                            bodyStyle={{ padding: 0 }}
+                        >
+                            {/* Modern Gradient Header */}
+                            <div
+                                style={{
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    padding: '20px 24px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div
+                                        style={{
+                                            width: 42,
+                                            height: 42,
+                                            borderRadius: 12,
+                                            background: 'rgba(255, 255, 255, 0.2)',
+                                            backdropFilter: 'blur(8px)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        <ClockCircleOutlined style={{ fontSize: 20, color: '#fff' }} />
+                                    </div>
+                                    <div>
+                                        <Title level={4} style={{ margin: 0, color: '#fff', fontWeight: 600 }}>
+                                            Action Required
+                                        </Title>
+                                        <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 12 }}>
+                                            Tasks waiting for your action
+                                        </Text>
+                                    </div>
                                 </div>
                                 {assignedStepTasks.length > 0 && (
-                                    <Badge
-                                        count={assignedStepTasks.length}
+                                    <div
                                         style={{
-                                            backgroundColor: '#ff7875',
-                                            boxShadow: '0 0 0 1px #fff',
+                                            minWidth: 36,
+                                            height: 36,
+                                            borderRadius: '50%',
+                                            background: 'rgba(255, 255, 255, 0.95)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontWeight: 700,
+                                            fontSize: 16,
+                                            color: '#764ba2',
+                                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                                         }}
-                                    />
+                                    >
+                                        {assignedStepTasks.length}
+                                    </div>
                                 )}
                             </div>
 
-                            {isLoadingStepTasks ? (
-                                <div className="text-center py-8">
-                                    <Spin />
-                                </div>
-                            ) : assignedStepTasks.length === 0 ? (
-                                <Empty 
-                                    description="No actions required at the moment."
-                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                />
-                            ) : (
-                                <div>
-                                    {assignedStepTasks.map((stepTask, index) => {
-                                        const actionConfig = getActionButtonConfig(stepTask);
-                                        const priorityConfig = getPriorityColor(stepTask.priority);
-                                        
-                                        return (
-                                            <div key={stepTask.id}>
+                            {/* Content Area */}
+                            <div style={{ padding: '16px 20px' }}>
+                                {isLoadingStepTasks ? (
+                                    <div className="text-center py-8">
+                                        <Spin />
+                                    </div>
+                                ) : assignedStepTasks.length === 0 ? (
+                                    <div style={{ padding: '32px 0' }}>
+                                        <Empty
+                                            description={
+                                                <Text style={{ color: '#9ca3af' }}>
+                                                    No actions required at the moment
+                                                </Text>
+                                            }
+                                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {assignedStepTasks.map((stepTask) => {
+                                            const actionConfig = getActionButtonConfig(stepTask);
+                                            const priorityConfig = getPriorityColor(stepTask.priority);
+
+                                            return (
                                                 <div
-                                                    className="hover:bg-gray-50 rounded-lg p-4 transition-colors"
+                                                    key={stepTask.id}
                                                     style={{
+                                                        background: '#fff',
+                                                        borderRadius: 12,
+                                                        padding: '16px 20px',
+                                                        border: '1px solid #e5e7eb',
                                                         display: 'flex',
-                                                        alignItems: 'flex-start',
-                                                        gap: 12,
+                                                        alignItems: 'center',
+                                                        gap: 16,
+                                                        transition: 'all 0.2s ease',
+                                                        cursor: 'pointer',
                                                     }}
+                                                    className="hover:border-purple-300 hover:shadow-md"
+                                                    onClick={() => setSelectedTaskId(stepTask.taskId)}
                                                 >
-                                                    {/* Action Icon */}
+                                                    {/* Icon with gradient background */}
                                                     <div
                                                         style={{
-                                                            width: 40,
-                                                            height: 40,
-                                                            borderRadius: 8,
-                                                            backgroundColor: priorityConfig.bg,
-                                                            border: `1px solid ${priorityConfig.border}`,
+                                                            width: 48,
+                                                            height: 48,
+                                                            borderRadius: 12,
+                                                            background: `linear-gradient(135deg, ${priorityConfig.bg} 0%, ${priorityConfig.border} 100%)`,
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
                                                             flexShrink: 0,
+                                                            boxShadow: `0 4px 12px ${priorityConfig.border}40`,
                                                         }}
                                                     >
-                                                        {getActionIcon(stepTask)}
+                                                        {React.cloneElement(getActionIcon(stepTask), {
+                                                            style: { fontSize: 20, color: priorityConfig.color }
+                                                        })}
                                                     </div>
 
                                                     {/* Content */}
                                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ marginBottom: 8 }}>
-                                                            <Space size={8} wrap>
-                                                                <Text strong style={{ fontSize: 15, color: '#111827' }}>
-                                                                    {stepTask.taskTitle || `Request #${stepTask.taskId}`}
-                                                                </Text>
-                                                                {getPriorityBadge(stepTask.priority)}
-                                                                {getUrgencyCue(stepTask)}
-                                                            </Space>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                                                            <Text
+                                                                strong
+                                                                style={{
+                                                                    fontSize: 15,
+                                                                    color: '#1f2937',
+                                                                    lineHeight: 1.3,
+                                                                }}
+                                                                ellipsis
+                                                            >
+                                                                {stepTask.taskTitle || `Request #${stepTask.taskId}`}
+                                                            </Text>
+                                                            {getPriorityBadge(stepTask.priority)}
+                                                            {getUrgencyCue(stepTask)}
                                                         </div>
-                                                        
-                                                        <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                                                            <Text type="secondary" style={{ fontSize: 12 }}>
+
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                            <Text style={{ fontSize: 13, color: '#6b7280' }}>
                                                                 {stepTask.workflowStepName}
                                                             </Text>
-                                                            
                                                             {stepTask.endDate && (
-                                                                <Text style={{ fontSize: 12, color: '#fa8c16', fontWeight: 500 }}>
-                                                                    Due: {dayjs(stepTask.endDate).format('YYYY-MM-DD')}
+                                                                <Text style={{
+                                                                    fontSize: 12,
+                                                                    color: '#f59e0b',
+                                                                    fontWeight: 500,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 4,
+                                                                }}>
+                                                                    <ClockCircleOutlined style={{ fontSize: 12 }} />
+                                                                    {dayjs(stepTask.endDate).format('MMM DD, YYYY')}
                                                                 </Text>
                                                             )}
-                                                        </Space>
+                                                        </div>
                                                     </div>
 
                                                     {/* Action Button */}
-                                                    <div style={{ flexShrink: 0 }}>
-                                                        <Button
-                                                            type="primary"
-                                                            size="small"
-                                                            icon={actionConfig.icon}
-                                                            onClick={() => {
-                                                                setSelectedTaskId(stepTask.taskId);
-                                                            }}
-                                                            style={{
-                                                                backgroundColor: actionConfig.color,
-                                                                borderColor: actionConfig.color,
-                                                                height: 32,
-                                                                fontSize: 12,
-                                                                fontWeight: 500,
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 6,
-                                                            }}
-                                                        >
-                                                            {actionConfig.text}
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                                
-                                                {/* Divider */}
-                                                {index < assignedStepTasks.length - 1 && (
-                                                    <div
-                                                        style={{
-                                                            height: 1,
-                                                            backgroundColor: '#e5e7eb',
-                                                            margin: '8px 0',
-                                                            opacity: 0.5,
+                                                    <Button
+                                                        type="primary"
+                                                        icon={actionConfig.icon}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedTaskId(stepTask.taskId);
                                                         }}
-                                                    />
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                                                        style={{
+                                                            background: `linear-gradient(135deg, ${actionConfig.color} 0%, ${actionConfig.color}dd 100%)`,
+                                                            border: 'none',
+                                                            height: 38,
+                                                            paddingLeft: 16,
+                                                            paddingRight: 16,
+                                                            fontSize: 13,
+                                                            fontWeight: 600,
+                                                            borderRadius: 10,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 6,
+                                                            boxShadow: `0 4px 12px ${actionConfig.color}40`,
+                                                        }}
+                                                    >
+                                                        {actionConfig.text}
+                                                    </Button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </Card>
                     </div>
 
                     {/* Recent Activity - SECONDARY SECTION */}
                     <div>
-                        <Card className="shadow-sm" style={{ borderRadius: 12 }} bodyStyle={{ padding: '16px 20px' }}>
-                            <div className="flex items-baseline gap-2" style={{ marginBottom: 16 }}>
-                                <ClockCircleOutlined className="text-lg" style={{ marginTop: '6px', color: '#722ed1' }} />
-                                <Title level={4} className="mb-0">Recent Activity</Title>
+                        <Card
+                            className="shadow-lg hover:shadow-xl transition-shadow duration-300"
+                            style={{
+                                borderRadius: 16,
+                                border: 'none',
+                                overflow: 'hidden',
+                                background: 'linear-gradient(145deg, #ffffff 0%, #fafbfc 100%)',
+                            }}
+                            bodyStyle={{ padding: 0 }}
+                        >
+                            {/* Modern Gradient Header */}
+                            <div
+                                style={{
+                                    background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                                    padding: '20px 24px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: 42,
+                                        height: 42,
+                                        borderRadius: 12,
+                                        background: 'rgba(255, 255, 255, 0.2)',
+                                        backdropFilter: 'blur(8px)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <ClockCircleOutlined style={{ fontSize: 20, color: '#fff' }} />
+                                </div>
+                                <div>
+                                    <Title level={4} style={{ margin: 0, color: '#fff', fontWeight: 600 }}>
+                                        Recent Activity
+                                    </Title>
+                                    <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 12 }}>
+                                        Your latest actions
+                                    </Text>
+                                </div>
                             </div>
 
-                            {isLoadingActivity ? (
-                                <div className="text-center py-8">
-                                    <Spin />
-                                </div>
-                            ) : recentActivity.length === 0 ? (
-                                <Empty 
-                                    description="No recent activity"
-                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                />
-                            ) : (
-                                <Timeline
-                                    items={recentActivity.map((action) => ({
-                                        dot: getActivityIcon(action.actionName),
-                                        children: (
-                                            <div>
-                                                <Text className="text-sm">{formatActivityDescription(action)}</Text>
-                                                <div>
-                                                    <Text type="secondary" className="text-xs">
+                            {/* Content Area */}
+                            <div style={{ padding: '20px 24px' }}>
+                                {isLoadingActivity ? (
+                                    <div className="text-center py-8">
+                                        <Spin />
+                                    </div>
+                                ) : recentActivity.length === 0 ? (
+                                    <div style={{ padding: '32px 0' }}>
+                                        <Empty
+                                            description={
+                                                <Text style={{ color: '#9ca3af' }}>
+                                                    No recent activity
+                                                </Text>
+                                            }
+                                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                        {recentActivity.map((action, index) => (
+                                            <div
+                                                key={index}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'flex-start',
+                                                    gap: 14,
+                                                    position: 'relative',
+                                                }}
+                                            >
+                                                {/* Timeline line */}
+                                                {index < recentActivity.length - 1 && (
+                                                    <div
+                                                        style={{
+                                                            position: 'absolute',
+                                                            left: 17,
+                                                            top: 38,
+                                                            width: 2,
+                                                            height: 'calc(100% + 8px)',
+                                                            background: 'linear-gradient(180deg, #e5e7eb 0%, transparent 100%)',
+                                                        }}
+                                                    />
+                                                )}
+
+                                                {/* Icon */}
+                                                <div
+                                                    style={{
+                                                        width: 36,
+                                                        height: 36,
+                                                        borderRadius: 10,
+                                                        background: action.actionName.toLowerCase().includes('approve')
+                                                            ? 'linear-gradient(135deg, #dcfce7 0%, #86efac 100%)'
+                                                            : action.actionName.toLowerCase().includes('reject')
+                                                                ? 'linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%)'
+                                                                : action.actionName.toLowerCase().includes('submit')
+                                                                    ? 'linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%)'
+                                                                    : 'linear-gradient(135deg, #f3e8ff 0%, #c4b5fd 100%)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        flexShrink: 0,
+                                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                                                        zIndex: 1,
+                                                    }}
+                                                >
+                                                    {getActivityIcon(action.actionName)}
+                                                </div>
+
+                                                {/* Content */}
+                                                <div style={{ flex: 1, paddingTop: 2 }}>
+                                                    <Text
+                                                        style={{
+                                                            fontSize: 14,
+                                                            color: '#374151',
+                                                            display: 'block',
+                                                            lineHeight: 1.4,
+                                                        }}
+                                                    >
+                                                        {formatActivityDescription(action)}
+                                                    </Text>
+                                                    <Text
+                                                        style={{
+                                                            fontSize: 12,
+                                                            color: '#9ca3af',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 4,
+                                                            marginTop: 4,
+                                                        }}
+                                                    >
+                                                        <ClockCircleOutlined style={{ fontSize: 11 }} />
                                                         {dayjs(action.createdAt).fromNow()}
                                                     </Text>
                                                 </div>
                                             </div>
-                                        ),
-                                    }))}
-                                />
-                            )}
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </Card>
                     </div>
                 </div>

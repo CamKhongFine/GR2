@@ -24,6 +24,8 @@ public class StepTaskResponse {
     private StepTaskStatus status;
     private Long assignedUserId;
     private String assignedUserName;
+    private Long creatorId;
+    private String creatorName;
     private Priority priority;
     private Instant beginDate;
     private Instant endDate;

@@ -3,9 +3,9 @@ import {
     Card,
     Typography,
     Table,
-    Tag,
     Empty,
     Spin,
+    Avatar,
 } from 'antd';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import WorkspaceLayout, { SidebarItemConfig } from '../../layouts/WorkspaceLayout';
@@ -16,6 +16,7 @@ import {
 } from '../../api/task.api';
 import RequestDetailView from '../../components/tasks/RequestDetailView';
 import dayjs from 'dayjs';
+import { UserOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
@@ -48,39 +49,74 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
         enabled: !!selectedTaskId,
     });
 
-    // Get priority display
+    // Get priority display with calm enterprise badge
     const getPriorityDisplay = (priority?: 'LOW' | 'NORMAL' | 'HIGH') => {
         const priorityText = priority || 'NORMAL';
-        const colorMap = {
-            'HIGH': '#ff4d4f',
-            'NORMAL': '#1890ff',
-            'LOW': '#8c8c8c',
+        const badgeConfig = {
+            'HIGH': {
+                bg: '#fff1f0',
+                border: '#ffccc7',
+                text: '#cf1322',
+            },
+            'NORMAL': {
+                bg: '#e6f7ff',
+                border: '#91d5ff',
+                text: '#0958d9',
+            },
+            'LOW': {
+                bg: '#f5f5f5',
+                border: '#d9d9d9',
+                text: '#595959',
+            },
         };
+        const config = badgeConfig[priorityText];
         return (
-            <Text style={{ 
-                fontSize: 13, 
-                color: colorMap[priorityText],
-                fontWeight: priorityText === 'HIGH' ? 600 : 400,
-            }}>
+            <span
+                style={{
+                    display: 'inline-block',
+                    padding: '2px 8px',
+                    backgroundColor: config.bg,
+                    border: `1px solid ${config.border}`,
+                    borderRadius: 4,
+                    fontSize: 12,
+                    color: config.text,
+                    fontWeight: 500,
+                }}
+            >
                 {priorityText}
-            </Text>
+            </span>
         );
     };
 
-    // Get due date display
-    const getDueDisplay = (endDate: string | null) => {
-        if (!endDate) return <Text style={{ fontSize: 13, color: '#8c8c8c' }}>—</Text>;
-        
-        const dueDate = dayjs(endDate);
-        const today = dayjs().startOf('day');
-        const daysDiff = dueDate.diff(today, 'day');
-        
-        if (daysDiff < 0) {
-            return <Text style={{ fontSize: 13, color: '#ff4d4f', fontWeight: 500 }}>Overdue</Text>;
-        } else if (daysDiff === 0) {
-            return <Text style={{ fontSize: 13, color: '#fa8c16', fontWeight: 500 }}>Due today</Text>;
+    // Get assigner display with avatar initial
+    const getAssignerDisplay = (creatorName: string | null | undefined) => {
+        if (!creatorName) {
+            return <Text style={{ fontSize: 13, color: '#8c8c8c' }}>—</Text>;
         }
-        return <Text style={{ fontSize: 13, color: '#8c8c8c' }}>—</Text>;
+        const initials = creatorName
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Avatar
+                    size={24}
+                    style={{
+                        backgroundColor: '#f0f0f0',
+                        color: '#595959',
+                        fontSize: 11,
+                        fontWeight: 500,
+                    }}
+                >
+                    {initials}
+                </Avatar>
+                <Text style={{ fontSize: 13, color: '#595959' }}>
+                    {creatorName}
+                </Text>
+            </div>
+        );
     };
 
     // Get received date display
@@ -95,45 +131,38 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
 
     const columns = [
         {
-            title: 'Step',
+            title: 'STEP',
             dataIndex: 'workflowStepName',
             key: 'step',
             render: (value: string | null) => (
-                <Text style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
+                <Text style={{ fontSize: 13, color: '#6b7280' }}>
                     {value || '—'}
                 </Text>
             ),
         },
         {
-            title: 'Request',
+            title: 'REQUEST',
             key: 'request',
             render: (_: unknown, record: StepTaskResponse) => (
-                <div>
-                    <Text strong style={{ fontSize: 14, color: '#111827', display: 'block', marginBottom: 4 }}>
-                        {record.taskTitle || `Request #${record.taskId}`}
-                    </Text>
-                    {record.projectName && (
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                            {record.projectName}
-                        </Text>
-                    )}
-                </div>
+                <Text strong style={{ fontSize: 15, color: '#111827', fontWeight: 600 }}>
+                    {record.taskTitle || `Request #${record.taskId}`}
+                </Text>
             ),
         },
         {
-            title: 'Priority',
+            title: 'ASSIGNER',
+            dataIndex: 'creatorName',
+            key: 'assigner',
+            render: (_: unknown, record: StepTaskResponse) => getAssignerDisplay(record.creatorName),
+        },
+        {
+            title: 'PRIORITY',
             dataIndex: 'priority',
             key: 'priority',
             render: (value: 'LOW' | 'NORMAL' | 'HIGH' | undefined) => getPriorityDisplay(value),
         },
         {
-            title: 'Due',
-            dataIndex: 'endDate',
-            key: 'due',
-            render: (value: string | null) => getDueDisplay(value),
-        },
-        {
-            title: 'Received',
+            title: 'RECEIVED',
             dataIndex: 'beginDate',
             key: 'received',
             render: (value: string | null) => getReceivedDisplay(value),
@@ -152,8 +181,8 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                     <Title level={2} className="mb-0" style={{ fontSize: 24, fontWeight: 600, color: '#111827' }}>
                         My Tasks
                     </Title>
-                    <Text type="secondary" style={{ fontSize: 14, color: '#8c8c8c' }}>
-                        Tasks that require your action
+                    <Text type="secondary" style={{ fontSize: 14, color: '#6b7280' }}>
+                        Steps assigned to you that require action
                     </Text>
                 </div>
 
@@ -185,7 +214,15 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                             size="middle"
                             onRow={(record: StepTaskResponse) => ({
                                 onClick: () => setSelectedTaskId(record.taskId),
-                                style: { cursor: 'pointer' },
+                                style: { 
+                                    cursor: 'pointer',
+                                },
+                                onMouseEnter: (e: React.MouseEvent<HTMLTableRowElement>) => {
+                                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                                },
+                                onMouseLeave: (e: React.MouseEvent<HTMLTableRowElement>) => {
+                                    e.currentTarget.style.backgroundColor = '#ffffff';
+                                },
                             })}
                             style={{
                                 fontSize: 13,
@@ -200,11 +237,22 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                                                 backgroundColor: '#f9fafb',
                                                 borderBottom: '1px solid #e5e7eb',
                                                 padding: '12px 16px',
-                                                fontWeight: 500,
-                                                fontSize: 12,
+                                                fontWeight: 600,
+                                                fontSize: 11,
                                                 color: '#6b7280',
                                                 textTransform: 'uppercase',
                                                 letterSpacing: '0.5px',
+                                            }}
+                                        />
+                                    ),
+                                },
+                                body: {
+                                    row: (props: any) => (
+                                        <tr
+                                            {...props}
+                                            style={{
+                                                ...props.style,
+                                                borderBottom: '1px solid #f3f4f6',
                                             }}
                                         />
                                     ),
