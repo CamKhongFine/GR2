@@ -2,6 +2,7 @@ package com.hust.auraflow.controller;
 
 import com.hust.auraflow.dto.request.ExecuteActionRequest;
 import com.hust.auraflow.dto.response.StepTaskActionResponse;
+import com.hust.auraflow.dto.response.StepTaskDetailResponse;
 import com.hust.auraflow.dto.response.StepTaskResponse;
 import com.hust.auraflow.dto.response.TaskResponse;
 import com.hust.auraflow.security.UserPrincipal;
@@ -100,5 +101,15 @@ public class StepTaskController {
     public ResponseEntity<List<StepTaskActionResponse>> getMyRecentActivity(
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(stepTaskService.getMyRecentActivity(principal));
+    }
+
+    /**
+     * Get detailed information for a step task including data, files, and comment.
+     */
+    @GetMapping("/{stepTaskId}/detail")
+    public ResponseEntity<StepTaskDetailResponse> getStepTaskDetail(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long stepTaskId) {
+        return ResponseEntity.ok(stepTaskService.getStepTaskDetail(principal, stepTaskId));
     }
 }

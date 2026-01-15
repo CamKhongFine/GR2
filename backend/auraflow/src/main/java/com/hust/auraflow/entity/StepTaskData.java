@@ -34,10 +34,12 @@ public class StepTaskData {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "step_task_id", nullable = false)
     private StepTask stepTask;
 
     /**
@@ -53,10 +55,18 @@ public class StepTaskData {
     private String dataType;
 
     /**
+     * Content type (required field in database)
+     */
+    @NotNull
+    @Column(name = "content_type", length = 50, nullable = false)
+    private String contentType;
+
+    /**
      * Who submitted this data
      */
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "created_by_id", nullable = false)
     private User createdBy;
 
     @NotNull

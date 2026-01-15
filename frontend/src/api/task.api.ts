@@ -164,6 +164,32 @@ export interface FileUploadRequest {
     fileSize: number;
 }
 
+export interface StepTaskDataResponse {
+    id: number;
+    dataBody: string | null;
+    dataType: string | null;
+    createdById: number | null;
+    createdByName: string | null;
+    createdAt: string;
+}
+
+export interface StepTaskFileResponse {
+    id: number;
+    fileName: string;
+    objectName: string;
+    fileSize: number | null;
+    uploadedById: number | null;
+    uploadedByName: string | null;
+    createdAt: string;
+}
+
+export interface StepTaskDetailResponse {
+    stepTask: StepTaskResponse;
+    comment: string | null;
+    data: StepTaskDataResponse[];
+    files: StepTaskFileResponse[];
+}
+
 /**
  * Get all step tasks for a task
  */
@@ -228,5 +254,13 @@ export const getMyAssignedStepTasksForWorkspace = async (): Promise<StepTaskResp
  */
 export const getMyRecentActivity = async (): Promise<StepTaskActionResponse[]> => {
     const response = await apiClient.get<StepTaskActionResponse[]>(`/api/step-tasks/my-recent-activity`);
+    return response.data;
+};
+
+/**
+ * Get detailed information for a step task including data, files, and comment.
+ */
+export const getStepTaskDetail = async (stepTaskId: number): Promise<StepTaskDetailResponse> => {
+    const response = await apiClient.get<StepTaskDetailResponse>(`/api/step-tasks/${stepTaskId}/detail`);
     return response.data;
 };

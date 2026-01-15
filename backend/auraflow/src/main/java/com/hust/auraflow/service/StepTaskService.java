@@ -2,6 +2,7 @@ package com.hust.auraflow.service;
 
 import com.hust.auraflow.dto.request.ExecuteActionRequest;
 import com.hust.auraflow.dto.response.StepTaskActionResponse;
+import com.hust.auraflow.dto.response.StepTaskDetailResponse;
 import com.hust.auraflow.dto.response.StepTaskResponse;
 import com.hust.auraflow.dto.response.TaskResponse;
 import com.hust.auraflow.security.UserPrincipal;
@@ -51,4 +52,9 @@ public interface StepTaskService {
      * Returns last 7 events, ordered by createdAt DESC.
      */
     List<StepTaskActionResponse> getMyRecentActivity(UserPrincipal principal);
+
+    /**
+     * Get detailed information for a step task including data, files, and comment.
+     */
+    StepTaskDetailResponse getStepTaskDetail(UserPrincipal principal, Long stepTaskId);
 }

@@ -5,6 +5,9 @@ import com.hust.auraflow.common.enums.StepTaskStatus;
 import com.hust.auraflow.common.enums.TaskStatus;
 import com.hust.auraflow.dto.request.ExecuteActionRequest;
 import com.hust.auraflow.dto.response.StepTaskActionResponse;
+import com.hust.auraflow.dto.response.StepTaskDataResponse;
+import com.hust.auraflow.dto.response.StepTaskDetailResponse;
+import com.hust.auraflow.dto.response.StepTaskFileResponse;
 import com.hust.auraflow.dto.response.StepTaskResponse;
 import com.hust.auraflow.dto.response.TaskResponse;
 import com.hust.auraflow.entity.*;
@@ -180,16 +183,21 @@ public class StepTaskServiceImpl implements StepTaskService {
 
         // Create StepTaskData if dataBody is provided
         if (request.getDataBody() != null && !request.getDataBody().trim().isEmpty()) {
+            if (actor == null) {
+                throw new IllegalStateException("Actor user is null, cannot create StepTaskData");
+            }
             StepTaskData stepTaskData = StepTaskData.builder()
                     .tenant(task.getTenant())
                     .stepTask(currentStepTask)
                     .dataBody(request.getDataBody())
                     .dataType("TEXT")
+                    .contentType("text/plain")
                     .createdBy(actor)
                     .createdAt(Instant.now())
                     .build();
             stepTaskDataRepository.save(stepTaskData);
-            log.info("Created StepTaskData for stepTask {} in task {}", currentStepTask.getId(), taskId);
+            log.info("Created StepTaskData for stepTask {} in task {} by user {}", 
+                    currentStepTask.getId(), taskId, actor.getId());
         }
 
         // Create StepTaskFile records if files are provided
@@ -422,5 +430,79 @@ public class StepTaskServiceImpl implements StepTaskService {
                 .limit(7)
                 .map(this::toStepTaskActionResponse)
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StepTaskDetailResponse getStepTaskDetail(UserPrincipal principal, Long stepTaskId) {
+        StepTask stepTask = stepTaskRepository.findById(stepTaskId)
+                .orElseThrow(() -> new IllegalArgumentException("StepTask not found"));
+
+        // Validate tenant access through the associated task
+        if (stepTask.getTask() != null) {
+            validateTenantAccess(principal, stepTask.getTask());
+        } else {
+            throw new IllegalStateException("StepTask has no associated task");
+        }
+
+        // Get StepTaskResponse
+        StepTaskResponse stepTaskResponse = toStepTaskResponse(stepTask);
+
+        // Get comment from StepTaskAction if exists
+        String comment = null;
+        List<StepTaskAction> actions = stepTaskActionRepository.findByTaskIdOrderByCreatedAtDesc(stepTask.getTask().getId());
+        StepTaskAction relatedAction = actions.stream()
+                .filter(action -> action.getStepTask() != null && action.getStepTask().getId().equals(stepTaskId))
+                .findFirst()
+                .orElse(null);
+        if (relatedAction != null && relatedAction.getComment() != null && !relatedAction.getComment().trim().isEmpty()) {
+            comment = relatedAction.getComment();
+        }
+
+        // Get StepTaskData list
+        List<StepTaskData> stepTaskDataList = stepTaskDataRepository.findByStepTaskIdOrderByCreatedAtDesc(stepTaskId);
+        List<StepTaskDataResponse> dataResponses = stepTaskDataList.stream()
+                .map(this::toStepTaskDataResponse)
+                .collect(Collectors.toList());
+
+        // Get StepTaskFile list
+        List<StepTaskFile> stepTaskFileList = stepTaskFileRepository.findByStepTaskIdOrderByCreatedAtDesc(stepTaskId);
+        List<StepTaskFileResponse> fileResponses = stepTaskFileList.stream()
+                .map(this::toStepTaskFileResponse)
+                .collect(Collectors.toList());
+
+        return StepTaskDetailResponse.builder()
+                .stepTask(stepTaskResponse)
+                .comment(comment)
+                .data(dataResponses)
+                .files(fileResponses)
+                .build();
+    }
+
+    private StepTaskDataResponse toStepTaskDataResponse(StepTaskData data) {
+        return StepTaskDataResponse.builder()
+                .id(data.getId())
+                .dataBody(data.getDataBody())
+                .dataType(data.getDataType())
+                .createdById(data.getCreatedBy() != null ? data.getCreatedBy().getId() : null)
+                .createdByName(data.getCreatedBy() != null
+                        ? (data.getCreatedBy().getFirstName() + " " + data.getCreatedBy().getLastName()).trim()
+                        : null)
+                .createdAt(data.getCreatedAt())
+                .build();
+    }
+
+    private StepTaskFileResponse toStepTaskFileResponse(StepTaskFile file) {
+        return StepTaskFileResponse.builder()
+                .id(file.getId())
+                .fileName(file.getFileName())
+                .objectName(file.getObjectName())
+                .fileSize(file.getFileSize())
+                .uploadedById(file.getUploadedBy() != null ? file.getUploadedBy().getId() : null)
+                .uploadedByName(file.getUploadedBy() != null
+                        ? (file.getUploadedBy().getFirstName() + " " + file.getUploadedBy().getLastName()).trim()
+                        : null)
+                .createdAt(file.getCreatedAt())
+                .build();
     }
 }

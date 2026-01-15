@@ -23,6 +23,10 @@ import {
     SendOutlined,
     UploadOutlined,
     DeleteOutlined,
+    FileTextOutlined,
+    FileOutlined,
+    DownloadOutlined,
+    EyeOutlined,
 } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
@@ -31,14 +35,15 @@ import {
     isUserAssignee, 
     getTaskActions, 
     executeAction, 
-    StepTaskActionResponse,
     ExecuteActionRequest,
     getCurrentStepTask,
-    StepTaskResponse
+    getStepTaskDetail,
+    StepTaskDetailResponse,
+    StepTaskDataResponse,
+    StepTaskFileResponse,
 } from '../../api/task.api';
-import { getWorkflowById, WorkflowDetailResponse } from '../../api/workflow.api';
+import { getWorkflowById } from '../../api/workflow.api';
 import WorkflowCanvas from '../workflow/WorkflowCanvas';
-import { useUserStore } from '../../store/userStore';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -52,10 +57,12 @@ interface RequestDetailViewProps {
 
 
 const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClose }) => {
-    const { user } = useUserStore();
     const queryClient = useQueryClient();
     const [form] = Form.useForm();
     const [fileList, setFileList] = useState<UploadFile[]>([]);
+    const [selectedStepTaskId, setSelectedStepTaskId] = useState<number | null>(null);
+    const [stepTaskDetail, setStepTaskDetail] = useState<StepTaskDetailResponse | null>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
 
     // Fetch workflow details for canvas
     const { data: workflowDetail, isLoading: workflowLoading } = useQuery({
@@ -148,7 +155,16 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
     };
 
     // Convert StepTaskActionResponse to ActivityEntry format
-    const activityEntries = useMemo(() => {
+    interface ActivityEntry {
+        id: string;
+        timestamp: string;
+        actor: string;
+        action: string;
+        comment?: string;
+        stepTaskId?: number | null;
+    }
+
+    const activityEntries = useMemo<ActivityEntry[]>(() => {
         if (!activityLog.length) {
             // Fallback: create initial entry from task
             if (task) {
@@ -168,8 +184,31 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
             actor: action.actorName,
             action: `${action.actionName}${action.toStepName ? ` → ${action.toStepName}` : ''}`,
             comment: action.comment || undefined,
+            stepTaskId: action.stepTaskId,
         }));
     }, [activityLog, task]);
+
+    const handleActivityItemClick = async (stepTaskId: number | null) => {
+        if (!stepTaskId) return;
+        
+        setSelectedStepTaskId(stepTaskId);
+        setLoadingDetail(true);
+        try {
+            const detail = await getStepTaskDetail(stepTaskId);
+            setStepTaskDetail(detail);
+        } catch (error) {
+            message.error('Failed to load step task details');
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
+
+    const formatFileSize = (bytes: number | null): string => {
+        if (!bytes) return 'Unknown size';
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    };
 
     if (!task) return null;
 
@@ -381,7 +420,24 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                         <List
                             dataSource={activityEntries}
                             renderItem={(item) => (
-                                <List.Item style={{ padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
+                                <List.Item 
+                                    style={{ 
+                                        padding: '12px 0', 
+                                        borderBottom: '1px solid #f0f0f0',
+                                        cursor: item.stepTaskId ? 'pointer' : 'default',
+                                    }}
+                                    onClick={() => item.stepTaskId && handleActivityItemClick(item.stepTaskId)}
+                                    onMouseEnter={(e) => {
+                                        if (item.stepTaskId) {
+                                            e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (item.stepTaskId) {
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                        }
+                                    }}
+                                >
                                     <List.Item.Meta
                                         avatar={
                                             <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
@@ -392,6 +448,9 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                                     {dayjs(item.timestamp).format('YYYY-MM-DD HH:mm')}
                                                 </Text>
+                                                {item.stepTaskId && (
+                                                    <EyeOutlined style={{ fontSize: 12, color: '#1890ff', marginLeft: 8 }} />
+                                                )}
                                             </Space>
                                         }
                                         description={
@@ -409,10 +468,185 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                             )}
                         />
                     ) : (
-                        <Empty description="No activity recorded" size="small" />
+                        <Empty description="No activity recorded" />
                     )}
                 </div>
             </div>
+
+            {/* Step Task Detail Modal */}
+            <Modal
+                title={
+                    <Space>
+                        <FileTextOutlined />
+                        <span>Step Task Details</span>
+                    </Space>
+                }
+                open={!!selectedStepTaskId}
+                onCancel={() => {
+                    setSelectedStepTaskId(null);
+                    setStepTaskDetail(null);
+                }}
+                footer={[
+                    <Button key="close" onClick={() => {
+                        setSelectedStepTaskId(null);
+                        setStepTaskDetail(null);
+                    }}>
+                        Close
+                    </Button>
+                ]}
+                width={800}
+            >
+                {loadingDetail ? (
+                    <div style={{ textAlign: 'center', padding: 40 }}>
+                        <Spin size="large" />
+                    </div>
+                ) : stepTaskDetail ? (
+                    <div style={{ maxHeight: '70vh', overflow: 'auto' }}>
+                        {/* Step Information */}
+                        <Card 
+                            size="small" 
+                            style={{ marginBottom: 16 }}
+                            title={
+                                <Space>
+                                    <ClockCircleOutlined />
+                                    <span>{stepTaskDetail.stepTask.workflowStepName}</span>
+                                </Space>
+                            }
+                        >
+                            <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                                <div>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>Status: </Text>
+                                    <Text strong>{stepTaskDetail.stepTask.status}</Text>
+                                </div>
+                                {stepTaskDetail.stepTask.assignedUserName && (
+                                    <div>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>Assigned to: </Text>
+                                        <Text>{stepTaskDetail.stepTask.assignedUserName}</Text>
+                                    </div>
+                                )}
+                                {stepTaskDetail.stepTask.beginDate && (
+                                    <div>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>Started: </Text>
+                                        <Text>{dayjs(stepTaskDetail.stepTask.beginDate).format('YYYY-MM-DD HH:mm')}</Text>
+                                    </div>
+                                )}
+                                {stepTaskDetail.stepTask.endDate && (
+                                    <div>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>Completed: </Text>
+                                        <Text>{dayjs(stepTaskDetail.stepTask.endDate).format('YYYY-MM-DD HH:mm')}</Text>
+                                    </div>
+                                )}
+                            </Space>
+                        </Card>
+
+                        {/* Comment Section */}
+                        {stepTaskDetail.comment && (
+                            <Card 
+                                size="small" 
+                                style={{ marginBottom: 16 }}
+                                title={
+                                    <Space>
+                                        <UserOutlined />
+                                        <span>Comment</span>
+                                    </Space>
+                                }
+                            >
+                                <Text>{stepTaskDetail.comment}</Text>
+                            </Card>
+                        )}
+
+                        {/* Data Section */}
+                        {stepTaskDetail.data && stepTaskDetail.data.length > 0 && (
+                            <Card 
+                                size="small" 
+                                style={{ marginBottom: 16 }}
+                                title={
+                                    <Space>
+                                        <FileTextOutlined />
+                                        <span>Input Data ({stepTaskDetail.data.length})</span>
+                                    </Space>
+                                }
+                            >
+                                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                    {stepTaskDetail.data.map((dataItem: StepTaskDataResponse) => (
+                                        <Card 
+                                            key={dataItem.id}
+                                            size="small"
+                                            style={{ backgroundColor: '#fafafa' }}
+                                        >
+                                            <Space direction="vertical" style={{ width: '100%' }} size={4}>
+                                                {dataItem.dataBody && (
+                                                    <Text style={{ whiteSpace: 'pre-wrap' }}>{dataItem.dataBody}</Text>
+                                                )}
+                                                <div style={{ marginTop: 8 }}>
+                                                    <Text type="secondary" style={{ fontSize: 11 }}>
+                                                        {dataItem.createdByName} • {dayjs(dataItem.createdAt).format('YYYY-MM-DD HH:mm')}
+                                                    </Text>
+                                                </div>
+                                            </Space>
+                                        </Card>
+                                    ))}
+                                </Space>
+                            </Card>
+                        )}
+
+                        {/* Files Section */}
+                        {stepTaskDetail.files && stepTaskDetail.files.length > 0 && (
+                            <Card 
+                                size="small"
+                                title={
+                                    <Space>
+                                        <FileOutlined />
+                                        <span>Attachments ({stepTaskDetail.files.length})</span>
+                                    </Space>
+                                }
+                            >
+                                <List
+                                    dataSource={stepTaskDetail.files}
+                                    renderItem={(file: StepTaskFileResponse) => (
+                                        <List.Item
+                                            actions={[
+                                                <Button 
+                                                    key="download" 
+                                                    type="link" 
+                                                    icon={<DownloadOutlined />}
+                                                    onClick={() => {
+                                                        // TODO: Implement file download when Minio is ready
+                                                        message.info('File download will be available when Minio is configured');
+                                                    }}
+                                                >
+                                                    Download
+                                                </Button>
+                                            ]}
+                                        >
+                                            <List.Item.Meta
+                                                avatar={<FileOutlined style={{ fontSize: 20, color: '#1890ff' }} />}
+                                                title={file.fileName}
+                                                description={
+                                                    <Space>
+                                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                                            {formatFileSize(file.fileSize)}
+                                                        </Text>
+                                                        <Text type="secondary" style={{ fontSize: 12 }}>•</Text>
+                                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                                            {file.uploadedByName} • {dayjs(file.createdAt).format('YYYY-MM-DD HH:mm')}
+                                                        </Text>
+                                                    </Space>
+                                                }
+                                            />
+                                        </List.Item>
+                                    )}
+                                />
+                            </Card>
+                        )}
+
+                        {!stepTaskDetail.comment && (!stepTaskDetail.data || stepTaskDetail.data.length === 0) && 
+                         (!stepTaskDetail.files || stepTaskDetail.files.length === 0) && (
+                            <Empty description="No additional details available" />
+                        )}
+                    </div>
+                ) : null}
+            </Modal>
         </Modal>
     );
 };
