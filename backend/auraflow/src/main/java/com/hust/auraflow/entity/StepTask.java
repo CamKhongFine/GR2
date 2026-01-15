@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import com.hust.auraflow.common.enums.StepTaskStatus;
+import com.hust.auraflow.common.enums.Priority;
 
 import java.time.Instant;
 
@@ -56,6 +57,6 @@ public class StepTask {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "priority")
-    private com.hust.auraflow.common.enums.Priority priority;
+    private Priority priority;
 
 }

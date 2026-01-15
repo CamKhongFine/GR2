@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,4 +17,18 @@ public class ExecuteActionRequest {
     private String actionName;
     
     private String comment;
+    
+    private String dataBody;
+    
+    private List<FileUploadRequest> files;
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FileUploadRequest {
+        private String fileName;
+        private String objectName;
+        private Long fileSize;
+    }
 }

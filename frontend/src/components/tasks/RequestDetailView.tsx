@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     Modal,
     Typography,
@@ -13,6 +13,7 @@ import {
     Spin,
     Empty,
     message,
+    Upload,
 } from 'antd';
 import {
     ClockCircleOutlined,
@@ -20,7 +21,10 @@ import {
     CheckOutlined,
     CloseOutlined,
     SendOutlined,
+    UploadOutlined,
+    DeleteOutlined,
 } from '@ant-design/icons';
+import type { UploadFile } from 'antd';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { 
     TaskResponse, 
@@ -51,6 +55,7 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
     const { user } = useUserStore();
     const queryClient = useQueryClient();
     const [form] = Form.useForm();
+    const [fileList, setFileList] = useState<UploadFile[]>([]);
 
     // Fetch workflow details for canvas
     const { data: workflowDetail, isLoading: workflowLoading } = useQuery({
@@ -114,12 +119,25 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
         
         try {
             const values = await form.validateFields();
+            
+            // Prepare file upload requests
+            const fileUploadRequests = fileList
+                .filter(file => file.originFileObj)
+                .map(file => ({
+                    fileName: file.name,
+                    objectName: `task-${task.id}/${file.uid}-${file.name}`, // Temporary object name until Minio is implemented
+                    fileSize: file.size || 0,
+                }));
+
             const request: ExecuteActionRequest = {
                 actionName: action.toLowerCase(),
                 comment: values.comment || undefined,
+                dataBody: values.dataBody || undefined,
+                files: fileUploadRequests.length > 0 ? fileUploadRequests : undefined,
             };
             executeActionMutation.mutate({ taskId: task.id, request });
-            form.resetFields(['comment']);
+            form.resetFields(['comment', 'dataBody']);
+            setFileList([]);
         } catch (error) {
             // Validation failed or no comment field
             const request: ExecuteActionRequest = {
@@ -159,7 +177,11 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
         <Modal
             title={null}
             open={open}
-            onCancel={onClose}
+            onCancel={() => {
+                form.resetFields();
+                setFileList([]);
+                onClose();
+            }}
             footer={null}
             width={1400}
             style={{ top: 20 }}
@@ -207,14 +229,60 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                                     <div>
                                         <Divider style={{ margin: '16px 0' }} />
                                         
-                                        {/* Step Input Form (if needed) */}
-                                        {currentStep.type === 'USER_TASK' && (
-                                            <Form form={form} layout="vertical" style={{ marginBottom: 16 }}>
-                                                <Form.Item name="input" label="Input">
+                                        <Form form={form} layout="vertical" style={{ marginBottom: 16 }}>
+                                            {/* Data Body Input (for USER_TASK) */}
+                                            {currentStep.type === 'USER_TASK' && (
+                                                <Form.Item name="dataBody" label="Input">
                                                     <TextArea rows={3} placeholder="Enter your input..." />
                                                 </Form.Item>
-                                            </Form>
-                                        )}
+                                            )}
+
+                                            {/* File Upload */}
+                                            <Form.Item label="Attachments">
+                                                <Upload
+                                                    fileList={fileList}
+                                                    onChange={({ fileList: newFileList }) => {
+                                                        setFileList(newFileList);
+                                                    }}
+                                                    beforeUpload={() => false}
+                                                    multiple
+                                                >
+                                                    <Button icon={<UploadOutlined />}>Upload File</Button>
+                                                </Upload>
+                                                {fileList.length > 0 && (
+                                                    <div style={{ marginTop: 8 }}>
+                                                        {fileList.map(file => (
+                                                            <div key={file.uid} style={{ 
+                                                                display: 'flex', 
+                                                                justifyContent: 'space-between', 
+                                                                alignItems: 'center',
+                                                                padding: '4px 0',
+                                                                fontSize: 12,
+                                                                color: '#595959'
+                                                            }}>
+                                                                <span>{file.name}</span>
+                                                                <Button
+                                                                    type="text"
+                                                                    size="small"
+                                                                    icon={<DeleteOutlined />}
+                                                                    onClick={() => {
+                                                                        setFileList(fileList.filter(f => f.uid !== file.uid));
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </Form.Item>
+
+                                            {/* Comment Input */}
+                                            <Form.Item name="comment" label="Comment">
+                                                <TextArea
+                                                    rows={2}
+                                                    placeholder="Add a comment (optional)"
+                                                />
+                                            </Form.Item>
+                                        </Form>
 
                                         {/* Action Buttons */}
                                         <Space direction="vertical" style={{ width: '100%' }} size={12}>
@@ -252,14 +320,6 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                                                     </Button>
                                                 </>
                                             )}
-
-                                            {/* Comment Input */}
-                                            <Form.Item name="comment" style={{ marginBottom: 0 }}>
-                                                <TextArea
-                                                    rows={2}
-                                                    placeholder="Add a comment (optional)"
-                                                />
-                                            </Form.Item>
                                         </Space>
                                     </div>
                                 ) : (

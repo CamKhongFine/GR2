@@ -154,6 +154,14 @@ export interface StepTaskActionResponse {
 export interface ExecuteActionRequest {
     actionName: string;
     comment?: string;
+    dataBody?: string;
+    files?: FileUploadRequest[];
+}
+
+export interface FileUploadRequest {
+    fileName: string;
+    objectName: string;
+    fileSize: number;
 }
 
 /**
