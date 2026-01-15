@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: auraflow
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auraflow
+    username: postgres
+    password: 132003
+    driver-class-name: org.postgresql.Driver
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 60000
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: auraflow
+    password: auraflow123
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/auraflow
+
+server:
+  port: 8000
+
+keycloak:
+  server-url: http://localhost:8080
+  realm: auraflow
+  admin-username: admin
+  admin-password: admin
+  client-id: auraflow-app

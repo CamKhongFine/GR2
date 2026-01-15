@@ -1,0 +1,164 @@
+package com.hust.auraflow.service.impl;
+
+import com.hust.auraflow.common.enums.InviteRequestStatus;
+import com.hust.auraflow.common.enums.TenantStatus;
+import com.hust.auraflow.common.enums.UserStatus;
+import com.hust.auraflow.dto.*;
+import com.hust.auraflow.dto.request.InviteRequestDTO;
+import com.hust.auraflow.dto.response.InviteResponse;
+import com.hust.auraflow.entity.InviteRequest;
+import com.hust.auraflow.entity.Role;
+import com.hust.auraflow.entity.Tenant;
+import com.hust.auraflow.entity.User;
+import com.hust.auraflow.entity.UserRole;
+import com.hust.auraflow.repository.InviteRequestRepository;
+import com.hust.auraflow.repository.TenantRepository;
+import com.hust.auraflow.repository.UserRepository;
+import com.hust.auraflow.repository.UserRoleRepository;
+import com.hust.auraflow.service.AuthService;
+import com.hust.auraflow.service.KeycloakService;
+import com.hust.auraflow.service.RabbitMQProducer;
+import com.hust.auraflow.service.SessionService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AuthServiceImpl implements AuthService {
+
+    private final UserRepository userRepository;
+    private final InviteRequestRepository inviteRequestRepository;
+    private final RabbitMQProducer rabbitMQProducer;
+    private final UserRoleRepository userRoleRepository;
+    private final SessionService sessionService;
+    private final KeycloakService keycloakService;
+    private final JwtDecoder jwtDecoder;
+    private final TenantRepository tenantRepository;
+
+    @Override
+    @Transactional
+    public InviteResponse inviteUser(InviteRequestDTO request) {
+
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            log.warn("User with email {} already exists", request.getEmail());
+            throw new IllegalArgumentException("User with this email already exists");
+        }
+
+        InviteRequest inviteRequest = new InviteRequest();
+        inviteRequest.setEmail(request.getEmail());
+        inviteRequest.setTenantId(request.getTenantId());
+        inviteRequest.setStatus(InviteRequestStatus.PENDING);
+        inviteRequest.setRetryCount(0);
+
+        InviteRequest saved = inviteRequestRepository.save(inviteRequest);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                rabbitMQProducer.publish(saved.getId());
+            }
+        });
+
+        return new InviteResponse("Invite request accepted");
+    }
+
+    @Override
+    public String handleKeycloakCallback(String code, String redirectUri) {
+        KeycloakTokenResult tokenResult = keycloakService.exchangeCodeForTokens(code, redirectUri);
+
+        Jwt jwt = jwtDecoder.decode(tokenResult.getIdToken());
+        String sub = jwt.getClaimAsString("sub");
+        if (sub == null) {
+            throw new IllegalStateException("sub not found in id_token");
+        }
+
+        User user = userRepository.findByKeycloakSub(sub)
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+
+        Tenant tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
+
+        if (tenant == null) {
+            log.warn("Login attempt blocked for user {} - tenant {} does not exist", user.getEmail(),
+                    user.getTenantId());
+            throw new IllegalStateException("Your tenant account does not exist. Please contact support.");
+        }
+        if (tenant.getStatus() == TenantStatus.INACTIVE) {
+            log.warn("Login attempt blocked for user {} - tenant {} is INACTIVE", user.getEmail(), tenant.getName());
+            throw new IllegalStateException("Your tenant account has been deactivated. Please contact support.");
+        }
+
+        if (user.getStatus() == UserStatus.INVITED) {
+            user.setStatus(UserStatus.ACTIVE);
+            userRepository.save(user);
+        }
+
+        List<UserRole> userRoles = userRoleRepository.findByIdUserId(user.getId());
+        Set<Long> roleIds = userRoles.stream()
+                .map(UserRole::getRole)
+                .filter(java.util.Objects::nonNull)
+                .map(Role::getId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        String sessionId = UUID.randomUUID().toString();
+        Instant expiresAt = Instant.now().plusSeconds(tokenResult.getRefreshExpiresIn());
+
+        SessionData sessionData = SessionData.builder()
+                .userId(user.getId())
+                .tenantId(user.getTenantId())
+                .roleIds(roleIds)
+                .accessToken(tokenResult.getAccessToken())
+                .refreshToken(tokenResult.getRefreshToken())
+                .expiresAt(expiresAt)
+                .build();
+
+        sessionService.saveSession(sessionId, sessionData, tokenResult.getRefreshExpiresIn());
+        return sessionId;
+    }
+
+    @Override
+    public SessionData getSessionData(String sessionId) {
+        return sessionService.getSession(sessionId);
+    }
+
+    @Override
+    public void clearSession(String sessionId) {
+        log.info("Clearing session: {}", sessionId);
+
+        try {
+            SessionData sessionData = sessionService.getSession(sessionId);
+
+            sessionService.deleteSession(sessionId);
+
+            if (sessionData != null && sessionData.getUserId() != null) {
+                User user = userRepository.findById(sessionData.getUserId()).orElse(null);
+
+                if (user != null && user.getKeycloakSub() != null) {
+                    rabbitMQProducer.publishLogoutUserMessage(user.getKeycloakSub(), user.getEmail());
+                    log.info("Published logout message to RabbitMQ for user: {}", user.getEmail());
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("Error during session cleanup for sessionId: {}", sessionId, e);
+            try {
+                sessionService.deleteSession(sessionId);
+            } catch (Exception ex) {
+                log.error("Failed to delete session after error: {}", sessionId, ex);
+            }
+        }
+    }
+}
