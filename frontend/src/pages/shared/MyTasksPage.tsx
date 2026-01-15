@@ -6,17 +6,28 @@ import {
     Empty,
     Spin,
     Avatar,
+    Input,
+    Select,
+    Button,
 } from 'antd';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import WorkspaceLayout, { SidebarItemConfig } from '../../layouts/WorkspaceLayout';
-import { 
-    getMyAssignedStepTasks, 
+import {
+    getMyAssignedStepTasks,
     StepTaskResponse,
     getTaskById,
 } from '../../api/task.api';
 import RequestDetailView from '../../components/tasks/RequestDetailView';
 import dayjs from 'dayjs';
-import { UserOutlined } from '@ant-design/icons';
+import {
+    UserOutlined,
+    SearchOutlined,
+    FilterOutlined,
+    ClockCircleOutlined,
+    CheckCircleOutlined,
+    RightOutlined,
+    InboxOutlined,
+} from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
@@ -34,6 +45,8 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
     workspaceType,
 }) => {
     const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+    const [searchText, setSearchText] = useState('');
+    const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
     const queryClient = useQueryClient();
 
     // Fetch assigned StepTasks with IN_PROGRESS status
@@ -49,24 +62,33 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
         enabled: !!selectedTaskId,
     });
 
-    // Get priority display with calm enterprise badge
+    // Filter tasks based on search and priority
+    const filteredTasks = stepTasks.filter(task => {
+        const matchesSearch = !searchText ||
+            task.taskTitle?.toLowerCase().includes(searchText.toLowerCase()) ||
+            task.workflowStepName?.toLowerCase().includes(searchText.toLowerCase());
+        const matchesPriority = !priorityFilter || task.priority === priorityFilter;
+        return matchesSearch && matchesPriority;
+    });
+
+    // Get priority display with modern gradient badge
     const getPriorityDisplay = (priority?: 'LOW' | 'NORMAL' | 'HIGH') => {
         const priorityText = priority || 'NORMAL';
         const badgeConfig = {
             'HIGH': {
-                bg: '#fff1f0',
-                border: '#ffccc7',
-                text: '#cf1322',
+                gradient: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%)',
+                text: '#fff',
+                shadow: '0 2px 8px rgba(238, 90, 90, 0.3)',
             },
             'NORMAL': {
-                bg: '#e6f7ff',
-                border: '#91d5ff',
-                text: '#0958d9',
+                gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                text: '#fff',
+                shadow: '0 2px 8px rgba(79, 172, 254, 0.3)',
             },
             'LOW': {
-                bg: '#f5f5f5',
-                border: '#d9d9d9',
-                text: '#595959',
+                gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                text: '#666',
+                shadow: '0 2px 8px rgba(168, 237, 234, 0.3)',
             },
         };
         const config = badgeConfig[priorityText];
@@ -74,13 +96,15 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
             <span
                 style={{
                     display: 'inline-block',
-                    padding: '2px 8px',
-                    backgroundColor: config.bg,
-                    border: `1px solid ${config.border}`,
-                    borderRadius: 4,
-                    fontSize: 12,
+                    padding: '4px 12px',
+                    background: config.gradient,
+                    borderRadius: 20,
+                    fontSize: 11,
                     color: config.text,
-                    fontWeight: 500,
+                    fontWeight: 600,
+                    letterSpacing: '0.5px',
+                    boxShadow: config.shadow,
+                    textTransform: 'uppercase',
                 }}
             >
                 {priorityText}
@@ -88,10 +112,10 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
         );
     };
 
-    // Get assigner display with avatar initial
+    // Get assigner display with gradient avatar
     const getAssignerDisplay = (creatorName: string | null | undefined) => {
         if (!creatorName) {
-            return <Text style={{ fontSize: 13, color: '#8c8c8c' }}>—</Text>;
+            return <Text style={{ fontSize: 13, color: '#9ca3af' }}>—</Text>;
         }
         const initials = creatorName
             .split(' ')
@@ -99,33 +123,73 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
             .join('')
             .toUpperCase()
             .slice(0, 2);
+
+        // Generate color based on name
+        const colors = [
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+        ];
+        const colorIndex = creatorName.charCodeAt(0) % colors.length;
+
         return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Avatar
-                    size={24}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
                     style={{
-                        backgroundColor: '#f0f0f0',
-                        color: '#595959',
-                        fontSize: 11,
-                        fontWeight: 500,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        background: colors[colorIndex],
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                     }}
                 >
                     {initials}
-                </Avatar>
-                <Text style={{ fontSize: 13, color: '#595959' }}>
+                </div>
+                <Text style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>
                     {creatorName}
                 </Text>
             </div>
         );
     };
 
-    // Get received date display
+    // Get received date display with relative time
     const getReceivedDisplay = (beginDate: string | null) => {
-        if (!beginDate) return <Text style={{ fontSize: 13, color: '#8c8c8c' }}>—</Text>;
+        if (!beginDate) return <Text style={{ fontSize: 13, color: '#9ca3af' }}>—</Text>;
+        const date = dayjs(beginDate);
+        const now = dayjs();
+        const diffDays = now.diff(date, 'day');
+
+        let timeText = '';
+        let timeColor = '#6b7280';
+
+        if (diffDays === 0) {
+            timeText = 'Today';
+            timeColor = '#10b981';
+        } else if (diffDays === 1) {
+            timeText = 'Yesterday';
+            timeColor = '#f59e0b';
+        } else if (diffDays <= 7) {
+            timeText = `${diffDays} days ago`;
+            timeColor = '#f59e0b';
+        } else {
+            timeText = date.format('MMM D, YYYY');
+        }
+
         return (
-            <Text style={{ fontSize: 13, color: '#595959' }}>
-                {dayjs(beginDate).format('MMM D, YYYY')}
-            </Text>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ClockCircleOutlined style={{ fontSize: 12, color: timeColor }} />
+                <Text style={{ fontSize: 13, color: timeColor, fontWeight: 500 }}>
+                    {timeText}
+                </Text>
+            </div>
         );
     };
 
@@ -134,40 +198,69 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
             title: 'STEP',
             dataIndex: 'workflowStepName',
             key: 'step',
+            width: 180,
             render: (value: string | null) => (
-                <Text style={{ fontSize: 13, color: '#6b7280' }}>
-                    {value || '—'}
-                </Text>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '4px 12px',
+                    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                    borderRadius: 8,
+                    width: 'fit-content',
+                }}>
+                    <CheckCircleOutlined style={{ fontSize: 14, color: '#0284c7' }} />
+                    <Text style={{ fontSize: 13, color: '#0369a1', fontWeight: 500 }}>
+                        {value || '—'}
+                    </Text>
+                </div>
             ),
         },
         {
             title: 'REQUEST',
             key: 'request',
             render: (_: unknown, record: StepTaskResponse) => (
-                <Text strong style={{ fontSize: 15, color: '#111827', fontWeight: 600 }}>
-                    {record.taskTitle || `Request #${record.taskId}`}
-                </Text>
+                <div>
+                    <Text strong style={{ fontSize: 15, color: '#111827', fontWeight: 600, display: 'block' }}>
+                        {record.taskTitle || `Request #${record.taskId}`}
+                    </Text>
+                </div>
             ),
         },
         {
             title: 'ASSIGNER',
             dataIndex: 'creatorName',
             key: 'assigner',
+            width: 200,
             render: (_: unknown, record: StepTaskResponse) => getAssignerDisplay(record.creatorName),
         },
         {
             title: 'PRIORITY',
             dataIndex: 'priority',
             key: 'priority',
+            width: 120,
             render: (value: 'LOW' | 'NORMAL' | 'HIGH' | undefined) => getPriorityDisplay(value),
         },
         {
             title: 'RECEIVED',
             dataIndex: 'beginDate',
             key: 'received',
+            width: 150,
             render: (value: string | null) => getReceivedDisplay(value),
         },
+        {
+            title: '',
+            key: 'action',
+            width: 50,
+            render: () => (
+                <RightOutlined style={{ fontSize: 14, color: '#9ca3af' }} />
+            ),
+        },
     ];
+
+    // Stats
+    const highPriorityCount = stepTasks.filter(t => t.priority === 'HIGH').length;
+    const totalCount = stepTasks.length;
 
     return (
         <WorkspaceLayout
@@ -177,56 +270,171 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
             headerOverSidebar
         >
             <div className="max-w-7xl mx-auto px-4">
-                <div style={{ marginBottom: 24 }}>
-                    <Title level={2} className="mb-0" style={{ fontSize: 24, fontWeight: 600, color: '#111827' }}>
-                        My Tasks
-                    </Title>
-                    <Text type="secondary" style={{ fontSize: 14, color: '#6b7280' }}>
-                        Steps assigned to you that require action
+                {/* Modern Header with Stats */}
+                <div
+                    style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        borderRadius: 16,
+                        padding: '28px 32px',
+                        marginBottom: 24,
+                        boxShadow: '0 10px 40px rgba(102, 126, 234, 0.3)',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                            <Title level={2} style={{ margin: 0, color: '#fff', fontWeight: 700, fontSize: 28 }}>
+                                My Tasks
+                            </Title>
+                            <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 15 }}>
+                                Steps assigned to you that require action
+                            </Text>
+                        </div>
+
+                        {/* Stats Cards */}
+                        <div style={{ display: 'flex', gap: 16 }}>
+                            <div
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.15)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 12,
+                                    padding: '16px 24px',
+                                    textAlign: 'center',
+                                    minWidth: 100,
+                                }}
+                            >
+                                <div style={{ fontSize: 28, fontWeight: 700, color: '#fff' }}>
+                                    {totalCount}
+                                </div>
+                                <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.8)', fontWeight: 500 }}>
+                                    Total Tasks
+                                </div>
+                            </div>
+                            <div
+                                style={{
+                                    background: highPriorityCount > 0
+                                        ? 'rgba(255, 107, 107, 0.2)'
+                                        : 'rgba(255, 255, 255, 0.15)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 12,
+                                    padding: '16px 24px',
+                                    textAlign: 'center',
+                                    minWidth: 100,
+                                    border: highPriorityCount > 0 ? '1px solid rgba(255, 107, 107, 0.3)' : 'none',
+                                }}
+                            >
+                                <div style={{ fontSize: 28, fontWeight: 700, color: highPriorityCount > 0 ? '#ff6b6b' : '#fff' }}>
+                                    {highPriorityCount}
+                                </div>
+                                <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.8)', fontWeight: 500 }}>
+                                    High Priority
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Filters Bar */}
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: 12,
+                        marginBottom: 20,
+                        alignItems: 'center',
+                    }}
+                >
+                    <Input
+                        placeholder="Search tasks..."
+                        prefix={<SearchOutlined style={{ color: '#9ca3af' }} />}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        style={{
+                            width: 300,
+                            borderRadius: 10,
+                            height: 42,
+                            border: '1px solid #e5e7eb',
+                        }}
+                    />
+                    <Select
+                        placeholder="All Priorities"
+                        allowClear
+                        value={priorityFilter}
+                        onChange={setPriorityFilter}
+                        style={{ width: 150, height: 42 }}
+                        options={[
+                            { label: 'High', value: 'HIGH' },
+                            { label: 'Normal', value: 'NORMAL' },
+                            { label: 'Low', value: 'LOW' },
+                        ]}
+                    />
+                    <div style={{ flex: 1 }} />
+                    <Text style={{ color: '#6b7280', fontSize: 13 }}>
+                        Showing {filteredTasks.length} of {totalCount} tasks
                     </Text>
                 </div>
 
+                {/* Tasks Table Card */}
                 <Card
                     style={{
-                        borderRadius: 8,
-                        border: '1px solid #e5e7eb',
+                        borderRadius: 16,
+                        border: 'none',
                         backgroundColor: '#ffffff',
-                        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+                        overflow: 'hidden',
                     }}
                     bodyStyle={{ padding: 0 }}
                 >
                     {isLoading ? (
-                        <div style={{ textAlign: 'center', padding: 40 }}>
+                        <div style={{ textAlign: 'center', padding: 60 }}>
                             <Spin size="large" />
+                            <div style={{ marginTop: 16, color: '#6b7280' }}>Loading your tasks...</div>
                         </div>
-                    ) : stepTasks.length === 0 ? (
-                        <Empty 
-                            description="You have no tasks requiring action."
-                            image={Empty.PRESENTED_IMAGE_SIMPLE}
-                            style={{ padding: 60 }}
-                        />
+                    ) : filteredTasks.length === 0 ? (
+                        <div style={{ padding: '80px 0', textAlign: 'center' }}>
+                            <div
+                                style={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    margin: '0 auto 20px',
+                                }}
+                            >
+                                <InboxOutlined style={{ fontSize: 36, color: '#0284c7' }} />
+                            </div>
+                            <Title level={4} style={{ color: '#374151', marginBottom: 8 }}>
+                                {searchText || priorityFilter ? 'No matching tasks' : 'All caught up!'}
+                            </Title>
+                            <Text style={{ color: '#9ca3af' }}>
+                                {searchText || priorityFilter
+                                    ? 'Try adjusting your search or filter criteria'
+                                    : 'You have no tasks requiring action right now'}
+                            </Text>
+                        </div>
                     ) : (
                         <Table
                             rowKey="id"
                             columns={columns}
-                            dataSource={stepTasks}
+                            dataSource={filteredTasks}
                             pagination={false}
                             size="middle"
                             onRow={(record: StepTaskResponse) => ({
                                 onClick: () => setSelectedTaskId(record.taskId),
-                                style: { 
+                                style: {
                                     cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
                                 },
                                 onMouseEnter: (e: React.MouseEvent<HTMLTableRowElement>) => {
-                                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                                    e.currentTarget.style.transform = 'scale(1.002)';
                                 },
                                 onMouseLeave: (e: React.MouseEvent<HTMLTableRowElement>) => {
                                     e.currentTarget.style.backgroundColor = '#ffffff';
+                                    e.currentTarget.style.transform = 'scale(1)';
                                 },
                             })}
-                            style={{
-                                fontSize: 13,
-                            }}
                             components={{
                                 header: {
                                     cell: (props: any) => (
@@ -234,14 +442,14 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                                             {...props}
                                             style={{
                                                 ...props.style,
-                                                backgroundColor: '#f9fafb',
-                                                borderBottom: '1px solid #e5e7eb',
-                                                padding: '12px 16px',
+                                                background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+                                                borderBottom: '1px solid #e2e8f0',
+                                                padding: '14px 20px',
                                                 fontWeight: 600,
                                                 fontSize: 11,
-                                                color: '#6b7280',
+                                                color: '#64748b',
                                                 textTransform: 'uppercase',
-                                                letterSpacing: '0.5px',
+                                                letterSpacing: '0.8px',
                                             }}
                                         />
                                     ),
@@ -252,7 +460,16 @@ const MyTasksPage: React.FC<MyTasksPageProps> = ({
                                             {...props}
                                             style={{
                                                 ...props.style,
-                                                borderBottom: '1px solid #f3f4f6',
+                                                borderBottom: '1px solid #f1f5f9',
+                                            }}
+                                        />
+                                    ),
+                                    cell: (props: any) => (
+                                        <td
+                                            {...props}
+                                            style={{
+                                                ...props.style,
+                                                padding: '16px 20px',
                                             }}
                                         />
                                     ),
