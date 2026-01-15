@@ -66,7 +66,7 @@ public class StepTaskData {
      */
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "created_by_id", nullable = false)
+    @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
     @NotNull
