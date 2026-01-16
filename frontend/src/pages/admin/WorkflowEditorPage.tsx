@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Input, message, Spin, Select, Radio, Space, Divider, Typography } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
+import { Button, Input, message, Spin, Select, Divider, Typography } from 'antd';
+import { ArrowLeftOutlined, SaveOutlined, UserOutlined, TeamOutlined, PlayCircleOutlined, StopOutlined, CheckOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Node, Edge, useNodesState, useEdgesState, addEdge, Connection, MarkerType } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -111,8 +111,11 @@ const WorkflowEditorPage: React.FC = () => {
     const [selectedAssigneeType, setSelectedAssigneeType] = React.useState<AssigneeType>('DYNAMIC');
 
     const [isEdgeLabelModalOpen, setIsEdgeLabelModalOpen] = React.useState(false);
-    const [pendingConnection, setPendingConnection] = React.useState<Connection | null>(null);
-    const [edgeLabelForm] = Form.useForm();
+    const [pendingReviewConnection, setPendingReviewConnection] = React.useState<{
+        sourceId: string;
+        connection: Connection;
+    } | null>(null);
+    const [rejectTargetForm] = Form.useForm();
 
     // Node config drawer state
     const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null);
@@ -240,36 +243,92 @@ const WorkflowEditorPage: React.FC = () => {
         }
     };
 
-    // Handle connection
+    // Create edge with proper styling
+    const createEdge = (source: string, target: string, action: string): Edge => {
+        const isReject = action.toLowerCase() === 'reject';
+        const isApprove = action.toLowerCase() === 'approve';
+
+        return {
+            id: `edge_${source}_${target}_${action}`,
+            source,
+            target,
+            label: action,
+            markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: isReject ? '#ff4d4f' : isApprove ? '#52c41a' : '#888',
+            },
+            style: {
+                stroke: isReject ? '#ff4d4f' : isApprove ? '#52c41a' : '#888',
+                strokeWidth: 2,
+                strokeDasharray: isReject ? '5,5' : undefined,
+            },
+            labelStyle: {
+                fill: isReject ? '#ff4d4f' : isApprove ? '#52c41a' : '#666',
+                fontSize: 12,
+                fontWeight: 600,
+            },
+        };
+    };
+
+    // Handle connection - auto-set edge names based on source node type
     const onConnect = useCallback(
         (connection: Connection) => {
-            // Show modal to enter action name
-            setPendingConnection(connection);
-            edgeLabelForm.resetFields();
-            setIsEdgeLabelModalOpen(true);
+            if (!connection.source || !connection.target) return;
+
+            const sourceNode = nodes.find((n) => n.id === connection.source);
+            const sourceType = sourceNode?.data.type;
+
+            if (sourceType === 'START') {
+                const newEdge = createEdge(connection.source, connection.target, 'start');
+                setEdges((eds) => addEdge(newEdge, eds));
+            } else if (sourceType === 'USER_TASK') {
+                const newEdge = createEdge(connection.source, connection.target, 'submit');
+                setEdges((eds) => addEdge(newEdge, eds));
+            } else if (sourceType === 'REVIEW') {
+                // Check if approve edge already exists
+                const existingApprove = edges.find(
+                    (e) => e.source === connection.source && e.label?.toString().toLowerCase() === 'approve'
+                );
+
+                if (!existingApprove) {
+                    // First connection from REVIEW is "approve"
+                    const newEdge = createEdge(connection.source, connection.target, 'approve');
+                    setEdges((eds) => addEdge(newEdge, eds));
+                } else {
+                    // Second connection is "reject" - show modal to select target
+                    setPendingReviewConnection({ sourceId: connection.source, connection });
+                    rejectTargetForm.setFieldsValue({ targetNodeId: connection.target });
+                    setIsEdgeLabelModalOpen(true);
+                }
+            } else {
+                const newEdge = createEdge(connection.source, connection.target, 'next');
+                setEdges((eds) => addEdge(newEdge, eds));
+            }
         },
-        [edgeLabelForm]
+        [nodes, edges, setEdges, rejectTargetForm]
     );
 
-    const handleEdgeLabelSubmit = async () => {
-        if (!pendingConnection) return;
+    // Handle reject target selection
+    const handleRejectTargetSubmit = async () => {
+        if (!pendingReviewConnection) return;
         try {
-            const values = await edgeLabelForm.validateFields();
-            const newEdge: Edge = {
-                id: `edge_${pendingConnection.source}_${pendingConnection.target}`,
-                source: pendingConnection.source!,
-                target: pendingConnection.target!,
-                label: values.action,
-                markerEnd: { type: MarkerType.ArrowClosed, color: '#888' },
-                style: { stroke: '#888', strokeWidth: 2 },
-                labelStyle: { fill: '#666', fontSize: 12 },
-            };
+            const values = await rejectTargetForm.validateFields();
+            const newEdge = createEdge(
+                pendingReviewConnection.sourceId,
+                values.targetNodeId,
+                'reject'
+            );
             setEdges((eds) => addEdge(newEdge, eds));
             setIsEdgeLabelModalOpen(false);
-            setPendingConnection(null);
+            setPendingReviewConnection(null);
         } catch (error) {
             console.error('Validation failed:', error);
         }
+    };
+
+    // Get available nodes for reject target (previous steps, not START/END)
+    const getRejectTargetOptions = () => {
+        return nodes.filter((n) => n.data.type !== 'START' && n.data.type !== 'END');
     };
 
     // Handle delete edge
@@ -349,8 +408,26 @@ const WorkflowEditorPage: React.FC = () => {
             message.warning('Workflow can only have one START step');
             return;
         }
+
+        // START and END nodes are added directly with hardcoded names
+        if (type === 'START' || type === 'END') {
+            const newNode: Node<WorkflowNodeData> = {
+                id: generateNodeId(),
+                type: 'workflowNode',
+                data: {
+                    name: type === 'START' ? 'Start' : 'End',
+                    type: type,
+                },
+                position: { x: Math.random() * 400 + 200, y: Math.random() * 200 + 100 },
+            };
+            setNodes((nds) => [...nds, newNode]);
+            return;
+        }
+
+        // USER_TASK and REVIEW show modal for assignee configuration
         setPendingNodeType(type);
         nodeNameForm.resetFields();
+        setSelectedAssigneeType('DYNAMIC');
         setIsAddNodeModalOpen(true);
     };
 
@@ -366,17 +443,15 @@ const WorkflowEditorPage: React.FC = () => {
             };
 
             // Add assignee config for USER_TASK and REVIEW types
-            if (pendingNodeType === 'USER_TASK' || pendingNodeType === 'REVIEW') {
-                const assigneeType = values.assigneeType || 'DYNAMIC';
-                nodeData.assigneeType = assigneeType;
-                nodeData.assigneeValue = assigneeType === 'FIXED' ? values.assigneeValue : null;
+            const assigneeType = values.assigneeType || 'DYNAMIC';
+            nodeData.assigneeType = assigneeType;
+            nodeData.assigneeValue = assigneeType === 'FIXED' ? values.assigneeValue : null;
 
-                // Store assignee name for display
-                if (assigneeType === 'FIXED' && values.assigneeValue && usersData) {
-                    const selectedUser = usersData.content.find(u => u.id.toString() === values.assigneeValue);
-                    if (selectedUser) {
-                        nodeData.assigneeName = `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim() || selectedUser.email;
-                    }
+            // Store assignee name for display
+            if (assigneeType === 'FIXED' && values.assigneeValue && usersData) {
+                const selectedUser = usersData.content.find(u => u.id.toString() === values.assigneeValue);
+                if (selectedUser) {
+                    nodeData.assigneeName = `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim() || selectedUser.email;
                 }
             }
 
@@ -521,7 +596,7 @@ const WorkflowEditorPage: React.FC = () => {
 
             {/* Add Node Modal */}
             <Modal
-                title={`Add ${pendingNodeType?.replace('_', ' ')} Step`}
+                title={null}
                 open={isAddNodeModalOpen}
                 onOk={handleNodeNameSubmit}
                 onCancel={() => {
@@ -529,107 +604,234 @@ const WorkflowEditorPage: React.FC = () => {
                     setPendingNodeType(null);
                     setSelectedAssigneeType('DYNAMIC');
                 }}
-                okText="Add"
-                width={500}
+                okText="Add Step"
+                cancelText="Cancel"
+                width={520}
+                bodyStyle={{ padding: 0 }}
             >
-                <Form form={nodeNameForm} layout="vertical" style={{ marginTop: 16 }}>
-                    <Form.Item
-                        name="name"
-                        label="Step Name"
-                        rules={[{ required: true, message: 'Please enter step name' }]}
+                {/* Modal Header */}
+                <div
+                    style={{
+                        padding: '20px 24px',
+                        background: pendingNodeType === 'USER_TASK' ? '#f59e0b' :
+                            pendingNodeType === 'REVIEW' ? '#10b981' :
+                                pendingNodeType === 'START' ? '#4f46e5' : '#6b7280',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 14,
+                    }}
+                >
+                    <div
+                        style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 10,
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 22,
+                            color: '#fff',
+                        }}
                     >
-                        <Input placeholder="Enter step name" />
-                    </Form.Item>
+                        {pendingNodeType === 'USER_TASK' ? <UserOutlined /> :
+                            pendingNodeType === 'REVIEW' ? <TeamOutlined /> :
+                                pendingNodeType === 'START' ? <PlayCircleOutlined /> :
+                                    <StopOutlined />}
+                    </div>
+                    <div>
+                        <Text style={{ fontSize: 18, fontWeight: 600, color: '#fff', display: 'block' }}>
+                            Add {pendingNodeType?.replace('_', ' ')} Step
+                        </Text>
+                        <Text style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.8)' }}>
+                            {pendingNodeType === 'USER_TASK' ? 'A task that requires user action' :
+                                pendingNodeType === 'REVIEW' ? 'An approval/review checkpoint' :
+                                    pendingNodeType === 'START' ? 'The entry point of workflow' :
+                                        'The completion point'}
+                        </Text>
+                    </div>
+                </div>
 
-                    {/* Assignee Configuration - only for USER_TASK and REVIEW */}
-                    {(pendingNodeType === 'USER_TASK' || pendingNodeType === 'REVIEW') && (
-                        <>
-                            <Divider orientation="left" style={{ margin: '16px 0 12px' }}>
-                                <Space>
-                                    <TeamOutlined />
-                                    <Text strong>Assignee Configuration</Text>
-                                </Space>
-                            </Divider>
+                {/* Modal Body */}
+                <div style={{ padding: '24px' }}>
+                    <Form form={nodeNameForm} layout="vertical">
+                        {/* Step Name - hidden, auto-generated */}
+                        <Form.Item
+                            name="name"
+                            initialValue={pendingNodeType === 'USER_TASK' ? 'User Task' : 'Review'}
+                            hidden
+                        >
+                            <Input />
+                        </Form.Item>
 
-                            <Form.Item
-                                name="assigneeType"
-                                label="Assignee Type"
-                                initialValue="DYNAMIC"
-                            >
-                                <Radio.Group
-                                    onChange={(e) => {
-                                        setSelectedAssigneeType(e.target.value);
-                                        if (e.target.value === 'DYNAMIC') {
-                                            nodeNameForm.setFieldValue('assigneeValue', null);
-                                        }
+                        {/* Assignee Configuration */}
+                        <Form.Item
+                            name="assigneeType"
+                            initialValue="DYNAMIC"
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                {/* Dynamic Option */}
+                                <div
+                                    onClick={() => {
+                                        setSelectedAssigneeType('DYNAMIC');
+                                        nodeNameForm.setFieldValue('assigneeType', 'DYNAMIC');
+                                        nodeNameForm.setFieldValue('assigneeValue', null);
+                                    }}
+                                    style={{
+                                        padding: '14px 16px',
+                                        borderRadius: 10,
+                                        border: `2px solid ${selectedAssigneeType === 'DYNAMIC' ? '#3b82f6' : '#e5e7eb'}`,
+                                        background: selectedAssigneeType === 'DYNAMIC' ? '#eff6ff' : '#fff',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 12,
+                                        transition: 'all 0.2s',
                                     }}
                                 >
-                                    <Space direction="vertical">
-                                        <Radio value="DYNAMIC">
-                                            <Space>
-                                                <UserOutlined />
-                                                <span>Dynamic</span>
-                                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                                    - Assignee selected at runtime
-                                                </Text>
-                                            </Space>
-                                        </Radio>
-                                        <Radio value="FIXED">
-                                            <Space>
-                                                <UserOutlined style={{ color: '#1890ff' }} />
-                                                <span>Fixed</span>
-                                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                                    - Predefined assignee
-                                                </Text>
-                                            </Space>
-                                        </Radio>
-                                    </Space>
-                                </Radio.Group>
-                            </Form.Item>
+                                    <div
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 8,
+                                            background: selectedAssigneeType === 'DYNAMIC' ? '#3b82f6' : '#e5e7eb',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        <UserOutlined style={{ fontSize: 18, color: '#fff' }} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <Text strong style={{ display: 'block', color: '#1f2937' }}>
+                                            Dynamic Assignment
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                            Assignee will be selected when task is created
+                                        </Text>
+                                    </div>
+                                    {selectedAssigneeType === 'DYNAMIC' && (
+                                        <div style={{
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: '50%',
+                                            background: '#3b82f6',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}>
+                                            <CheckOutlined style={{ fontSize: 12, color: '#fff' }} />
+                                        </div>
+                                    )}
+                                </div>
 
-                            {selectedAssigneeType === 'FIXED' && (
-                                <Form.Item
-                                    name="assigneeValue"
-                                    label="Select Assignee"
-                                    rules={[{ required: true, message: 'Please select an assignee' }]}
+                                {/* Fixed Option */}
+                                <div
+                                    onClick={() => {
+                                        setSelectedAssigneeType('FIXED');
+                                        nodeNameForm.setFieldValue('assigneeType', 'FIXED');
+                                    }}
+                                    style={{
+                                        padding: '14px 16px',
+                                        borderRadius: 10,
+                                        border: `2px solid ${selectedAssigneeType === 'FIXED' ? '#10b981' : '#e5e7eb'}`,
+                                        background: selectedAssigneeType === 'FIXED' ? '#ecfdf5' : '#fff',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 12,
+                                        transition: 'all 0.2s',
+                                    }}
                                 >
-                                    <Select
-                                        showSearch
-                                        placeholder="Search and select user"
-                                        optionFilterProp="label"
-                                        loading={!usersData}
-                                        options={
-                                            usersData?.content.map((user) => ({
-                                                value: user.id.toString(),
-                                                label: `${user.firstName || ''} ${user.lastName || ''} (${user.email})`.trim(),
-                                            })) || []
-                                        }
-                                    />
-                                </Form.Item>
-                            )}
-                        </>
-                    )}
-                </Form>
+                                    <div
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 8,
+                                            background: selectedAssigneeType === 'FIXED' ? '#10b981' : '#e5e7eb',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        <UserOutlined style={{ fontSize: 18, color: '#fff' }} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <Text strong style={{ display: 'block', color: '#1f2937' }}>
+                                            Fixed Assignment
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                            Always assigned to a specific user
+                                        </Text>
+                                    </div>
+                                    {selectedAssigneeType === 'FIXED' && (
+                                        <div style={{
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: '50%',
+                                            background: '#10b981',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}>
+                                            <CheckOutlined style={{ fontSize: 12, color: '#fff' }} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </Form.Item>
+
+                        {selectedAssigneeType === 'FIXED' && (
+                            <Form.Item
+                                name="assigneeValue"
+                                label={<Text style={{ fontSize: 12, color: '#6b7280' }}>Select {pendingNodeType === 'USER_TASK' ? 'Assignee' : 'Reviewer'}</Text>}
+                                rules={[{ required: true, message: 'Please select a user' }]}
+                                style={{ marginTop: 16 }}
+                            >
+                                <Select
+                                    showSearch
+                                    placeholder="Search and select user"
+                                    optionFilterProp="label"
+                                    loading={!usersData}
+                                    size="middle"
+                                    style={{ borderRadius: 8 }}
+                                    options={
+                                        usersData?.content.map((user) => ({
+                                            value: user.id.toString(),
+                                            label: `${user.firstName || ''} ${user.lastName || ''} (${user.email})`.trim(),
+                                        })) || []
+                                    }
+                                />
+                            </Form.Item>
+                        )}
+                    </Form>
+                </div>
             </Modal>
 
-            {/* Edge Label Modal */}
+            {/* Reject Target Selection Modal */}
             <Modal
-                title="Add Transition"
+                title="Set Reject Target"
                 open={isEdgeLabelModalOpen}
-                onOk={handleEdgeLabelSubmit}
+                onOk={handleRejectTargetSubmit}
                 onCancel={() => {
                     setIsEdgeLabelModalOpen(false);
-                    setPendingConnection(null);
+                    setPendingReviewConnection(null);
                 }}
-                okText="Add"
+                okText="Confirm"
             >
-                <Form form={edgeLabelForm} layout="vertical" style={{ marginTop: 16 }}>
+                <Form form={rejectTargetForm} layout="vertical" style={{ marginTop: 16 }}>
                     <Form.Item
-                        name="action"
-                        label="Action Name"
-                        rules={[{ required: true, message: 'Please enter action name' }]}
+                        name="targetNodeId"
+                        label="On Reject, return to:"
+                        rules={[{ required: true, message: 'Please select target step' }]}
                     >
-                        <Input placeholder="e.g., submit, approve, reject" />
+                        <Select placeholder="Select step to return to on reject">
+                            {getRejectTargetOptions().map((node) => (
+                                <Select.Option key={node.id} value={node.id}>
+                                    {node.data.name} ({node.data.type.replace('_', ' ')})
+                                </Select.Option>
+                            ))}
+                        </Select>
                     </Form.Item>
                 </Form>
             </Modal>
@@ -646,9 +848,23 @@ const WorkflowEditorPage: React.FC = () => {
                         email: user.email,
                     })) || []
                 }
+                availableNodes={nodes.map((n) => ({
+                    id: n.id,
+                    name: n.data.name,
+                    type: n.data.type,
+                }))}
+                currentRejectTarget={
+                    selectedNodeId
+                        ? edges.find(
+                            (e) => e.source === selectedNodeId && e.label?.toString().toLowerCase() === 'reject'
+                        )?.target
+                        : undefined
+                }
                 onSave={handleNodeUpdate}
                 onClose={() => setSelectedNodeId(null)}
                 onDelete={handleDeleteNode}
+                onSetRejectTarget={handleSetRejectTarget}
+                onRemoveRejectTarget={handleRemoveRejectTarget}
             />
         </div>
     );

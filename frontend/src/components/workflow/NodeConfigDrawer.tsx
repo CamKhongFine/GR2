@@ -10,13 +10,16 @@ import {
     Typography,
     Divider,
     Tag,
+    Alert,
 } from 'antd';
 import {
     UserOutlined,
     PlayCircleOutlined,
     AuditOutlined,
     StopOutlined,
-    TeamOutlined,
+    CheckOutlined,
+    CloseOutlined,
+    ArrowRightOutlined,
 } from '@ant-design/icons';
 import { WorkflowNodeData } from './WorkflowNode';
 import { WorkflowStepType, AssigneeType } from '../../api/workflow.api';
@@ -30,25 +33,35 @@ interface UserOption {
     email?: string;
 }
 
+interface AvailableNode {
+    id: string;
+    name: string;
+    type: string;
+}
+
 interface NodeConfigDrawerProps {
     open: boolean;
     nodeId: string | null;
     nodeData: WorkflowNodeData | null;
     users?: UserOption[];
+    availableNodes?: AvailableNode[];
+    currentRejectTarget?: string | null;
     onSave: (nodeId: string, updates: Partial<WorkflowNodeData>) => void;
     onClose: () => void;
     onDelete?: (nodeId: string) => void;
+    onSetRejectTarget?: (sourceNodeId: string, targetNodeId: string) => void;
+    onRemoveRejectTarget?: (sourceNodeId: string) => void;
 }
 
 const typeIcons: Record<WorkflowStepType, React.ReactNode> = {
-    START: <PlayCircleOutlined style={{ color: '#597ef7' }} />,
-    USER_TASK: <UserOutlined style={{ color: '#fa8c16' }} />,
-    REVIEW: <AuditOutlined style={{ color: '#52c41a' }} />,
-    END: <StopOutlined style={{ color: '#595959' }} />,
+    START: <PlayCircleOutlined style={{ color: '#4f46e5' }} />,
+    USER_TASK: <UserOutlined style={{ color: '#f59e0b' }} />,
+    REVIEW: <AuditOutlined style={{ color: '#10b981' }} />,
+    END: <StopOutlined style={{ color: '#6b7280' }} />,
 };
 
 const typeColors: Record<WorkflowStepType, string> = {
-    START: 'blue',
+    START: 'purple',
     USER_TASK: 'orange',
     REVIEW: 'green',
     END: 'default',
@@ -59,12 +72,17 @@ const NodeConfigDrawer: React.FC<NodeConfigDrawerProps> = ({
     nodeId,
     nodeData,
     users = [],
+    availableNodes = [],
+    currentRejectTarget,
     onSave,
     onClose,
     onDelete,
+    onSetRejectTarget,
+    onRemoveRejectTarget,
 }) => {
     const [form] = Form.useForm();
     const [assigneeType, setAssigneeType] = React.useState<AssigneeType>('DYNAMIC');
+    const [rejectTargetId, setRejectTargetId] = React.useState<string | undefined>(undefined);
 
     // Reset form when node changes
     useEffect(() => {
@@ -79,6 +97,11 @@ const NodeConfigDrawer: React.FC<NodeConfigDrawerProps> = ({
             setAssigneeType(nodeData.assigneeType || 'DYNAMIC');
         }
     }, [nodeData, form]);
+
+    // Update reject target when currentRejectTarget changes
+    useEffect(() => {
+        setRejectTargetId(currentRejectTarget || undefined);
+    }, [currentRejectTarget]);
 
     const handleSave = async () => {
         if (!nodeId) return;
@@ -122,7 +145,21 @@ const NodeConfigDrawer: React.FC<NodeConfigDrawerProps> = ({
         }
     };
 
+    const handleRejectTargetChange = (value: string | undefined) => {
+        setRejectTargetId(value);
+        if (nodeId && value && onSetRejectTarget) {
+            onSetRejectTarget(nodeId, value);
+        } else if (nodeId && !value && onRemoveRejectTarget) {
+            onRemoveRejectTarget(nodeId);
+        }
+    };
+
     const isReadOnly = nodeData?.type === 'START' || nodeData?.type === 'END';
+
+    // Get reject target name
+    const rejectTargetName = rejectTargetId
+        ? availableNodes.find(n => n.id === rejectTargetId)?.name
+        : null;
 
     return (
         <Drawer
@@ -137,7 +174,7 @@ const NodeConfigDrawer: React.FC<NodeConfigDrawerProps> = ({
                     )}
                 </Space>
             }
-            width={420}
+            width={440}
             open={open}
             onClose={onClose}
             footer={
@@ -171,9 +208,15 @@ const NodeConfigDrawer: React.FC<NodeConfigDrawerProps> = ({
                     {/* Assignee Configuration - USER_TASK and REVIEW */}
                     {(nodeData.type === 'USER_TASK' || nodeData.type === 'REVIEW') && (
                         <>
+                            <Divider style={{ margin: '16px 0 12px' }}>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    {nodeData.type === 'USER_TASK' ? 'ASSIGNEE' : 'REVIEWER'}
+                                </Text>
+                            </Divider>
+
                             <Form.Item
                                 name="assigneeType"
-                                label={nodeData.type === 'USER_TASK' ? 'Assignee' : 'Reviewer'}
+                                label="Assignment Type"
                             >
                                 <Radio.Group
                                     onChange={(e) => {
@@ -183,22 +226,22 @@ const NodeConfigDrawer: React.FC<NodeConfigDrawerProps> = ({
                                         }
                                     }}
                                 >
-                                    <Space direction="vertical">
+                                    <Space direction="vertical" style={{ width: '100%' }}>
                                         <Radio value="DYNAMIC">
                                             <Space>
                                                 <UserOutlined />
                                                 <span>Dynamic</span>
                                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                                    — Selected at runtime by the user
+                                                    — Selected at runtime
                                                 </Text>
                                             </Space>
                                         </Radio>
                                         <Radio value="FIXED">
                                             <Space>
-                                                <UserOutlined style={{ color: '#1890ff' }} />
+                                                <UserOutlined style={{ color: '#3b82f6' }} />
                                                 <span>Fixed</span>
                                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                                    — Predefined assignee
+                                                    — Predefined user
                                                 </Text>
                                             </Space>
                                         </Radio>
@@ -226,9 +269,91 @@ const NodeConfigDrawer: React.FC<NodeConfigDrawerProps> = ({
                         </>
                     )}
 
+                    {/* Reject Target - REVIEW only */}
+                    {nodeData.type === 'REVIEW' && onSetRejectTarget && (
+                        <>
+                            <Divider style={{ margin: '16px 0 12px' }}>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    ACTIONS
+                                </Text>
+                            </Divider>
+
+                            {/* Approve Action Display */}
+                            <div style={{
+                                padding: '10px 14px',
+                                background: '#f0fdf4',
+                                borderRadius: 8,
+                                border: '1px solid #bbf7d0',
+                                marginBottom: 12,
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <div style={{
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: 6,
+                                        background: '#10b981',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <CheckOutlined style={{ color: '#fff', fontSize: 12 }} />
+                                    </div>
+                                    <Text strong style={{ color: '#10b981' }}>Approve</Text>
+                                    <ArrowRightOutlined style={{ color: '#bbf7d0', marginLeft: 'auto' }} />
+                                    <Text style={{ color: '#065f46' }}>Next step (via edge)</Text>
+                                </div>
+                            </div>
+
+                            {/* Reject Target Selection */}
+                            <div style={{
+                                padding: '8px 12px',
+                                background: '#fef2f2',
+                                borderRadius: 8,
+                                border: '1px solid #fecaca',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                                    <div style={{
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 5,
+                                        background: '#ef4444',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <CloseOutlined style={{ color: '#fff', fontSize: 10 }} />
+                                    </div>
+                                    <Text strong style={{ color: '#ef4444', fontSize: 12 }}>Reject</Text>
+                                    <ArrowRightOutlined style={{ color: '#fecaca', marginLeft: 'auto', fontSize: 10 }} />
+                                </div>
+                                <Select
+                                    placeholder="Select step to return to"
+                                    style={{ width: '100%' }}
+                                    size="small"
+                                    value={rejectTargetId}
+                                    onChange={handleRejectTargetChange}
+                                    allowClear
+                                >
+                                    {availableNodes
+                                        .filter(n => n.id !== nodeId && n.type !== 'END')
+                                        .map((node) => (
+                                            <Select.Option key={node.id} value={node.id}>
+                                                {node.name} ({node.type.replace('_', ' ')})
+                                            </Select.Option>
+                                        ))}
+                                </Select>
+                                {!rejectTargetId && (
+                                    <Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 4 }}>
+                                        Select which step to return to when rejected
+                                    </Text>
+                                )}
+                            </div>
+                        </>
+                    )}
+
                     {/* Guidance Text - REVIEW only */}
                     {nodeData.type === 'REVIEW' && (
-                        <Form.Item name="guidanceText" label="Review Guidance">
+                        <Form.Item name="guidanceText" label="Review Guidance" style={{ marginTop: 16 }}>
                             <TextArea
                                 rows={3}
                                 placeholder="Instructions or criteria for the reviewer"
@@ -238,19 +363,16 @@ const NodeConfigDrawer: React.FC<NodeConfigDrawerProps> = ({
 
                     {/* Read-only info for START/END */}
                     {isReadOnly && (
-                        <div style={{
-                            background: '#fafafa',
-                            padding: 16,
-                            borderRadius: 8,
-                            marginTop: 16
-                        }}>
-                            <Text type="secondary">
-                                {nodeData.type === 'START'
+                        <Alert
+                            type="info"
+                            showIcon
+                            message={
+                                nodeData.type === 'START'
                                     ? 'This is the entry point of the workflow. Tasks will start from this step.'
                                     : 'This is the completion point. When a task reaches this step, the workflow is complete.'
-                                }
-                            </Text>
-                        </div>
+                            }
+                            style={{ marginTop: 16 }}
+                        />
                     )}
 
                     {/* Delete Button */}

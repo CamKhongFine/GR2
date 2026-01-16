@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import ReactFlow, {
     Node,
     Edge,
@@ -13,7 +13,7 @@ import ReactFlow, {
     MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Modal, Input, Form, message } from 'antd';
+import { Modal, Input, Form, message, Select } from 'antd';
 import WorkflowNode, { WorkflowNodeData } from './WorkflowNode';
 import WorkflowNodePalette from './WorkflowNodePalette';
 import {
@@ -63,18 +63,34 @@ const stepsToNodes = (steps: WorkflowStepResponse[], onNodeClick?: (nodeId: stri
 
 // Convert API transitions to ReactFlow edges
 const transitionsToEdges = (transitions: WorkflowTransitionResponse[]): Edge[] => {
-    return transitions.map((transition) => ({
-        id: `edge_${transition.fromStepId}_${transition.toStepId}`,
-        source: transition.fromStepId.toString(),
-        target: transition.toStepId.toString(),
-        label: transition.action,
-        markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#888',
-        },
-        style: { stroke: '#888', strokeWidth: 2 },
-        labelStyle: { fill: '#666', fontSize: 12 },
-    }));
+    return transitions.map((transition) => {
+        const isReject = transition.action?.toLowerCase() === 'reject';
+        const isApprove = transition.action?.toLowerCase() === 'approve';
+
+        return {
+            id: `edge_${transition.fromStepId}_${transition.toStepId}_${transition.action || 'next'}`,
+            source: transition.fromStepId.toString(),
+            target: transition.toStepId.toString(),
+            label: transition.action,
+            markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: isReject ? '#ff4d4f' : isApprove ? '#52c41a' : '#888',
+            },
+            style: {
+                stroke: isReject ? '#ff4d4f' : isApprove ? '#52c41a' : '#888',
+                strokeWidth: 2,
+                strokeDasharray: isReject ? '5,5' : undefined,
+            },
+            labelStyle: {
+                fill: isReject ? '#ff4d4f' : isApprove ? '#52c41a' : '#666',
+                fontSize: 12,
+                fontWeight: 600,
+            },
+            labelBgStyle: {
+                fill: '#fff',
+            },
+        };
+    });
 };
 
 // Convert ReactFlow state to API request format
@@ -157,47 +173,113 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
     const [pendingNodeType, setPendingNodeType] = useState<WorkflowStepType | null>(null);
     const [nodeNameForm] = Form.useForm();
 
-    // Modal state for edge labels
-    const [isEdgeLabelModalOpen, setIsEdgeLabelModalOpen] = useState(false);
-    const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
-    const [edgeLabelForm] = Form.useForm();
+    // Modal state for REVIEW reject target selection
+    const [isRejectTargetModalOpen, setIsRejectTargetModalOpen] = useState(false);
+    const [pendingReviewConnection, setPendingReviewConnection] = useState<{
+        sourceId: string;
+        connection: Connection;
+    } | null>(null);
+    const [rejectTargetForm] = Form.useForm();
 
     // Check if START node already exists
     const hasStartNode = nodes.some((n) => n.data.type === 'START');
 
+    // Get source node type
+    const getSourceNodeType = (sourceId: string): WorkflowStepType | null => {
+        const sourceNode = nodes.find((n) => n.id === sourceId);
+        return sourceNode?.data.type || null;
+    };
+
+    // Create edge with proper styling
+    const createEdge = (source: string, target: string, action: string): Edge => {
+        const isReject = action.toLowerCase() === 'reject';
+        const isApprove = action.toLowerCase() === 'approve';
+
+        return {
+            id: `edge_${source}_${target}_${action}`,
+            source,
+            target,
+            label: action,
+            markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: isReject ? '#ff4d4f' : isApprove ? '#52c41a' : '#888',
+            },
+            style: {
+                stroke: isReject ? '#ff4d4f' : isApprove ? '#52c41a' : '#888',
+                strokeWidth: 2,
+                strokeDasharray: isReject ? '5,5' : undefined,
+            },
+            labelStyle: {
+                fill: isReject ? '#ff4d4f' : isApprove ? '#52c41a' : '#666',
+                fontSize: 12,
+                fontWeight: 600,
+            },
+            labelBgStyle: {
+                fill: '#fff',
+            },
+        };
+    };
+
     const onConnect = useCallback(
         (connection: Connection) => {
-            if (readOnly) return;
-            // Open modal to get edge label
-            setPendingConnection(connection);
-            edgeLabelForm.resetFields();
-            setIsEdgeLabelModalOpen(true);
+            if (readOnly || !connection.source || !connection.target) return;
+
+            const sourceType = getSourceNodeType(connection.source);
+
+            if (sourceType === 'START') {
+                // START always uses "start" action
+                const newEdge = createEdge(connection.source, connection.target, 'start');
+                setEdges((eds) => addEdge(newEdge, eds));
+            } else if (sourceType === 'USER_TASK') {
+                // USER_TASK always uses "submit" action
+                const newEdge = createEdge(connection.source, connection.target, 'submit');
+                setEdges((eds) => addEdge(newEdge, eds));
+            } else if (sourceType === 'REVIEW') {
+                // Check if approve edge already exists
+                const existingApprove = edges.find(
+                    (e) => e.source === connection.source && e.label?.toString().toLowerCase() === 'approve'
+                );
+
+                if (!existingApprove) {
+                    // First connection from REVIEW is "approve"
+                    const newEdge = createEdge(connection.source, connection.target, 'approve');
+                    setEdges((eds) => addEdge(newEdge, eds));
+                } else {
+                    // Second connection is "reject" - show modal to select target
+                    setPendingReviewConnection({ sourceId: connection.source, connection });
+                    rejectTargetForm.setFieldsValue({ targetNodeId: connection.target });
+                    setIsRejectTargetModalOpen(true);
+                }
+            } else {
+                // Default action for other types
+                const newEdge = createEdge(connection.source, connection.target, 'next');
+                setEdges((eds) => addEdge(newEdge, eds));
+            }
         },
-        [readOnly, edgeLabelForm]
+        [readOnly, nodes, edges, setEdges, rejectTargetForm]
     );
 
-    const handleEdgeLabelSubmit = async () => {
-        if (!pendingConnection) return;
+    // Handle reject target selection
+    const handleRejectTargetSubmit = async () => {
+        if (!pendingReviewConnection) return;
         try {
-            const values = await edgeLabelForm.validateFields();
-            const newEdge: Edge = {
-                id: `edge_${pendingConnection.source}_${pendingConnection.target}`,
-                source: pendingConnection.source!,
-                target: pendingConnection.target!,
-                label: values.action,
-                markerEnd: {
-                    type: MarkerType.ArrowClosed,
-                    color: '#888',
-                },
-                style: { stroke: '#888', strokeWidth: 2 },
-                labelStyle: { fill: '#666', fontSize: 12 },
-            };
+            const values = await rejectTargetForm.validateFields();
+            const newEdge = createEdge(
+                pendingReviewConnection.sourceId,
+                values.targetNodeId,
+                'reject'
+            );
             setEdges((eds) => addEdge(newEdge, eds));
-            setIsEdgeLabelModalOpen(false);
-            setPendingConnection(null);
+            setIsRejectTargetModalOpen(false);
+            setPendingReviewConnection(null);
         } catch (error) {
             console.error('Validation failed:', error);
         }
+    };
+
+    // Get available nodes for reject target (previous steps, not END)
+    const getRejectTargetOptions = () => {
+        return nodes.filter((n) => n.data.type !== 'START' && n.data.type !== 'END');
     };
 
     const handleAddNode = (type: WorkflowStepType) => {
@@ -309,24 +391,30 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                 </Form>
             </Modal>
 
-            {/* Edge Label Modal */}
+            {/* Reject Target Selection Modal */}
             <Modal
-                title="Add Transition"
-                open={isEdgeLabelModalOpen}
-                onOk={handleEdgeLabelSubmit}
+                title="Set Reject Target"
+                open={isRejectTargetModalOpen}
+                onOk={handleRejectTargetSubmit}
                 onCancel={() => {
-                    setIsEdgeLabelModalOpen(false);
-                    setPendingConnection(null);
+                    setIsRejectTargetModalOpen(false);
+                    setPendingReviewConnection(null);
                 }}
-                okText="Add"
+                okText="Confirm"
             >
-                <Form form={edgeLabelForm} layout="vertical" style={{ marginTop: 16 }}>
+                <Form form={rejectTargetForm} layout="vertical" style={{ marginTop: 16 }}>
                     <Form.Item
-                        name="action"
-                        label="Action Name"
-                        rules={[{ required: true, message: 'Please enter action name' }]}
+                        name="targetNodeId"
+                        label="On Reject, return to:"
+                        rules={[{ required: true, message: 'Please select target step' }]}
                     >
-                        <Input placeholder="e.g., submit, approve, reject" />
+                        <Select placeholder="Select step to return to on reject">
+                            {getRejectTargetOptions().map((node) => (
+                                <Select.Option key={node.id} value={node.id}>
+                                    {node.data.name} ({node.data.type.replace('_', ' ')})
+                                </Select.Option>
+                            ))}
+                        </Select>
                     </Form.Item>
                 </Form>
             </Modal>
