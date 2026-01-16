@@ -214,14 +214,14 @@ const StaffWorkspacePage: React.FC = () => {
                                 borderRadius: 16,
                                 border: 'none',
                                 overflow: 'hidden',
-                                background: 'linear-gradient(145deg, #ffffff 0%, #fafbfc 100%)',
+                                background: '#ffffff',
                             }}
                             bodyStyle={{ padding: 0 }}
                         >
-                            {/* Modern Gradient Header */}
+                            {/* Solid Color Header */}
                             <div
                                 style={{
-                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    background: '#4f46e5',
                                     padding: '20px 24px',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -235,7 +235,6 @@ const StaffWorkspacePage: React.FC = () => {
                                             height: 42,
                                             borderRadius: 12,
                                             background: 'rgba(255, 255, 255, 0.2)',
-                                            backdropFilter: 'blur(8px)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -264,8 +263,7 @@ const StaffWorkspacePage: React.FC = () => {
                                             justifyContent: 'center',
                                             fontWeight: 700,
                                             fontSize: 16,
-                                            color: '#764ba2',
-                                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                            color: '#4f46e5',
                                         }}
                                     >
                                         {assignedStepTasks.length}
@@ -313,18 +311,17 @@ const StaffWorkspacePage: React.FC = () => {
                                                     className="hover:border-purple-300 hover:shadow-md"
                                                     onClick={() => setSelectedTaskId(stepTask.taskId)}
                                                 >
-                                                    {/* Icon with gradient background */}
+                                                    {/* Icon with solid color background */}
                                                     <div
                                                         style={{
                                                             width: 48,
                                                             height: 48,
                                                             borderRadius: 12,
-                                                            background: `linear-gradient(135deg, ${priorityConfig.bg} 0%, ${priorityConfig.border} 100%)`,
+                                                            background: priorityConfig.bg,
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
                                                             flexShrink: 0,
-                                                            boxShadow: `0 4px 12px ${priorityConfig.border}40`,
                                                         }}
                                                     >
                                                         {React.cloneElement(getActionIcon(stepTask), {
@@ -379,7 +376,7 @@ const StaffWorkspacePage: React.FC = () => {
                                                             setSelectedTaskId(stepTask.taskId);
                                                         }}
                                                         style={{
-                                                            background: `linear-gradient(135deg, ${actionConfig.color} 0%, ${actionConfig.color}dd 100%)`,
+                                                            background: actionConfig.color,
                                                             border: 'none',
                                                             height: 38,
                                                             paddingLeft: 16,
@@ -390,7 +387,6 @@ const StaffWorkspacePage: React.FC = () => {
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             gap: 6,
-                                                            boxShadow: `0 4px 12px ${actionConfig.color}40`,
                                                         }}
                                                     >
                                                         {actionConfig.text}
@@ -412,14 +408,14 @@ const StaffWorkspacePage: React.FC = () => {
                                 borderRadius: 16,
                                 border: 'none',
                                 overflow: 'hidden',
-                                background: 'linear-gradient(145deg, #ffffff 0%, #fafbfc 100%)',
+                                background: '#ffffff',
                             }}
                             bodyStyle={{ padding: 0 }}
                         >
-                            {/* Modern Gradient Header */}
+                            {/* Solid Color Header */}
                             <div
                                 style={{
-                                    background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                                    background: '#10b981',
                                     padding: '20px 24px',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -432,7 +428,6 @@ const StaffWorkspacePage: React.FC = () => {
                                         height: 42,
                                         borderRadius: 12,
                                         background: 'rgba(255, 255, 255, 0.2)',
-                                        backdropFilter: 'blur(8px)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -488,7 +483,7 @@ const StaffWorkspacePage: React.FC = () => {
                                                             top: 38,
                                                             width: 2,
                                                             height: 'calc(100% + 8px)',
-                                                            background: 'linear-gradient(180deg, #e5e7eb 0%, transparent 100%)',
+                                                            background: '#e5e7eb',
                                                         }}
                                                     />
                                                 )}
@@ -500,17 +495,16 @@ const StaffWorkspacePage: React.FC = () => {
                                                         height: 36,
                                                         borderRadius: 10,
                                                         background: action.actionName.toLowerCase().includes('approve')
-                                                            ? 'linear-gradient(135deg, #dcfce7 0%, #86efac 100%)'
+                                                            ? '#dcfce7'
                                                             : action.actionName.toLowerCase().includes('reject')
-                                                                ? 'linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%)'
+                                                                ? '#fee2e2'
                                                                 : action.actionName.toLowerCase().includes('submit')
-                                                                    ? 'linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%)'
-                                                                    : 'linear-gradient(135deg, #f3e8ff 0%, #c4b5fd 100%)',
+                                                                    ? '#dbeafe'
+                                                                    : '#f3e8ff',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
                                                         flexShrink: 0,
-                                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                                                         zIndex: 1,
                                                     }}
                                                 >

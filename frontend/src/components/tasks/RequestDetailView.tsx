@@ -30,11 +30,11 @@ import {
 } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { 
-    TaskResponse, 
-    isUserAssignee, 
-    getTaskActions, 
-    executeAction, 
+import {
+    TaskResponse,
+    isUserAssignee,
+    getTaskActions,
+    executeAction,
     ExecuteActionRequest,
     getCurrentStepTask,
     getStepTaskDetail,
@@ -123,10 +123,10 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
 
     const handleAction = async (action: string) => {
         if (!task) return;
-        
+
         try {
             const values = await form.validateFields();
-            
+
             // Prepare file upload requests
             const fileUploadRequests = fileList
                 .filter(file => file.originFileObj)
@@ -177,7 +177,7 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
             }
             return [];
         }
-        
+
         return activityLog.map((action) => ({
             id: action.id.toString(),
             timestamp: action.createdAt,
@@ -190,7 +190,7 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
 
     const handleActivityItemClick = async (stepTaskId: number | null) => {
         if (!stepTaskId) return;
-        
+
         setSelectedStepTaskId(stepTaskId);
         setLoadingDetail(true);
         try {
@@ -267,7 +267,7 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                                     // Case A: User IS assignee - Show actionable panel
                                     <div>
                                         <Divider style={{ margin: '16px 0' }} />
-                                        
+
                                         <Form form={form} layout="vertical" style={{ marginBottom: 16 }}>
                                             {/* Data Body Input (for USER_TASK) */}
                                             {currentStep.type === 'USER_TASK' && (
@@ -291,9 +291,9 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                                                 {fileList.length > 0 && (
                                                     <div style={{ marginTop: 8 }}>
                                                         {fileList.map(file => (
-                                                            <div key={file.uid} style={{ 
-                                                                display: 'flex', 
-                                                                justifyContent: 'space-between', 
+                                                            <div key={file.uid} style={{
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
                                                                 alignItems: 'center',
                                                                 padding: '4px 0',
                                                                 fontSize: 12,
@@ -326,17 +326,17 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                                         {/* Action Buttons */}
                                         <Space direction="vertical" style={{ width: '100%' }} size={12}>
                                             {currentStep.type === 'USER_TASK' && (
-                                                    <Button
-                                                        type="primary"
-                                                        icon={<SendOutlined />}
-                                                        block
-                                                        onClick={() => handleAction('submit')}
-                                                        loading={executeActionMutation.isPending}
-                                                    >
-                                                        Submit
-                                                    </Button>
+                                                <Button
+                                                    type="primary"
+                                                    icon={<SendOutlined />}
+                                                    block
+                                                    onClick={() => handleAction('submit')}
+                                                    loading={executeActionMutation.isPending}
+                                                >
+                                                    Submit
+                                                </Button>
                                             )}
-                                            
+
                                             {currentStep.type === 'REVIEW' && (
                                                 <>
                                                     <Button
@@ -420,9 +420,9 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                         <List
                             dataSource={activityEntries}
                             renderItem={(item) => (
-                                <List.Item 
-                                    style={{ 
-                                        padding: '12px 0', 
+                                <List.Item
+                                    style={{
+                                        padding: '12px 0',
                                         borderBottom: '1px solid #f0f0f0',
                                         cursor: item.stepTaskId ? 'pointer' : 'default',
                                     }}
@@ -473,177 +473,402 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                 </div>
             </div>
 
-            {/* Step Task Detail Modal */}
+            {/* Step Task Detail Modal - Enterprise Grade */}
             <Modal
-                title={
-                    <Space>
-                        <FileTextOutlined />
-                        <span>Step Task Details</span>
-                    </Space>
-                }
+                title={null}
                 open={!!selectedStepTaskId}
                 onCancel={() => {
                     setSelectedStepTaskId(null);
                     setStepTaskDetail(null);
                 }}
-                footer={[
-                    <Button key="close" onClick={() => {
-                        setSelectedStepTaskId(null);
-                        setStepTaskDetail(null);
-                    }}>
-                        Close
-                    </Button>
-                ]}
-                width={800}
+                footer={null}
+                width={900}
+                bodyStyle={{ padding: 0 }}
             >
                 {loadingDetail ? (
-                    <div style={{ textAlign: 'center', padding: 40 }}>
+                    <div style={{ textAlign: 'center', padding: 60 }}>
                         <Spin size="large" />
                     </div>
                 ) : stepTaskDetail ? (
-                    <div style={{ maxHeight: '70vh', overflow: 'auto' }}>
-                        {/* Step Information */}
-                        <Card 
-                            size="small" 
-                            style={{ marginBottom: 16 }}
-                            title={
-                                <Space>
-                                    <ClockCircleOutlined />
-                                    <span>{stepTaskDetail.stepTask.workflowStepName}</span>
-                                </Space>
-                            }
+                    <div style={{ maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                        {/* Header with gradient */}
+                        <div
+                            style={{
+                                background: '#4f46e5',
+                                padding: '24px 32px',
+                                color: '#fff',
+                            }}
                         >
-                            <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                                <div>
-                                    <Text type="secondary" style={{ fontSize: 12 }}>Status: </Text>
-                                    <Text strong>{stepTaskDetail.stepTask.status}</Text>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <div
+                                    style={{
+                                        width: 52,
+                                        height: 52,
+                                        borderRadius: 14,
+                                        background: 'rgba(255, 255, 255, 0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <FileTextOutlined style={{ fontSize: 26, color: '#fff' }} />
                                 </div>
-                                {stepTaskDetail.stepTask.assignedUserName && (
-                                    <div>
-                                        <Text type="secondary" style={{ fontSize: 12 }}>Assigned to: </Text>
-                                        <Text>{stepTaskDetail.stepTask.assignedUserName}</Text>
-                                    </div>
-                                )}
-                                {stepTaskDetail.stepTask.beginDate && (
-                                    <div>
-                                        <Text type="secondary" style={{ fontSize: 12 }}>Started: </Text>
-                                        <Text>{dayjs(stepTaskDetail.stepTask.beginDate).format('YYYY-MM-DD HH:mm')}</Text>
-                                    </div>
-                                )}
-                                {stepTaskDetail.stepTask.endDate && (
-                                    <div>
-                                        <Text type="secondary" style={{ fontSize: 12 }}>Completed: </Text>
-                                        <Text>{dayjs(stepTaskDetail.stepTask.endDate).format('YYYY-MM-DD HH:mm')}</Text>
-                                    </div>
-                                )}
-                            </Space>
-                        </Card>
+                                <div style={{ flex: 1 }}>
+                                    <Title level={4} style={{ margin: 0, color: '#fff', fontWeight: 600 }}>
+                                        {stepTaskDetail.stepTask.workflowStepName}
+                                    </Title>
+                                    <Text style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: 13 }}>
+                                        Step #{stepTaskDetail.stepTask.stepSequence} • {stepTaskDetail.stepTask.taskTitle}
+                                    </Text>
+                                </div>
+                                <div
+                                    style={{
+                                        padding: '6px 16px',
+                                        borderRadius: 20,
+                                        background: stepTaskDetail.stepTask.status === 'COMPLETED' ? '#10b981' :
+                                            stepTaskDetail.stepTask.status === 'IN_PROGRESS' ? '#f59e0b' : '#6b7280',
+                                        color: '#fff',
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px',
+                                    }}
+                                >
+                                    {stepTaskDetail.stepTask.status}
+                                </div>
+                            </div>
+                        </div>
 
-                        {/* Comment Section */}
-                        {stepTaskDetail.comment && (
-                            <Card 
-                                size="small" 
-                                style={{ marginBottom: 16 }}
-                                title={
-                                    <Space>
-                                        <UserOutlined />
-                                        <span>Comment</span>
-                                    </Space>
-                                }
-                            >
-                                <Text>{stepTaskDetail.comment}</Text>
-                            </Card>
-                        )}
+                        {/* Info Cards Row */}
+                        <div style={{ padding: '20px 32px', background: '#f8fafc', borderBottom: '1px solid #e5e7eb' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                                {/* Assignee Card */}
+                                <div style={{
+                                    background: '#fff',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: 12,
+                                    padding: '14px 18px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                }}>
+                                    <div style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 10,
+                                        background: '#ede9fe',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <UserOutlined style={{ fontSize: 18, color: '#8b5cf6' }} />
+                                    </div>
+                                    <div>
+                                        <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>Assigned To</Text>
+                                        <Text strong style={{ fontSize: 14 }}>
+                                            {stepTaskDetail.stepTask.assignedUserName || 'Unassigned'}
+                                        </Text>
+                                    </div>
+                                </div>
 
-                        {/* Data Section */}
-                        {stepTaskDetail.data && stepTaskDetail.data.length > 0 && (
-                            <Card 
-                                size="small" 
-                                style={{ marginBottom: 16 }}
-                                title={
-                                    <Space>
-                                        <FileTextOutlined />
-                                        <span>Input Data ({stepTaskDetail.data.length})</span>
-                                    </Space>
-                                }
-                            >
-                                <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                    {stepTaskDetail.data.map((dataItem: StepTaskDataResponse) => (
-                                        <Card 
-                                            key={dataItem.id}
-                                            size="small"
-                                            style={{ backgroundColor: '#fafafa' }}
-                                        >
-                                            <Space direction="vertical" style={{ width: '100%' }} size={4}>
+                                {/* Started Card */}
+                                <div style={{
+                                    background: '#fff',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: 12,
+                                    padding: '14px 18px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                }}>
+                                    <div style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 10,
+                                        background: '#dbeafe',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <ClockCircleOutlined style={{ fontSize: 18, color: '#3b82f6' }} />
+                                    </div>
+                                    <div>
+                                        <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>Started</Text>
+                                        <Text strong style={{ fontSize: 14 }}>
+                                            {stepTaskDetail.stepTask.beginDate
+                                                ? dayjs(stepTaskDetail.stepTask.beginDate).format('MMM DD, HH:mm')
+                                                : '-'}
+                                        </Text>
+                                    </div>
+                                </div>
+
+                                {/* Completed Card */}
+                                <div style={{
+                                    background: '#fff',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: 12,
+                                    padding: '14px 18px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                }}>
+                                    <div style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 10,
+                                        background: '#dcfce7',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <CheckOutlined style={{ fontSize: 18, color: '#10b981' }} />
+                                    </div>
+                                    <div>
+                                        <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>Completed</Text>
+                                        <Text strong style={{ fontSize: 14 }}>
+                                            {stepTaskDetail.stepTask.endDate
+                                                ? dayjs(stepTaskDetail.stepTask.endDate).format('MMM DD, HH:mm')
+                                                : '-'}
+                                        </Text>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Content Area - Scrollable */}
+                        <div style={{ padding: '24px 32px', overflow: 'auto', flex: 1 }}>
+                            {/* Comment Section */}
+                            {stepTaskDetail.comment && (
+                                <div style={{ marginBottom: 24 }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 10,
+                                        marginBottom: 12,
+                                    }}>
+                                        <div style={{
+                                            width: 32,
+                                            height: 32,
+                                            borderRadius: 8,
+                                            background: '#fef3c7',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}>
+                                            <UserOutlined style={{ fontSize: 14, color: '#f59e0b' }} />
+                                        </div>
+                                        <Text strong style={{ fontSize: 15, color: '#374151' }}>Comment</Text>
+                                    </div>
+                                    <div style={{
+                                        background: '#fffbeb',
+                                        border: '1px solid #fde68a',
+                                        borderRadius: 12,
+                                        padding: '16px 20px',
+                                    }}>
+                                        <Text style={{ fontSize: 14, lineHeight: 1.6 }}>{stepTaskDetail.comment}</Text>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Data Section */}
+                            {stepTaskDetail.data && stepTaskDetail.data.length > 0 && (
+                                <div style={{ marginBottom: 24 }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 10,
+                                        marginBottom: 12,
+                                    }}>
+                                        <div style={{
+                                            width: 32,
+                                            height: 32,
+                                            borderRadius: 8,
+                                            background: '#e0e7ff',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}>
+                                            <FileTextOutlined style={{ fontSize: 14, color: '#4f46e5' }} />
+                                        </div>
+                                        <Text strong style={{ fontSize: 15, color: '#374151' }}>
+                                            Input Data
+                                        </Text>
+                                        <span style={{
+                                            background: '#e0e7ff',
+                                            color: '#4f46e5',
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            padding: '2px 8px',
+                                            borderRadius: 10,
+                                        }}>
+                                            {stepTaskDetail.data.length}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {stepTaskDetail.data.map((dataItem: StepTaskDataResponse) => (
+                                            <div
+                                                key={dataItem.id}
+                                                style={{
+                                                    background: '#f8fafc',
+                                                    border: '1px solid #e5e7eb',
+                                                    borderRadius: 12,
+                                                    padding: '16px 20px',
+                                                }}
+                                            >
                                                 {dataItem.dataBody && (
-                                                    <Text style={{ whiteSpace: 'pre-wrap' }}>{dataItem.dataBody}</Text>
+                                                    <Text style={{
+                                                        whiteSpace: 'pre-wrap',
+                                                        fontSize: 14,
+                                                        lineHeight: 1.6,
+                                                        display: 'block',
+                                                    }}>
+                                                        {dataItem.dataBody}
+                                                    </Text>
                                                 )}
-                                                <div style={{ marginTop: 8 }}>
-                                                    <Text type="secondary" style={{ fontSize: 11 }}>
-                                                        {dataItem.createdByName} • {dayjs(dataItem.createdAt).format('YYYY-MM-DD HH:mm')}
+                                                <div style={{
+                                                    marginTop: 12,
+                                                    paddingTop: 12,
+                                                    borderTop: '1px solid #e5e7eb',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 8,
+                                                }}>
+                                                    <Avatar size={24} style={{ background: '#4f46e5', fontSize: 11 }}>
+                                                        {dataItem.createdByName?.charAt(0) || '?'}
+                                                    </Avatar>
+                                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                                        {dataItem.createdByName} • {dayjs(dataItem.createdAt).format('MMM DD, YYYY HH:mm')}
                                                     </Text>
                                                 </div>
-                                            </Space>
-                                        </Card>
-                                    ))}
-                                </Space>
-                            </Card>
-                        )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-                        {/* Files Section */}
-                        {stepTaskDetail.files && stepTaskDetail.files.length > 0 && (
-                            <Card 
-                                size="small"
-                                title={
-                                    <Space>
-                                        <FileOutlined />
-                                        <span>Attachments ({stepTaskDetail.files.length})</span>
-                                    </Space>
-                                }
-                            >
-                                <List
-                                    dataSource={stepTaskDetail.files}
-                                    renderItem={(file: StepTaskFileResponse) => (
-                                        <List.Item
-                                            actions={[
-                                                <Button 
-                                                    key="download" 
-                                                    type="link" 
+                            {/* Files Section */}
+                            {stepTaskDetail.files && stepTaskDetail.files.length > 0 && (
+                                <div>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 10,
+                                        marginBottom: 12,
+                                    }}>
+                                        <div style={{
+                                            width: 32,
+                                            height: 32,
+                                            borderRadius: 8,
+                                            background: '#dcfce7',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}>
+                                            <FileOutlined style={{ fontSize: 14, color: '#10b981' }} />
+                                        </div>
+                                        <Text strong style={{ fontSize: 15, color: '#374151' }}>
+                                            Attachments
+                                        </Text>
+                                        <span style={{
+                                            background: '#dcfce7',
+                                            color: '#10b981',
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            padding: '2px 8px',
+                                            borderRadius: 10,
+                                        }}>
+                                            {stepTaskDetail.files.length}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {stepTaskDetail.files.map((file: StepTaskFileResponse) => (
+                                            <div
+                                                key={file.id}
+                                                style={{
+                                                    background: '#fff',
+                                                    border: '1px solid #e5e7eb',
+                                                    borderRadius: 12,
+                                                    padding: '14px 18px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 14,
+                                                }}
+                                            >
+                                                <div style={{
+                                                    width: 44,
+                                                    height: 44,
+                                                    borderRadius: 10,
+                                                    background: '#f0fdf4',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                }}>
+                                                    <FileOutlined style={{ fontSize: 20, color: '#10b981' }} />
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <Text strong style={{ fontSize: 14, display: 'block' }}>
+                                                        {file.fileName}
+                                                    </Text>
+                                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                                        {formatFileSize(file.fileSize)} • {file.uploadedByName} • {dayjs(file.createdAt).format('MMM DD, HH:mm')}
+                                                    </Text>
+                                                </div>
+                                                <Button
+                                                    type="primary"
                                                     icon={<DownloadOutlined />}
+                                                    style={{
+                                                        background: '#10b981',
+                                                        border: 'none',
+                                                        borderRadius: 8,
+                                                    }}
                                                     onClick={() => {
-                                                        // TODO: Implement file download when Minio is ready
                                                         message.info('File download will be available when Minio is configured');
                                                     }}
                                                 >
                                                     Download
                                                 </Button>
-                                            ]}
-                                        >
-                                            <List.Item.Meta
-                                                avatar={<FileOutlined style={{ fontSize: 20, color: '#1890ff' }} />}
-                                                title={file.fileName}
-                                                description={
-                                                    <Space>
-                                                        <Text type="secondary" style={{ fontSize: 12 }}>
-                                                            {formatFileSize(file.fileSize)}
-                                                        </Text>
-                                                        <Text type="secondary" style={{ fontSize: 12 }}>•</Text>
-                                                        <Text type="secondary" style={{ fontSize: 12 }}>
-                                                            {file.uploadedByName} • {dayjs(file.createdAt).format('YYYY-MM-DD HH:mm')}
-                                                        </Text>
-                                                    </Space>
-                                                }
-                                            />
-                                        </List.Item>
-                                    )}
-                                />
-                            </Card>
-                        )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-                        {!stepTaskDetail.comment && (!stepTaskDetail.data || stepTaskDetail.data.length === 0) && 
-                         (!stepTaskDetail.files || stepTaskDetail.files.length === 0) && (
-                            <Empty description="No additional details available" />
-                        )}
+                            {!stepTaskDetail.comment && (!stepTaskDetail.data || stepTaskDetail.data.length === 0) &&
+                                (!stepTaskDetail.files || stepTaskDetail.files.length === 0) && (
+                                    <div style={{
+                                        textAlign: 'center',
+                                        padding: '40px 0',
+                                        background: '#f8fafc',
+                                        borderRadius: 12,
+                                    }}>
+                                        <Empty description="No additional details available" />
+                                    </div>
+                                )}
+                        </div>
+
+                        {/* Footer */}
+                        <div style={{
+                            padding: '16px 32px',
+                            borderTop: '1px solid #e5e7eb',
+                            background: '#fff',
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                        }}>
+                            <Button
+                                onClick={() => {
+                                    setSelectedStepTaskId(null);
+                                    setStepTaskDetail(null);
+                                }}
+                                style={{
+                                    height: 40,
+                                    paddingLeft: 24,
+                                    paddingRight: 24,
+                                    borderRadius: 8,
+                                }}
+                            >
+                                Close
+                            </Button>
+                        </div>
                     </div>
                 ) : null}
             </Modal>
