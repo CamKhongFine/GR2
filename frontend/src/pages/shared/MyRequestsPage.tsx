@@ -902,7 +902,8 @@ const MyRequestsPage: React.FC<MyRequestsPageProps> = ({
                             label="Status"
                         >
                             <Select>
-                                {STATUS_FILTER_OPTIONS.map((status) => (
+                                {/* Only allow RUNNING and CANCELLED - COMPLETED is set via workflow */}
+                                {['RUNNING', 'CANCELLED'].map((status) => (
                                     <Select.Option key={status} value={status}>
                                         {status}
                                     </Select.Option>

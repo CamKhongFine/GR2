@@ -484,7 +484,32 @@ const RequestDetailView: React.FC<RequestDetailViewProps> = ({ task, open, onClo
                 footer={null}
                 width={900}
                 bodyStyle={{ padding: 0 }}
+                style={{ top: 40 }}
+                closable={false}
             >
+                {/* Custom Close Button */}
+                <div
+                    onClick={() => {
+                        setSelectedStepTaskId(null);
+                        setStepTaskDetail(null);
+                    }}
+                    style={{
+                        position: 'absolute',
+                        top: -16,
+                        right: -16,
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        background: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                        cursor: 'pointer',
+                        zIndex: 1001,
+                    }}>
+                    <CloseOutlined style={{ fontSize: 16, color: '#666' }} />
+                </div>
                 {loadingDetail ? (
                     <div style={{ textAlign: 'center', padding: 60 }}>
                         <Spin size="large" />

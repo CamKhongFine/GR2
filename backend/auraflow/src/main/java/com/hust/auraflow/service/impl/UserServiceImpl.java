@@ -39,7 +39,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse getCurrentUser(UserPrincipal principal) {
         if (principal == null || principal.getUserId() == null) {
-            throw new IllegalArgumentException("UserPrincipal is required");
+            throw new IllegalArgumentException("staffUserPrincipal is required");
         }
 
         User user = userRepository.findById(principal.getUserId())

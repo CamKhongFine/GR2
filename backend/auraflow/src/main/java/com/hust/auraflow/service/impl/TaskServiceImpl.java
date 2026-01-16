@@ -275,6 +275,12 @@ public class TaskServiceImpl implements TaskService {
             task.setPriority(request.getPriority());
         }
         if (request.getStatus() != null) {
+            // Don't allow manually setting status to COMPLETED - this should only happen
+            // via workflow
+            if (request.getStatus() == TaskStatus.COMPLETED) {
+                throw new IllegalStateException(
+                        "Task status cannot be manually set to COMPLETED. Complete the workflow instead.");
+            }
             // Only allow changing to CANCELLED if task is RUNNING
             if (request.getStatus() == TaskStatus.CANCELLED && task.getStatus() != TaskStatus.RUNNING) {
                 throw new IllegalStateException("Can only cancel a running task");
@@ -284,7 +290,8 @@ public class TaskServiceImpl implements TaskService {
                 throw new IllegalStateException("Cannot change status of completed or cancelled task");
             }
 
-            // When cancelling a task, complete all IN_PROGRESS step tasks
+            // When cancelling a task, complete all IN_PROGRESS step tasks and clean up
+            // configs
             if (request.getStatus() == TaskStatus.CANCELLED) {
                 List<StepTask> inProgressStepTasks = stepTaskRepository.findByTaskIdAndStatus(
                         taskId, StepTaskStatus.IN_PROGRESS);
@@ -295,6 +302,10 @@ public class TaskServiceImpl implements TaskService {
                 }
                 stepTaskRepository.saveAll(inProgressStepTasks);
                 log.info("Completed {} step tasks for cancelled task {}", inProgressStepTasks.size(), taskId);
+
+                // Delete assignment configs when task is cancelled
+                taskStepAssignmentConfigRepository.deleteByTaskId(taskId);
+                log.info("Deleted assignment configs for cancelled task {}", taskId);
             }
 
             task.setStatus(request.getStatus());
@@ -355,11 +366,9 @@ public class TaskServiceImpl implements TaskService {
         stepTaskRepository.deleteByTaskId(taskId);
         log.info("Deleted step tasks for task {}", taskId);
 
-        // 5. Delete task_step_assignment_config (references tasks)
-        taskStepAssignmentConfigRepository.deleteByTaskId(taskId);
-        log.info("Deleted task step assignment configs for task {}", taskId);
+        // NOTE: assignment_config already deleted when task was COMPLETED or CANCELLED
 
-        // 6. Delete the task
+        // 5. Delete the task
         taskRepository.delete(task);
         log.info("Deleted task: {} by user {}", taskId, principal.getUserId());
     }

@@ -153,19 +153,9 @@ public class StepTaskServiceImpl implements StepTaskService {
         }
         stepTaskRepository.save(currentStepTask);
 
-        // Delete assignment config for the completed step (only for DYNAMIC and FIXED
-        // steps with config)
-        if (currentStepTask.getWorkflowStep() != null) {
-            WorkflowStep completedStep = currentStepTask.getWorkflowStep();
-            if (completedStep.getAssigneeType() != null &&
-                    (completedStep.getAssigneeType().name().equals("DYNAMIC") ||
-                            completedStep.getAssigneeType().name().equals("FIXED"))) {
-                taskStepAssignmentConfigRepository.deleteByTaskIdAndWorkflowStepId(
-                        taskId, completedStep.getId());
-                log.info("Deleted assignment config for completed step {} in task {}",
-                        completedStep.getId(), taskId);
-            }
-        }
+        // NOTE: Assignment configs are NOT deleted when step completes.
+        // This allows reassignment when steps are revisited after REJECT.
+        // Configs are cleaned up when the entire task is deleted.
 
         // Create StepTaskAction log
         StepTaskAction actionLog = StepTaskAction.builder()
@@ -236,6 +226,10 @@ public class StepTaskServiceImpl implements StepTaskService {
             endStepTask.setBeginDate(Instant.now());
             endStepTask.setEndDate(Instant.now());
             stepTaskRepository.save(endStepTask);
+
+            // Delete assignment configs when task is COMPLETED
+            taskStepAssignmentConfigRepository.deleteByTaskId(taskId);
+            log.info("Deleted assignment configs for completed task {}", taskId);
         } else {
             // Create new StepTask for next step
             StepTask nextStepTask = new StepTask();
