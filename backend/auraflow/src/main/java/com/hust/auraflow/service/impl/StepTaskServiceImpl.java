@@ -82,8 +82,8 @@ public class StepTaskServiceImpl implements StepTaskService {
             }
         }
 
-        // Check StepTask assigned user
-        StepTask currentStepTask = stepTaskRepository.findByTaskIdAndWorkflowStepId(taskId, currentStep.getId())
+        // Check StepTask assigned user (only for IN_PROGRESS step tasks)
+        StepTask currentStepTask = stepTaskRepository.findActiveByTaskIdAndWorkflowStepId(taskId, currentStep.getId())
                 .orElse(null);
         if (currentStepTask != null && currentStepTask.getAssignedUser() != null) {
             return currentStepTask.getAssignedUser().getId().equals(principal.getUserId());
@@ -136,10 +136,10 @@ public class StepTaskServiceImpl implements StepTaskService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No transition found for action: " + request.getActionName()));
 
-        // Get current StepTask
+        // Get current StepTask (must be IN_PROGRESS)
         StepTask currentStepTask = stepTaskRepository
-                .findByTaskIdAndWorkflowStepId(taskId, task.getCurrentStep().getId())
-                .orElseThrow(() -> new IllegalStateException("Current step task not found"));
+                .findActiveByTaskIdAndWorkflowStepId(taskId, task.getCurrentStep().getId())
+                .orElseThrow(() -> new IllegalStateException("Current step task not found or not in progress"));
 
         // Get actor user
         User actor = userRepository.findById(principal.getUserId())
@@ -196,7 +196,7 @@ public class StepTaskServiceImpl implements StepTaskService {
                     .createdAt(Instant.now())
                     .build();
             stepTaskDataRepository.save(stepTaskData);
-            log.info("Created StepTaskData for stepTask {} in task {} by user {}", 
+            log.info("Created StepTaskData for stepTask {} in task {} by user {}",
                     currentStepTask.getId(), taskId, actor.getId());
         }
 
@@ -245,6 +245,11 @@ public class StepTaskServiceImpl implements StepTaskService {
             nextStepTask.setStepSequence(currentStepTask.getStepSequence() + 1);
             nextStepTask.setStatus(StepTaskStatus.IN_PROGRESS);
             nextStepTask.setBeginDate(Instant.now());
+
+            // Calculate iteration - if this step was visited before, increment iteration
+            Integer maxIteration = stepTaskRepository.getMaxIterationByTaskIdAndWorkflowStepId(
+                    task.getId(), nextStep.getId());
+            nextStepTask.setIteration(maxIteration + 1);
 
             // Default priority is NORMAL if not provided
             nextStepTask.setPriority(Priority.NORMAL);
@@ -450,12 +455,14 @@ public class StepTaskServiceImpl implements StepTaskService {
 
         // Get comment from StepTaskAction if exists
         String comment = null;
-        List<StepTaskAction> actions = stepTaskActionRepository.findByTaskIdOrderByCreatedAtDesc(stepTask.getTask().getId());
+        List<StepTaskAction> actions = stepTaskActionRepository
+                .findByTaskIdOrderByCreatedAtDesc(stepTask.getTask().getId());
         StepTaskAction relatedAction = actions.stream()
                 .filter(action -> action.getStepTask() != null && action.getStepTask().getId().equals(stepTaskId))
                 .findFirst()
                 .orElse(null);
-        if (relatedAction != null && relatedAction.getComment() != null && !relatedAction.getComment().trim().isEmpty()) {
+        if (relatedAction != null && relatedAction.getComment() != null
+                && !relatedAction.getComment().trim().isEmpty()) {
             comment = relatedAction.getComment();
         }
 

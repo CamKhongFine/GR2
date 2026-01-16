@@ -59,4 +59,12 @@ public class StepTask {
     @Column(name = "priority")
     private Priority priority;
 
+    /**
+     * Iteration number for this step in this task.
+     * When a step is revisited (e.g., after REJECT), iteration is incremented.
+     * Default is 1 for the first execution.
+     */
+    @Column(name = "iteration", nullable = false)
+    private Integer iteration = 1;
+
 }

@@ -29,9 +29,36 @@ public interface StepTaskRepository extends JpaRepository<StepTask, Long> {
     List<StepTask> findByTaskIdOrderByStepSequence(@Param("taskId") Long taskId);
 
     /**
-     * Find a step task by task ID and workflow step ID.
+     * Find a step task by task ID and workflow step ID with IN_PROGRESS status.
+     * This ensures we get the active step task when there might be completed ones
+     * from previous iterations.
      */
+    @Query("SELECT st FROM StepTask st WHERE st.task.id = :taskId AND st.workflowStep.id = :workflowStepId AND st.status = 'IN_PROGRESS'")
+    Optional<StepTask> findActiveByTaskIdAndWorkflowStepId(@Param("taskId") Long taskId,
+            @Param("workflowStepId") Long workflowStepId);
+
+    /**
+     * Find latest step task by task ID and workflow step ID (highest iteration).
+     */
+    @Query("SELECT st FROM StepTask st WHERE st.task.id = :taskId AND st.workflowStep.id = :workflowStepId ORDER BY st.iteration DESC")
+    List<StepTask> findByTaskIdAndWorkflowStepIdOrderByIterationDesc(@Param("taskId") Long taskId,
+            @Param("workflowStepId") Long workflowStepId);
+
+    /**
+     * Find a step task by task ID and workflow step ID.
+     * 
+     * @deprecated Use findActiveByTaskIdAndWorkflowStepId or
+     *             findByTaskIdAndWorkflowStepIdOrderByIterationDesc instead
+     */
+    @Deprecated
     Optional<StepTask> findByTaskIdAndWorkflowStepId(Long taskId, Long workflowStepId);
+
+    /**
+     * Get max iteration for a workflow step in a task.
+     */
+    @Query("SELECT COALESCE(MAX(st.iteration), 0) FROM StepTask st WHERE st.task.id = :taskId AND st.workflowStep.id = :workflowStepId")
+    Integer getMaxIterationByTaskIdAndWorkflowStepId(@Param("taskId") Long taskId,
+            @Param("workflowStepId") Long workflowStepId);
 
     /**
      * Find all step tasks for a given task with specific status.
@@ -57,7 +84,8 @@ public interface StepTaskRepository extends JpaRepository<StepTask, Long> {
      * Sorted by priority (desc) only. For Workspace use (limit 5).
      */
     @Query("SELECT st FROM StepTask st WHERE st.assignedUser.id = :userId AND st.status = :status ORDER BY st.priority DESC")
-    List<StepTask> findByAssignedUserIdAndStatusOrderByPriorityDesc(@Param("userId") Long userId, @Param("status") StepTaskStatus status);
+    List<StepTask> findByAssignedUserIdAndStatusOrderByPriorityDesc(@Param("userId") Long userId,
+            @Param("status") StepTaskStatus status);
 
     /**
      * Delete all step tasks for a given task.

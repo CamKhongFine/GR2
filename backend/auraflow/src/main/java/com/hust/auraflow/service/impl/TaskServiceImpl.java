@@ -32,6 +32,9 @@ public class TaskServiceImpl implements TaskService {
     private final UserRepository userRepository;
     private final WorkflowStepRepository workflowStepRepository;
     private final StepTaskRepository stepTaskRepository;
+    private final StepTaskActionRepository stepTaskActionRepository;
+    private final StepTaskDataRepository stepTaskDataRepository;
+    private final StepTaskFileRepository stepTaskFileRepository;
     private final TaskStepAssignmentConfigRepository taskStepAssignmentConfigRepository;
 
     @Override
@@ -42,7 +45,8 @@ public class TaskServiceImpl implements TaskService {
             throw new IllegalStateException("User does not have a tenant");
         }
 
-        return taskRepository.findByTenantIdAndFilters(tenantId, projectId, title, status, priority, creatorId, pageable)
+        return taskRepository
+                .findByTenantIdAndFilters(tenantId, projectId, title, status, priority, creatorId, pageable)
                 .map(this::toTaskResponse);
     }
 
@@ -154,7 +158,7 @@ public class TaskServiceImpl implements TaskService {
                     config.setPriority(assignment.getPriority());
                     config.setCreatedAt(Instant.now());
                     taskStepAssignmentConfigRepository.save(config);
-                    log.info("Saved assignment config for step {} -> assignee {} with priority {} in task {}", 
+                    log.info("Saved assignment config for step {} -> assignee {} with priority {} in task {}",
                             step.getId(), assignee.getId(), assignment.getPriority(), task.getId());
                 } else if (step.getAssigneeType() != null && step.getAssigneeType().name().equals("FIXED")) {
                     // For FIXED steps: only save priority (assignee is already in workflow step)
@@ -166,10 +170,11 @@ public class TaskServiceImpl implements TaskService {
                                 Long assigneeId = Long.parseLong(step.getAssigneeValue());
                                 assignee = userRepository.findById(assigneeId).orElse(null);
                             } catch (NumberFormatException e) {
-                                log.warn("Invalid assignee value for step {}: {}", step.getId(), step.getAssigneeValue());
+                                log.warn("Invalid assignee value for step {}: {}", step.getId(),
+                                        step.getAssigneeValue());
                             }
                         }
-                        
+
                         if (assignee != null) {
                             TaskStepAssignmentConfig config = new TaskStepAssignmentConfig();
                             config.setTask(task);
@@ -178,7 +183,7 @@ public class TaskServiceImpl implements TaskService {
                             config.setPriority(assignment.getPriority());
                             config.setCreatedAt(Instant.now());
                             taskStepAssignmentConfigRepository.save(config);
-                            log.info("Saved priority config for FIXED step {} with priority {} in task {}", 
+                            log.info("Saved priority config for FIXED step {} with priority {} in task {}",
                                     step.getId(), assignment.getPriority(), task.getId());
                         }
                     }
@@ -198,8 +203,9 @@ public class TaskServiceImpl implements TaskService {
         // Set assignee and priority based on step type
         // Default priority is NORMAL if not provided
         businessStepTask.setPriority(Priority.NORMAL);
-        
-        if (firstBusinessStep.getAssigneeType() != null && firstBusinessStep.getAssigneeType().name().equals("DYNAMIC")) {
+
+        if (firstBusinessStep.getAssigneeType() != null
+                && firstBusinessStep.getAssigneeType().name().equals("DYNAMIC")) {
             TaskStepAssignmentConfig config = taskStepAssignmentConfigRepository
                     .findByTaskIdAndWorkflowStepId(task.getId(), firstBusinessStep.getId())
                     .orElse(null);
@@ -208,11 +214,12 @@ public class TaskServiceImpl implements TaskService {
                 if (config.getPriority() != null) {
                     businessStepTask.setPriority(config.getPriority());
                 }
-                log.info("Snapshotted assignee {} with priority {} for step {} in task {}", 
+                log.info("Snapshotted assignee {} with priority {} for step {} in task {}",
                         config.getAssignee().getId(), config.getPriority(), firstBusinessStep.getId(), task.getId());
                 // Config will be deleted when this StepTask is COMPLETED
             }
-        } else if (firstBusinessStep.getAssigneeType() != null && firstBusinessStep.getAssigneeType().name().equals("FIXED")) {
+        } else if (firstBusinessStep.getAssigneeType() != null
+                && firstBusinessStep.getAssigneeType().name().equals("FIXED")) {
             // For FIXED steps, get assignee from step's assigneeValue
             if (firstBusinessStep.getAssigneeValue() != null) {
                 try {
@@ -222,7 +229,8 @@ public class TaskServiceImpl implements TaskService {
                         businessStepTask.setAssignedUser(assignee);
                     }
                 } catch (NumberFormatException e) {
-                    log.warn("Invalid assignee value for step {}: {}", firstBusinessStep.getId(), firstBusinessStep.getAssigneeValue());
+                    log.warn("Invalid assignee value for step {}: {}", firstBusinessStep.getId(),
+                            firstBusinessStep.getAssigneeValue());
                 }
             }
             // For FIXED steps, check if priority is in config
@@ -275,6 +283,20 @@ public class TaskServiceImpl implements TaskService {
             if (task.getStatus() == TaskStatus.COMPLETED || task.getStatus() == TaskStatus.CANCELLED) {
                 throw new IllegalStateException("Cannot change status of completed or cancelled task");
             }
+
+            // When cancelling a task, complete all IN_PROGRESS step tasks
+            if (request.getStatus() == TaskStatus.CANCELLED) {
+                List<StepTask> inProgressStepTasks = stepTaskRepository.findByTaskIdAndStatus(
+                        taskId, StepTaskStatus.IN_PROGRESS);
+                for (StepTask stepTask : inProgressStepTasks) {
+                    stepTask.setStatus(StepTaskStatus.COMPLETED);
+                    stepTask.setEndDate(Instant.now());
+                    stepTask.setNote("Auto-completed due to task cancellation");
+                }
+                stepTaskRepository.saveAll(inProgressStepTasks);
+                log.info("Completed {} step tasks for cancelled task {}", inProgressStepTasks.size(), taskId);
+            }
+
             task.setStatus(request.getStatus());
         }
         if (request.getProjectId() != null) {
@@ -312,14 +334,28 @@ public class TaskServiceImpl implements TaskService {
         // Task must be COMPLETED or CANCELLED before deletion
         if (task.getStatus() != TaskStatus.COMPLETED && task.getStatus() != TaskStatus.CANCELLED) {
             throw new IllegalStateException(
-                    "Task can only be deleted when status is COMPLETED or CANCELLED. Current status: " + task.getStatus());
+                    "Task can only be deleted when status is COMPLETED or CANCELLED. Current status: "
+                            + task.getStatus());
         }
 
-        // Delete all related step tasks first
+        // Delete in correct order to respect foreign key constraints:
+        // 1. Delete step_task_data (references step_tasks)
+        stepTaskDataRepository.deleteByTaskId(taskId);
+        log.info("Deleted step task data for task {}", taskId);
+
+        // 2. Delete step_task_files (references step_tasks)
+        stepTaskFileRepository.deleteByTaskId(taskId);
+        log.info("Deleted step task files for task {}", taskId);
+
+        // 3. Delete step_task_actions (references step_tasks)
+        stepTaskActionRepository.deleteByTaskId(taskId);
+        log.info("Deleted step task actions for task {}", taskId);
+
+        // 4. Delete step_tasks
         stepTaskRepository.deleteByTaskId(taskId);
         log.info("Deleted step tasks for task {}", taskId);
 
-        // Delete the task
+        // 5. Delete the task
         taskRepository.delete(task);
         log.info("Deleted task: {} by user {}", taskId, principal.getUserId());
     }
