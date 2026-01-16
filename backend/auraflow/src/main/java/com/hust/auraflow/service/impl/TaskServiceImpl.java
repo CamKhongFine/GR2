@@ -355,7 +355,11 @@ public class TaskServiceImpl implements TaskService {
         stepTaskRepository.deleteByTaskId(taskId);
         log.info("Deleted step tasks for task {}", taskId);
 
-        // 5. Delete the task
+        // 5. Delete task_step_assignment_config (references tasks)
+        taskStepAssignmentConfigRepository.deleteByTaskId(taskId);
+        log.info("Deleted task step assignment configs for task {}", taskId);
+
+        // 6. Delete the task
         taskRepository.delete(task);
         log.info("Deleted task: {} by user {}", taskId, principal.getUserId());
     }
